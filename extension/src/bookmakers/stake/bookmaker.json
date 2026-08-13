@@ -1,0 +1,40 @@
+{
+  "id": "stake",
+  "name": "Stake",
+  "site": "stake.com",
+  "brand": "#071824",
+  "color": "#1A9AEF",
+  "hasCasino": true,
+  "betsPath": "/my-bets/sports",
+  "mirrors": [
+    "stake.bet",
+    "stake.games",
+    "stake.ac",
+    "stake.pet",
+    "stake.mba",
+    "stake.bz",
+    "stake.krd",
+    "stake.us",
+    "stake.jp",
+    "stake.ceo",
+    "stake.tr",
+    "Its numbered mirrors, such as stake1001.com"
+  ],
+  "sites": [
+    "https://stake.com/*",
+    "https://*.stake.com/*",
+    "https://*.stake.bet/*",
+    "https://*.stake.games/*",
+    "https://*.stake.ac/*",
+    "https://*.stake.pet/*",
+    "https://*.stake.mba/*",
+    "https://*.stake.bz/*",
+    "https://*.stake.krd/*",
+    "https://*.stake.us/*",
+    "https://*.stake.jp/*",
+    "https://*.stake.ceo/*",
+    "https://*.stake.tr/*"
+  ],
+  "siteRanges": [{ "prefix": "stake", "from": 1000, "to": 1080, "suffixes": ["com"] }],
+  "apiHosts": []
+}

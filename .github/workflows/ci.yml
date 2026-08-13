@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A second push to the same pull request cancels the first — nobody needs the
+# result of a commit that has already been replaced.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+
+      # plugin.test.ts checks every bookmaker folder is complete and registered
+      # in all three collectors; manifest.test.ts checks the sites the extension
+      # asks to be injected into are the ones a capture rule recognises. Both
+      # failures are silent at runtime, which is why they are gates here.
+      - run: pnpm test
+
+      - run: pnpm build
+
+      # Proof the extension still loads, not just that it compiled.
+      - name: manifest survived the build
+        run: node -e "JSON.parse(require('fs').readFileSync('extension/dist/manifest.json','utf8'))"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-dist
+          path: extension/dist
+          retention-days: 7

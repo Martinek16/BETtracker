@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question, idea, or showing what you built
+    url: https://github.com/Martinek16/BETtracker/discussions
+    about: Anything that is not a bug or a bookmaker request belongs in Discussions.
+  - name: A security problem
+    url: https://github.com/Martinek16/BETtracker/security/advisories/new
+    about: Report privately. Never in a public issue.
+  - name: Help with gambling
+    url: https://www.begambleaware.org/
+    about: This tool measures losses. It does not stop them. Free, confidential help.

@@ -1,0 +1,18 @@
+{
+  "id": "bet-at-home",
+  "name": "bet-at-home",
+  "site": "bet-at-home.com",
+  "brand": "#f7f8f9",
+  "color": "#76BC21",
+  "mirrors": [
+    "Its country addresses, such as bet-at-home.de",
+    "Its numbered mirrors, such as bah24.si"
+  ],
+  "sites": [
+    "https://*.bet-at-home.com/*",
+    "https://*.bet-at-home.de/*",
+    "https://*.bet-at-home.at/*"
+  ],
+  "siteRanges": [{ "prefix": "bah", "from": 20, "to": 45, "suffixes": ["com", "si"] }],
+  "apiHosts": ["https://sports-api.everymatrix.com/*", "https://*.nwacdn.com/*"]
+}

@@ -1,0 +1,91 @@
+name: Guard
+
+# Two things this repository cannot recover from once merged: a change to the
+# shared core that quietly breaks every bookmaker at once, and a captured
+# session token published in a diff. Both are checked before a human reads the
+# pull request, because both are easy to miss by eye.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  core:
+    name: only adds a bookmaker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: changed files
+        id: diff
+        run: |
+          git diff --name-only origin/${{ github.base_ref }}...HEAD > changed.txt
+          echo "--- changed:"; cat changed.txt
+
+      - name: no protected path touched
+        if: github.actor != github.repository_owner
+        run: |
+          # Everything is protected except a bookmaker's own folder, the three
+          # collectors it has to be registered in, and documentation.
+          ALLOWED='^(extension/src/bookmakers/[a-z0-9-]+/|extension/src/bookmakers/(capture|registry|catalog)\.ts$|docs/|.*\.md$)'
+          BLOCKED=$(grep -Ev "$ALLOWED" changed.txt || true)
+          if [ -n "$BLOCKED" ]; then
+            echo "::error::This pull request changes the shared core. Contributions may add a bookmaker, not change how they all work."
+            echo "$BLOCKED" | while read -r f; do echo "::error file=$f::protected path"; done
+            echo
+            echo "A bookmaker lives entirely in extension/src/bookmakers/<id>/ and is"
+            echo "registered with one line in each of capture.ts, registry.ts and catalog.ts."
+            echo "If the site cannot work without a core change, open a Discussion instead."
+            exit 1
+          fi
+          echo "Only bookmaker and documentation paths touched."
+
+      - name: one bookmaker per pull request
+        if: github.actor != github.repository_owner
+        run: |
+          # Two sites in one diff means two adapters reviewed at half the
+          # attention, and one bad one blocks the good one.
+          FOLDERS=$(grep -oE '^extension/src/bookmakers/[a-z0-9-]+/' changed.txt | sort -u | wc -l)
+          if [ "$FOLDERS" -gt 1 ]; then
+            echo "::error::This pull request adds $FOLDERS bookmakers. Please open one per site."
+            exit 1
+          fi
+
+  secrets:
+    name: no captured credentials
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: no HAR recording committed
+        run: |
+          # A HAR is a verbatim copy of a signed-in session. It is gitignored,
+          # but -f exists and this is not recoverable once it is public.
+          FOUND=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -iE '\.har$' || true)
+          if [ -n "$FOUND" ]; then
+            echo "::error::A .har recording is in this diff. It contains live session tokens."
+            echo "$FOUND"
+            echo "Run 'pnpm sanitize-har' and commit only what it produces."
+            exit 1
+          fi
+
+      - name: no credential-shaped values in added lines
+        run: |
+          ADDED=$(git diff -U0 origin/${{ github.base_ref }}...HEAD -- . ':(exclude)pnpm-lock.yaml' | grep '^+' || true)
+          # A JWT, a long hex token or a bearer header in a fixture means the
+          # sanitiser was skipped. The patterns match its own leak check.
+          LEAK=$(echo "$ADDED" | grep -aoE 'eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+|[Bb]earer [A-Za-z0-9._-]{20,}|\b[0-9a-fA-F]{40,}\b' || true)
+          if [ -n "$LEAK" ]; then
+            echo "::error::Added lines contain something shaped like a credential."
+            echo "$LEAK" | head -5
+            echo "Fixtures must come from 'pnpm sanitize-har', never from a raw recording."
+            exit 1
+          fi
+          echo "Nothing credential-shaped in the added lines."

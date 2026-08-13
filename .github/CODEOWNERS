@@ -1,0 +1,18 @@
+# Every path needs the owner's review by default. Combined with branch
+# protection on main, this is what actually keeps the core closed — the CI
+# guard only reports, a required review is what blocks.
+*                                       @Martinek16
+
+# Named again so it is obvious in the review UI why these files are watched:
+# they are the shared machinery every bookmaker runs on.
+/shared/                                @Martinek16
+/extension/src/sync/                    @Martinek16
+/extension/src/background/              @Martinek16
+/extension/src/content/                 @Martinek16
+/extension/src/bookmakers/types.ts      @Martinek16
+/extension/src/bookmakers/capture-rule.ts @Martinek16
+/extension/src/bookmakers/plugin.test.ts  @Martinek16
+/extension/manifest.json                @Martinek16
+/extension/sites.mjs                    @Martinek16
+/dashboard/                             @Martinek16
+/.github/                               @Martinek16

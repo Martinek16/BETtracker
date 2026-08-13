@@ -1,0 +1,76 @@
+name: Report a bug
+description: Something is wrong with the numbers, the sync or the dashboard
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not paste a HAR file, a screenshot with your balance, or anything
+        with an account number in it.** Issues are public and cannot be
+        un-published. A description of what is wrong is enough to start with.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to see it
+      placeholder: |
+        1. Open the dashboard
+        2. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: where
+    attributes:
+      label: Which part
+      options:
+        - Sync — data does not arrive, or stops arriving
+        - Numbers — a figure is wrong
+        - Dashboard — something looks or behaves wrong
+        - Install — cannot get it loaded at all
+        - Something else
+    validations:
+      required: true
+
+  - type: input
+    id: bookmaker
+    attributes:
+      label: Which bookmaker
+      description: If it is only one of them.
+    validations:
+      required: false
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: e.g. Chrome 131, Firefox 133
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Which release
+      description: The version in chrome://extensions, or the commit if you built it.
+    validations:
+      required: false
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: >
+        Optional. Right-click the extension, Inspect service worker, Console
+        tab. **Read it before pasting** — check there is no token in it.
+      render: text
+    validations:
+      required: false

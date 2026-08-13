@@ -1,0 +1,29 @@
+{
+  "name": "bettracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BETtracker — local betting-history analytics for bet-at-home and Stake",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r build",
+    "build:shared": "pnpm --filter @betanal/shared build",
+    "build:extension": "pnpm build:dashboard && pnpm --filter @betanal/extension build",
+    "build:dashboard": "pnpm --filter @betanal/dashboard build",
+    "dev:dashboard": "pnpm --filter @betanal/dashboard dev",
+    "package": "pnpm build:shared && pnpm build:extension",
+    "zip": "pnpm package && node extension/scripts/zip.mjs",
+    "sanitize-har": "node extension/scripts/sanitize-har.mjs",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\"",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

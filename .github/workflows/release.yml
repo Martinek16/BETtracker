@@ -1,0 +1,64 @@
+name: Release
+
+# There is no store listing, so a GitHub Release is how anyone gets the
+# extension. Tagging is the whole publishing process.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # A release that fails its own tests is worse than no release.
+      - run: pnpm test
+
+      - run: pnpm package
+
+      # zip.mjs uses bsdtar, which the local machines have and this runner does
+      # not. The archive is the same either way.
+      - name: zip
+        run: cd extension/dist && zip -qr ../bettracker.zip .
+
+      - name: checksum
+        run: cd extension && sha256sum bettracker.zip > bettracker.zip.sha256
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            extension/bettracker.zip
+            extension/bettracker.zip.sha256
+          generate_release_notes: true
+          body: |
+            ## Install
+
+            **Chrome, Edge, Brave, Opera**
+
+            1. Download `bettracker.zip` below and unzip it.
+            2. Open `chrome://extensions`, turn on **Developer mode**.
+            3. **Load unpacked**, and pick the unzipped folder.
+
+            **Firefox** — see [the README](https://github.com/${{ github.repository }}#firefox).
+
+            Verify the download if you like:
+            `sha256sum -c bettracker.zip.sha256`
+
+            ---
+
+            Everything stays in your browser. Nothing is uploaded anywhere. 18+.

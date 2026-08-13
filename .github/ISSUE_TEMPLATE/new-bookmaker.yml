@@ -1,0 +1,59 @@
+name: Request a bookmaker
+description: Ask for a betting site to be supported, or claim one to work on yourself
+title: 'bookmaker: '
+labels: ['bookmaker', 'help wanted']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Two things worth knowing before you fill this in:
+
+        - **Nobody can add a site they do not have an account with.** Support is
+          written from a recording of a real signed-in session, so a request is
+          only useful if you or someone else is willing to capture one.
+        - **Never attach a HAR file to an issue.** It contains your live session
+          tokens. Issues are public and permanent.
+
+  - type: input
+    id: name
+    attributes:
+      label: Which bookmaker
+      placeholder: e.g. Bet365
+    validations:
+      required: true
+
+  - type: input
+    id: site
+    attributes:
+      label: Its address
+      description: The domain you actually sign in on.
+      placeholder: e.g. bet365.com
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: account
+    attributes:
+      label: Do you have an account there?
+      options:
+        - label: Yes, and I can capture a recording of my own bet history
+        - label: Yes, but I would rather someone else did the work
+        - label: No, I am only asking
+
+  - type: checkboxes
+    id: doing
+    attributes:
+      label: Are you writing it?
+      options:
+        - label: I intend to open a pull request for this myself
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything unusual about the site
+      description: >
+        Optional. Does it renumber its domain? Is the money history on a
+        different site than the bets? Does it need a phone confirmation to sign
+        in? These are the things that decide how much work it is.
+    validations:
+      required: false

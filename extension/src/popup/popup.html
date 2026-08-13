@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BETtracker</title>
+    <style>
+      /* Same tokens as the dashboard, so the popup reads as part of the app. */
+      :root {
+        color-scheme: dark;
+        --background: #0a0a0a;
+        --card: #0f0f0f;
+        --foreground: #f5f5f5;
+        --muted: #8c8c8c;
+        --border: #292929;
+        --profit: #57bd8c;
+        --loss: #d9635c;
+        --pending: #e0a63c;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      }
+      body {
+        width: 300px;
+        margin: 0;
+        padding: 16px;
+        /* The card's own surface, edge to edge: the popup window is the card, and
+           its corner radius is the browser's to draw, not ours. */
+        background: var(--card);
+        color: var(--foreground);
+        font-size: 13px;
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+      }
+      h1 {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--foreground);
+        margin: 0 0 12px 2px;
+      }
+      /* The window itself is the card, so nothing is boxed inside it again. */
+      .site {
+        padding: 0 2px;
+      }
+      /* Top-aligned, so the name sits on the mark's upper edge and the status
+         hangs under it in the same column rather than beside the mark. */
+      .head {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .who {
+        flex: 1;
+        min-width: 0;
+      }
+      /* The mark's own shape painted in the surrounding ink: no plate, no white
+         box the brand ships, and it reads the same whatever it sits on. */
+      .logo {
+        width: 30px;
+        height: 30px;
+        flex: none;
+        display: block;
+        background-color: var(--muted);
+        mask-size: contain;
+        -webkit-mask-size: contain;
+        mask-repeat: no-repeat;
+        -webkit-mask-repeat: no-repeat;
+        mask-position: center;
+        -webkit-mask-position: center;
+      }
+      /* A bookmaker that ships no artwork keeps its initial instead. */
+      .logo.letter {
+        background-color: var(--card);
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--muted);
+        mask-image: none;
+        -webkit-mask-image: none;
+      }
+      .name {
+        display: block;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        /* Matches the mark's top edge: the cap sits on the same line as it. */
+        line-height: 1.15;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      /* The refresh sits at the head of this line, so the one thing the user can
+         do about the state is next to the state itself. */
+      .state {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 3px;
+      }
+      /* What was read on the left, when it was last read on the right. */
+      .facts {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--foreground);
+        margin-top: 14px;
+      }
+      .when {
+        flex: none;
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .spinner {
+        width: 12px;
+        height: 12px;
+        flex: none;
+        border-radius: 50%;
+        /* Turns in whatever ink the line is written in, so the state says the
+           same thing twice: once in a word, once in the colour of the ring. */
+        border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+        border-top-color: currentColor;
+        animation: spin 700ms linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .spinner {
+          animation-duration: 2.4s;
+        }
+      }
+      /* One button, and a way out written beside it — not two weights to compare. */
+      .choices {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      button {
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: inherit;
+        transition:
+          background 120ms ease,
+          border-color 120ms ease,
+          color 120ms ease,
+          opacity 120ms ease;
+      }
+      button:focus-visible {
+        outline: 2px solid var(--muted);
+        outline-offset: 2px;
+      }
+      .primary {
+        background: var(--foreground);
+        color: var(--background);
+      }
+      .primary:hover {
+        opacity: 0.88;
+      }
+      /* The answer that changes nothing: a word to click, not a thing to press. */
+      .plain {
+        background: none;
+        border: 0;
+        padding: 0;
+        color: var(--muted);
+      }
+      .plain:hover {
+        color: var(--foreground);
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 2px 12px;
+      }
+      header h1 {
+        flex: 1;
+        margin: 0;
+      }
+      /* Leaving for the dashboard is a corner action, not a decision on the page. */
+      #openDashboard,
+      .refresh {
+        display: grid;
+        place-items: center;
+        padding: 0;
+        border: 0;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--muted);
+      }
+      #openDashboard:hover,
+      .refresh:hover {
+        background: var(--border);
+        color: var(--foreground);
+      }
+      #openDashboard {
+        width: 28px;
+        height: 28px;
+      }
+      /* Where the status light used to be. A colour to decode said less than the
+         one thing the user might want to do about it. */
+      .refresh {
+        flex: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+        /* Sits on the status line, so it is sized to the words beside it. */
+        color: inherit;
+      }
+      #openDashboard svg {
+        width: 14px;
+        height: 14px;
+      }
+      .refresh svg {
+        width: 12px;
+        height: 12px;
+      }
+      /* Sits under the spinner's label, indented past the spinner itself. */
+      .tally {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 6px;
+        padding-left: 22px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>BETtracker</h1>
+      <button id="openDashboard" title="Open dashboard" aria-label="Open dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 4h6v6" />
+          <path d="M20 4 10 14" />
+          <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+        </svg>
+      </button>
+    </header>
+    <div id="accounts"></div>
+    <script type="module" src="./popup.js"></script>
+  </body>
+</html>

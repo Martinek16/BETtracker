@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.tsbuildinfo
+*.zip
+.DS_Store
+.env
+.env.local
+*.log
+
+# Captured network data holds live session tokens and account history.
+# Drop recordings in har/ — the whole folder is ignored, and CI rejects a pull
+# request that carries one anyway. Run `pnpm sanitize-har` before sharing.
+har/
+*.har
+*.har.com
+*.sanitized.har

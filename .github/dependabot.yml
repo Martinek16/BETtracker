@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # Grouped and monthly on purpose. This is a browser extension that talks to a
+  # handful of pinned APIs, not a server — a weekly flood of individual bumps
+  # would be noise that trains everyone to ignore the alerts that matter.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      dev:
+        dependency-type: development
+      prod:
+        dependency-type: production
+    commit-message:
+      prefix: 'chore'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: 'chore'
