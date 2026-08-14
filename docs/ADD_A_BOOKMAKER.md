@@ -6,8 +6,6 @@ You do not need to know how the extension works. You do need an account at the
 bookmaker — support is written from a recording of a real signed-in session, and
 there is no way to fake one.
 
----
-
 ## Before you start
 
 ```bash
@@ -22,8 +20,6 @@ If `pnpm build` finishes without errors, you are set up. (No local setup at all:
 open the repository in a [Codespace](https://github.com/codespaces) instead. The
 final check in step 6 still has to happen on your own machine, because you
 cannot load a browser extension into a Codespace.)
-
----
 
 ## 1. Record your bet history
 
@@ -51,8 +47,6 @@ So you make those requests yourself, with the browser writing them down.
 > pick it up by accident — but do not email it, do not attach it to an issue,
 > and do not put it in a chat.
 
----
-
 ## 2. Strip it
 
 ```bash
@@ -76,8 +70,6 @@ credential.
 
 **Open the sanitised file and look at it anyway.** The tool is a net, not a
 guarantee. It does not know that `"nickname": "YourNickname87"` is you.
-
----
 
 ## 3. Let Claude Code write it
 
@@ -113,8 +105,6 @@ Perfectly reasonable. Read
 for the folder contract, then copy `extension/src/bookmakers/stake/` and work
 through it. It is about 300 lines for a straightforward site.
 
----
-
 ## 4. Check it
 
 ```bash
@@ -141,8 +131,6 @@ wrong here:
 If a test fails, fix the folder. Never the test. They are shared files, and CI
 rejects a pull request that changes one.
 
----
-
 ## 5. Look at what you are about to publish
 
 ```bash
@@ -158,8 +146,6 @@ Two things to confirm with your own eyes:
   address — none of it should be there.
 
 CI checks both, and CI will miss things. This step is the one that matters.
-
----
 
 ## 6. Prove it actually works
 
@@ -219,8 +205,6 @@ request: "transactions untested, my account has none" or "leagues come through
 empty, the API does not send them". That is a genuinely useful contribution.
 A ticked box that turns out to be wrong costs the next person a day.
 
----
-
 ## 7. Open the pull request
 
 ```bash
@@ -231,15 +215,11 @@ git push -u origin add-yoursite
 ```
 
 Then open the pull request on GitHub. The template asks what works, what does
-not, and how you tested it. **Fill it in honestly.** "Bets and balance work,
-transactions untested because my account has none" is a genuinely useful pull
-request. A tick-everything one that turns out to be wrong costs the next person
-a day of their life.
+not, and how you tested it. Fill it in honestly: unticked boxes are fine, a
+wrong tick is not.
 
 CI will run and check that you only added a bookmaker and that no credential is
 in the diff.
-
----
 
 ## When it breaks later
 
@@ -249,8 +229,6 @@ stops and the numbers stay frozen on the last thing they knew.
 Record a fresh HAR, sanitise it, compare it to the fixtures in your folder, fix
 what moved, and refresh the fixtures. You are the person who will notice first,
 because you are the one using it.
-
----
 
 ## Stuck
 

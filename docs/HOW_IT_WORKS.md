@@ -29,8 +29,6 @@ American, number format, theme, whether the balance shown is the bookmaker's own
 or your deposits minus withdrawals, and whether bonus money counts towards it.
 Rename an account, hide one, back everything up to a file, or delete the lot.
 
----
-
 ## What happens between signing in and a number appearing
 
 There is no server and no API key, because bookmakers do not offer one. What
@@ -63,8 +61,6 @@ you out, it stops and says so rather than showing you a zero.
 year's profit does not move because a rate did. Crypto stakes are priced the same
 way, through the coin's own daily close.
 
----
-
 ## Why it is built this way
 
 **Local only, because there is no version of this worth a data breach.** A file
@@ -94,8 +90,6 @@ and the fields the dashboard groups by must actually be filled — otherwise the
 totals come out right beside an empty screen, which is the failure that wastes
 the most time. A separate test reads every folder's code and fails it if it names
 any host but the bookmaker's own.
-
----
 
 ## What it calls, and what it tells them
 
