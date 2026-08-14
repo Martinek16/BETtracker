@@ -41,7 +41,10 @@ jobs:
       - name: checksum
         run: cd extension && sha256sum bettracker.zip > bettracker.zip.sha256
 
-      - uses: softprops/action-gh-release@v3
+      # Pinned by commit rather than by tag: this is the only job that can write
+      # to the repository, and a tag can be moved under it by whoever owns it.
+      # Dependabot bumps the pin the same as it bumps a version.
+      - uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
         with:
           files: |
             extension/bettracker.zip
