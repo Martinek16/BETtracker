@@ -12,6 +12,8 @@ Name and address:
 Tick only what you have actually seen work. An honest partial adapter is a good
 pull request; a claim that turns out to be untrue costs the next person a day.
 
+Parsing:
+
 - [ ] Settled bets import
 - [ ] Open bets appear
 - [ ] Accumulators parse correctly, not just singles
@@ -19,6 +21,17 @@ pull request; a claim that turns out to be untrue costs the next person a day.
 - [ ] Deposits and withdrawals import
 - [ ] Bonuses import
 - [ ] Paging reaches the end of the history, not just the first page
+
+On screen — the part that is easy to skip, because the totals can be right while
+the screens are blank:
+
+- [ ] Overview: bet count, profit and turnover match the bookmaker's own page
+- [ ] Bets: every row names a sport, a match and a selection, with no blanks
+- [ ] Bets: won, lost, void and cashed-out each read as what they are
+- [ ] Bets: an accumulator expands to its legs, each with its own selection and result
+- [ ] Analytics: the breakdown cards have bars in them, not one "Unknown" bucket
+- [ ] A second sync duplicates nothing
+- [ ] Signing out at the bookmaker asks me to sign in again, rather than showing zero
 
 Anything that does not work, and why:
 
@@ -29,7 +42,8 @@ Anything that does not work, and why:
 - [ ] I loaded the built extension and synced my own real account with it
 
 If the last box is unticked, say so plainly — an adapter proven only against a
-recording is still worth merging, it just gets labelled that way.
+recording is still worth merging, it just gets labelled that way. The full
+walkthrough is step 6 of [docs/ADD_A_BOOKMAKER.md](../docs/ADD_A_BOOKMAKER.md).
 
 ## Safety
 

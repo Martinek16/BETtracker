@@ -142,6 +142,10 @@ Tell the contributor, briefly:
   is not true is not;
 - that the adapter has only ever been run against a recording, never against a
   live account, unless they have loaded the extension and confirmed otherwise;
+- that the tests passing does not mean the dashboard shows anything, and that
+  step 6 of `docs/ADD_A_BOOKMAKER.md` is the checklist that finds out. Point them
+  at it and say plainly that a parsed bet with a null `sport` or `selection`
+  produces a correct total beside an empty breakdown;
 - to open a pull request using the template, which asks for exactly this.
 
 Do not commit or push on their behalf unless they ask.

@@ -123,7 +123,7 @@ pnpm test
 pnpm build
 ```
 
-All three, all green. Two tests exist specifically to catch what is easy to get
+All three, all green. Four tests exist specifically to catch what is easy to get
 wrong here:
 
 - **`plugin.test.ts`** — your folder is complete, and registered in all three
@@ -131,8 +131,15 @@ wrong here:
 - **`manifest.test.ts`** — the addresses you declared match the ones your
   capture rule recognises. Get these out of step and the extension either is not
   injected where it should be, or is injected and then does nothing.
+- **`conformance.test.ts`** — your bets obey the rules every site's bets obey.
+  It reads your folder's `samples.ts`, so a folder without that file is never
+  checked at all. Two of its rules exist for the failure that wastes the most
+  time: the parse succeeds, the totals look right, and every breakdown on screen
+  is a list of blanks, because `sport`, `event` or `selection` came through null.
+- **`privacy.test.ts`** — your folder talks to the bookmaker and to nothing else.
 
-If a test fails, fix the folder. Never the test.
+If a test fails, fix the folder. Never the test. They are shared files, and CI
+rejects a pull request that changes one.
 
 ---
 
@@ -156,20 +163,61 @@ CI checks both, and CI will miss things. This step is the one that matters.
 
 ## 6. Prove it actually works
 
-Everything so far only proves the code parses a recording. Load it and use it:
+Everything so far only proves the code parses a recording. A green test run and
+an empty dashboard are entirely compatible, and that is the most common way this
+goes wrong: the sync reports success, the total is right, and half the screens
+show nothing. So load it and use it.
 
-1. `pnpm build`
-2. `chrome://extensions` → Developer mode → **Load unpacked** → `extension/dist`
-3. Open the bookmaker, sign in, and say yes when asked.
-4. Wait for the sync, then open the dashboard and **check the numbers against
-   what the bookmaker's own page says.**
+```bash
+pnpm build
+```
 
-Do they match? Does an accumulator show its legs? Is a voided bet counted as
-void rather than a loss? Does paging reach the end of your history or stop after
-one page?
+Then `chrome://extensions` → Developer mode → **Load unpacked** →
+`extension/dist`. Open the bookmaker, sign in, and say yes when the extension
+asks. Wait for the sync to finish, then open the dashboard and go through every
+screen with the bookmaker's own history page open beside it.
 
-If you skip this step, say so in the pull request. An adapter tested only
-against a recording is still worth merging — it just gets labelled honestly.
+**Overview**
+
+- [ ] Bet count matches what the bookmaker says, not one page of it
+- [ ] Profit and turnover match, to the cent
+- [ ] The graph draws a line rather than a flat zero
+
+**Bets**
+
+- [ ] The oldest bet you have is there — paging reached the end, not page one
+- [ ] Every row names a sport, a match and a selection. No blanks, no "—"
+- [ ] Stake, odds and return match the bookmaker's own figures
+- [ ] Won, lost, void and cashed-out bets each read as what they are
+- [ ] Expanding an accumulator lists its legs, each with its own selection and result
+- [ ] A voided leg inside a winning slip is not counted as a loss
+- [ ] Dates are right, including bets placed near midnight
+
+**Analytics**
+
+- [ ] Every breakdown card has bars in it — by sport, by league, by market
+- [ ] None of them is one big bucket named "Unknown" or empty
+
+**Cashflow and Bonuses**
+
+- [ ] Deposits and withdrawals appear, or the site genuinely has no endpoint for them
+- [ ] Free bets and bonuses appear, or the same
+
+**Open bets**
+
+- [ ] A bet you have running right now shows as pending, with its potential return
+
+**And then**
+
+- [ ] Place or settle nothing — just sync a second time. Nothing duplicates, and
+      the counts stay the same
+- [ ] Sign out at the bookmaker and sync again. You are asked to sign in, rather
+      than shown a silent zero
+
+A box you cannot tick is not a reason to give up. It is a line in the pull
+request: "transactions untested, my account has none" or "leagues come through
+empty, the API does not send them". That is a genuinely useful contribution.
+A ticked box that turns out to be wrong costs the next person a day.
 
 ---
 
