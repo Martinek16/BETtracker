@@ -20,8 +20,20 @@ import { SAMPLE_ACCOUNT_ID, type Samples } from './samples';
 import { CAPTURE_RULES } from './capture';
 import { adapters } from './registry';
 
+/**
+ * `import.meta.glob` belongs to the test runner's bundler, not to the extension
+ * build, so it is typed here rather than project-wide — declaring it globally
+ * would offer it to adapter code, where esbuild would leave the call unresolved.
+ */
+type Globber = {
+  glob: <T>(pattern: string, options: { eager: true }) => Record<string, T>;
+};
+
 /** Every `<bookmaker>/samples.ts` that exists, keyed by the folder it is in. */
-const modules = import.meta.glob<{ samples: Samples }>('./*/samples.ts', { eager: true });
+const modules = (import.meta as unknown as Globber).glob<{ samples: Samples }>(
+  './*/samples.ts',
+  { eager: true },
+);
 
 const CASES = Object.entries(modules).map(([path, module]) => ({
   name: path.split('/')[1] as string,

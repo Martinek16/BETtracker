@@ -101,9 +101,10 @@ describe.each(FOLDERS)('%s sends nothing anywhere', (folder) => {
 
   it('names no host it did not declare in its own bookmaker.json', () => {
     for (const { file, text } of sources) {
-      for (const [, host] of code(text).matchAll(/https?:\/\/([a-z0-9.*-]+)/gi)) {
+      for (const match of code(text).matchAll(/https?:\/\/([a-z0-9.*-]+)/gi)) {
+        const host = (match[1] ?? '').toLowerCase();
         expect(
-          allowed.some((pattern) => pattern.test(host.toLowerCase())),
+          allowed.some((pattern) => pattern.test(host)),
           `${file} names ${host}, which is not a site or apiHost in ${folder}/bookmaker.json`,
         ).toBe(true);
       }
