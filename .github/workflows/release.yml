@@ -60,8 +60,6 @@ jobs:
             2. Open `chrome://extensions`, turn on **Developer mode**.
             3. **Load unpacked**, and pick the unzipped folder.
 
-            **Firefox** — not yet; it does not run Manifest V3 background workers.
-
             Verify the download if you like:
             `sha256sum -c bettracker.zip.sha256`
 

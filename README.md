@@ -28,13 +28,9 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square" alt="MIT"></a>
 </p>
 
-</div>
+<br>
 
-***
-
-<div align="center">
-
-### You have a bet on tonight.
+<h3>You have a bet on tonight.</h3>
 
 You had one last Tuesday. A few in March you have stopped thinking about.
 
@@ -53,48 +49,13 @@ has no answer on the screen.
 
 ## Install
 
-<table>
-<tr>
-<td width="34%" valign="top">
-
-### Edge
-**One click.**
-
-<a href="https://microsoftedge.microsoft.com/addons/detail/bettracker/dofgloogkcigmpnkmoaefnejeffdbcmi">Get it from Microsoft&nbsp;Edge&nbsp;Add&#8209;ons</a>
-
-<sub>Reviewed by Microsoft. Updates itself.</sub>
-
-</td>
-<td width="33%" valign="top">
-
-### Chrome, Brave, Opera
-**Two minutes, once.**
-
-1. [Download the zip](https://github.com/Martinek16/BETtracker/releases/latest) and unzip it
-2. Open `chrome://extensions`
-3. Turn on **Developer mode**
-4. Click **Load unpacked**, pick the folder
-
-<sub>Keep that folder. Deleting it uninstalls the extension.</sub>
-
-</td>
-<td width="33%" valign="top">
-
-### Firefox
-**Not yet.**
-
-Firefox does not run Manifest&nbsp;V3 background workers, which is what this is built on.
-
-<sub>One build change away. Help welcome.</sub>
-
-</td>
-</tr>
-</table>
+| Browser | What to do | Worth knowing |
+|:--|:--|:--|
+| **Edge** | [Get it from Microsoft&nbsp;Edge&nbsp;Add&#8209;ons](https://microsoftedge.microsoft.com/addons/detail/bettracker/dofgloogkcigmpnkmoaefnejeffdbcmi). One click. | Reviewed by Microsoft. Updates itself. |
+| **Chrome, Brave, Opera** | [Download the zip](https://github.com/Martinek16/BETtracker/releases/latest) and unzip it. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the folder. | Two minutes, once. Keep that folder: deleting it uninstalls the extension. |
 
 > [!NOTE]
 > There is no Chrome listing because Google removes gambling related extensions from its store, even ones that only read your own history. Edge accepted it.
-
-***
 
 ## Then two things happen
 
@@ -117,12 +78,7 @@ The extension asks whether it may read that account. Your bets appear.
 </tr>
 </table>
 
-<div align="center">
-<sub>Older history fills in over the next few visits, read one page at a time so the site is not hammered.<br>
-Click the toolbar icon whenever you want the dashboard.</sub>
-</div>
-
-***
+<sub>Older history fills in over the next few visits, read one page at a time so the site is not hammered. Click the toolbar icon whenever you want the dashboard.</sub>
 
 ## What you see
 
@@ -131,42 +87,39 @@ Click the toolbar icon whenever you want the dashboard.</sub>
 <td width="50%" valign="top">
 
 ### Every bet, to the cent
+
 From stake to payout. Combos open into their legs, each with its own pick, price and result.
 
 </td>
 <td width="50%" valign="top">
 
 ### Luck, or skill
+
 Whether the prices you take are honest ones. Whether you chase after a loss. What your worst run cost you.
 
 </td>
 </tr>
 <tr>
-<td valign="top">
+<td width="50%" valign="top">
 
 ### Where it comes from
+
 By sport, league, market, odds band, stake size or time. What earns, and what quietly costs.
 
 </td>
-<td valign="top">
+<td width="50%" valign="top">
 
 ### Every euro in, every euro out
+
 Deposits, withdrawals, and what a bonus turned out to be worth rather than what it promised.
 
 </td>
 </tr>
 </table>
 
-<div align="center">
-<sub>It only looks backwards. No tips, no predictions, no telling you what to bet.</sub><br><br>
-<a href="docs/HOW_IT_WORKS.md"><b>How it works, screen by screen</b></a>
-</div>
-
-***
+<sub>It only looks backwards. No tips, no predictions, no telling you what to bet.</sub> &nbsp;·&nbsp; [**How it works, screen by screen**](docs/HOW_IT_WORKS.md)
 
 ## Bookmakers it can read
-
-<div align="center">
 
 | Bookmaker | Bets | Balance | Money in and out | Bonuses |
 |:--|:-:|:-:|:-:|:-:|
@@ -175,28 +128,44 @@ Deposits, withdrawals, and what a bonus turned out to be worth rather than what 
 
 <sub>Both work on all their addresses. Country domains, numbered mirrors, and whatever they switch to next.</sub>
 
-</div>
-
-***
-
 ## Your data never leaves
 
 <table>
 <tr>
-<td width="25%" align="center"><b>No account</b><br><sub>Nothing to sign up for</sub></td>
-<td width="25%" align="center"><b>No server</b><br><sub>There is nothing to breach</sub></td>
-<td width="25%" align="center"><b>No tracking</b><br><sub>No analytics, no ads</sub></td>
-<td width="25%" align="center"><b>No password</b><br><sub>It never sees one</sub></td>
+<td width="50%" valign="top">
+
+### No account, no server
+
+Nothing to sign up for, and nothing standing between you and your figures. There is no database of yours to breach.
+
+</td>
+<td width="50%" valign="top">
+
+### No tracking, no password
+
+No analytics and no ads. It reads pages you already opened, so it never sees a password and cannot place a bet, deposit or withdraw.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### Yours to take, or to burn
+
+Your bets, payments and balances stay in your browser, on your disk. Export the lot to a file whenever you like, or delete it in one click.
+
+</td>
+<td width="50%" valign="top">
+
+### Two addresses, and no more
+
+Besides your bookmakers: a public exchange rate feed and a public coin price feed. Neither is told anything about you, and a test in the build fails if a bookmaker ever names a third.
+
+</td>
 </tr>
 </table>
 
-Your bets, payments and balances stay in your browser, on your disk. It reads pages you already opened, so it cannot place a bet, deposit or withdraw. Export everything to a file whenever you like, or delete the lot in one click.
-
-Besides your bookmakers, the extension calls exactly two addresses: a public exchange rate feed and a public coin price feed. Neither is told anything about you. A test in the build fails if any bookmaker ever names a third.
-
-<div align="center"><a href="PRIVACY.md"><b>Full privacy policy</b></a></div>
-
-***
+<sub>Read the whole of it:</sub> [**Privacy policy**](PRIVACY.md)
 
 ## Questions people ask
 
@@ -230,8 +199,6 @@ Everything is converted on the day the bet was placed, not today, so last year's
 It reads the same pages your browser already loaded, with your own session, slower than you clicking. That said, plenty of bookmakers write their terms broadly enough to cover anything they dislike. Your account, your call.
 </details>
 
-<br>
-
 ***
 
 <div align="center">
@@ -250,7 +217,7 @@ It reads the same pages your browser already loaded, with your own session, slow
 <tr>
 <td width="50%" valign="top">
 
-## A bookmaker is one folder
+### A bookmaker is one folder
 
 Everything a site needs lives in a single directory. How it is recognised, how it is read, its logo, its recorded test data. Adding one touches nothing else in the project, which is what makes a stranger's work reviewable in an evening.
 
@@ -267,55 +234,49 @@ extension/src/bookmakers/your-site/
 </td>
 <td width="50%" valign="top">
 
-## Four steps, one evening
+### Four steps, one evening
 
 1. **Record.** Click through your own bet history with DevTools open, and save it.
 2. **Strip it.** One command removes your tokens, your name and your account number.
 3. **Let it write.** `/add-bookmaker yoursite` in Claude Code reads the recording and writes the folder.
 4. **Prove it.** Load the extension, check your own numbers, open a pull request.
 
-<a href="docs/ADD_A_BOOKMAKER.md"><b>The whole process, step by step</b></a>
+[**The whole process, step by step**](docs/ADD_A_BOOKMAKER.md)
 
 </td>
 </tr>
 </table>
 
-<br>
-
-<div align="center">
-
-### Other ways to help
-
-</div>
-
 <table>
 <tr>
-<td width="25%" valign="top" align="center">
+<td width="50%" valign="top">
 
-**Your site broke**
+### Your site broke
 
 Bookmakers change their API without telling anyone. Fix the folder you use.
 
 </td>
-<td width="25%" valign="top" align="center">
+<td width="50%" valign="top">
 
-**Ask for a site**
+### Ask for a site
 
 No account there yourself? [Request it](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml) and somebody who plays there may pick it up.
 
 </td>
-<td width="25%" valign="top" align="center">
+</tr>
+<tr>
+<td width="50%" valign="top">
 
-**Report a bug**
+### Report a bug
 
 A number that looks wrong is worth an [issue](https://github.com/Martinek16/BETtracker/issues/new?template=bug.yml). Wrong figures are the only real failure here.
 
 </td>
-<td width="25%" valign="top" align="center">
+<td width="50%" valign="top">
 
-**Bring Firefox**
+### Say what is missing
 
-Manifest V3 background workers are the one thing in the way. [Say hello](https://github.com/Martinek16/BETtracker/discussions) if you know that ground.
+A figure you keep working out by hand belongs on a screen. [Say so](https://github.com/Martinek16/BETtracker/discussions).
 
 </td>
 </tr>
