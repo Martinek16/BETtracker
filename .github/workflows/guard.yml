@@ -28,7 +28,9 @@ jobs:
           echo "--- changed:"; cat changed.txt
 
       - name: no protected path touched
-        if: github.actor != github.repository_owner
+        # Dependabot is configured by the owner and only ever raises dependency
+        # and action bumps, which live in protected paths by definition.
+        if: github.actor != github.repository_owner && github.actor != 'dependabot[bot]'
         run: |
           # Everything is protected except a bookmaker's own folder, the three
           # collectors it has to be registered in, and documentation.
@@ -46,7 +48,9 @@ jobs:
           echo "Only bookmaker and documentation paths touched."
 
       - name: one bookmaker per pull request
-        if: github.actor != github.repository_owner
+        # Dependabot is configured by the owner and only ever raises dependency
+        # and action bumps, which live in protected paths by definition.
+        if: github.actor != github.repository_owner && github.actor != 'dependabot[bot]'
         run: |
           # Two sites in one diff means two adapters reviewed at half the
           # attention, and one bad one blocks the good one.
