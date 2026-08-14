@@ -20,7 +20,21 @@ bookmakers/
   catalog.ts            <- collector 3: metadata for the dashboard
   samples.ts            <- the contract every folder's samples.ts implements
   conformance.test.ts   <- the rules every folder is held to
+  privacy.test.ts       <- proves no folder sends anything anywhere
 ```
+
+## Nothing leaves the machine
+
+`privacy.test.ts` reads every folder's own source and fails if it names a host
+the folder did not declare in its `bookmaker.json`, or if it uses one of the
+calls that can move data without showing a request: `sendBeacon`, `WebSocket`,
+`XMLHttpRequest`, `new Image`, `eval`, an injected `<script>`, or
+`chrome.storage.sync` — which is not local storage, it copies to the browser
+account.
+
+Both the test and the manifest read the same `bookmaker.json`, so an undeclared
+host is one the extension holds no permission for either. An adapter talks to
+the bookmaker it is for, and to nothing else.
 
 ## The three collectors
 

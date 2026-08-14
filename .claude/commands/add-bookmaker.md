@@ -80,7 +80,12 @@ Create `extension/src/bookmakers/$1/` containing:
   **only** from `../capture-rule`. It is loaded by the MAIN-world inject script,
   which runs inside the page's own JavaScript; an import that reaches an adapter
   drags the sync engine into every page the user visits.
-- **`adapter.ts`** — exports the `BookmakerAdapter`. Throw
+- **`adapter.ts`** — exports the `BookmakerAdapter`. It may talk to the
+  bookmaker's own hosts and to nothing else: every host it names must be one
+  declared in `bookmaker.json`, and `privacy.test.ts` fails the folder otherwise.
+  No analytics, no error reporting, no `sendBeacon`, no `WebSocket`, no
+  `chrome.storage.sync`. A user's betting history does not leave their machine.
+  Throw
   `SessionExpiredError` on a dead token so the user is prompted to sign in
   rather than shown a silent zero. Skip a bet you cannot parse and count it;
   never invent a value to fill a gap.
