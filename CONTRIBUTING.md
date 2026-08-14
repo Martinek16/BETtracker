@@ -111,5 +111,6 @@ are `feat:`, `fix:`, `refactor:`, `docs:` or `chore:`, and say why in the body.
 | [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) | How the extension reads a site and stores it |
 | [SECURITY.md](SECURITY.md) | Reporting a hole, and what counts as one |
 | [PRIVACY.md](PRIVACY.md) | What is stored, and what leaves the machine |
+| [LEGAL.md](LEGAL.md) | No affiliation, whose logos those are, and no warranty |
 
 MIT licensed. Contributing means you are fine with your work going out under it.

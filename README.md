@@ -196,7 +196,11 @@ A figure you keep working out by hand belongs on a screen.
 ***
 
 <sub>
-MIT licensed. For adults only. This tool measures losses, it does not stop
+MIT licensed, and not affiliated with any bookmaker: names and logos identify
+whose site a folder reads, nothing more, and any of them is removed on the
+owner's word. <a href="LEGAL.md">Legal notice</a>.
+<br><br>
+For adults only. This tool measures losses, it does not stop
 them. If gambling stops being something you control,
 <a href="https://www.begambleaware.org/">BeGambleAware</a> and
 <a href="https://www.gamblersanonymous.org/">Gamblers Anonymous</a> are free
