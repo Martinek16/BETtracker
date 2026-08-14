@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import fixture from './__fixtures__/bets.json';
+import walletFixture from './__fixtures__/wallet.json';
 import { RateLimitedError } from '../../sync/sync';
-import { couponBonus, normalizeBet, parseWagered, stake } from './adapter';
+import { sampleRef } from '../samples';
+import { couponBonus, normalizeBet, parseBalance, parseWagered, stake } from './adapter';
 
 /** Real `sportBetList` entries, lifted out of a recorded stake.com page load. */
 const raw = fixture.data.user.sportBetList.map((entry) => entry.bet);
@@ -179,6 +181,46 @@ describe('stake wagered totals', () => {
   it('reports no turnover rather than zero when the site sends none', () => {
     expect(parseWagered([])).toBeUndefined();
     expect(parseWagered(null)).toBeUndefined();
+  });
+});
+
+/**
+ * Stake keeps a wallet per coin, so its balance is the one place a bookmaker's
+ * own figures are combined by us rather than by the site. The fixture is the
+ * real 174-coin answer, of which four were actually held.
+ */
+describe('stake balance', () => {
+  // USD per unit, as Stake's own price list states them.
+  const rates = new Map([
+    ['BTC', 113_000],
+    ['LTC', 110],
+    ['SOL', 160],
+    ['DOGE', 0.2],
+  ]);
+  const balance = parseBalance(walletFixture, rates, sampleRef('stake'));
+
+  it('reports only the coins actually held, richest first', () => {
+    expect(balance?.holdings?.map((h) => h.currency)).toEqual(['LTC', 'SOL', 'BTC', 'DOGE']);
+  });
+
+  it('leaves the vault out, as the site does in its own header', () => {
+    // The fixture's LTC row holds 0.000498… in the vault on top of this.
+    expect(balance?.holdings?.[0]?.amount).toBeCloseTo(0.005562004523654822, 18);
+  });
+
+  it('adds the holdings up into one figure in one currency', () => {
+    const worth =
+      0.005562004523654822 * 110 +
+      0.0000863500000000128 * 160 +
+      2.9233026167339488e-8 * 113_000 +
+      7.278615044015169e-9 * 0.2;
+    expect(balance?.amount).toBeCloseTo(worth, 4);
+    expect(balance?.currency).toBe('USD');
+  });
+
+  it('says nothing rather than zero when it cannot price anything', () => {
+    expect(parseBalance(walletFixture, new Map(), sampleRef('stake'))).toBeNull();
+    expect(parseBalance(null, rates, sampleRef('stake'))).toBeNull();
   });
 });
 

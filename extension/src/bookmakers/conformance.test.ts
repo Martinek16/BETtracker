@@ -2,51 +2,35 @@
  * One suite every bookmaker is held to, so a second site cannot be "supported"
  * while quietly producing records the rest of the app has to special-case.
  *
- * Every case below is parsed from a payload recorded off the live site (the HARs
- * in `doc/`), not from something written to make the parser pass. The invariants
- * are the ones the dashboard, the totals and the database all assume: an id no
- * other site can claim, money that is a number, a status that agrees with the
- * payout, and legs that match the bet type.
+ * Every case is parsed from a payload recorded off the live site, not from
+ * something written to make the parser pass. The invariants are the ones the
+ * dashboard, the totals and the database all assume: an id no other site can
+ * claim, money that is a number, a status that agrees with the payout, and legs
+ * that match the bet type.
  *
- * Adding a bookmaker: add a case. Nothing else here changes.
+ * Nothing here names a bookmaker. The folders are found on disk and each hands
+ * over its own parsed output through `samples.ts`, so adding a site never means
+ * editing this file — which is just as well, because contributors are not
+ * allowed to. An invariant weakened here would be weakened for every site.
  */
 
 import { describe, expect, it } from 'vitest';
-import type { AccountRef, Bet, Bookmaker } from '@betanal/shared';
-import bahSettledFixture from './bet-at-home/__fixtures__/settled-bets.json';
-import bahOpenFixture from './bet-at-home/__fixtures__/open-bets.json';
-import stakeBetsFixture from './stake/__fixtures__/bets.json';
-import stakeWalletFixture from './stake/__fixtures__/wallet.json';
-import { betAtHome, parseSettled } from './bet-at-home/adapter';
-import { normalizeBet as normalizeStakeBet, parseBalance } from './stake/adapter';
+import type { Bet } from '@betanal/shared';
+import { SAMPLE_ACCOUNT_ID, type Samples } from './samples';
 import { CAPTURE_RULES } from './capture';
 import { adapters } from './registry';
 
-const ref = (bookmaker: Bookmaker): AccountRef => ({ bookmaker, accountId: 'acc-1' });
+/** Every `<bookmaker>/samples.ts` that exists, keyed by the folder it is in. */
+const modules = import.meta.glob<{ samples: Samples }>('./*/samples.ts', { eager: true });
 
-interface Case {
-  name: Bookmaker;
-  settled: Bet[];
-  open: Bet[];
-}
+const CASES = Object.entries(modules).map(([path, module]) => ({
+  name: path.split('/')[1] as string,
+  ...module.samples,
+}));
 
-const CASES: Case[] = [
-  {
-    name: 'bet-at-home',
-    settled: parseSettled(bahSettledFixture, 'acc-1').bets,
-    open: betAtHome.parseOpen(bahOpenFixture, ref('bet-at-home')),
-  },
-  {
-    name: 'stake',
-    settled: stakeBetsFixture.data.user.sportBetList.flatMap(
-      (entry) => normalizeStakeBet(entry.bet, 'acc-1') ?? [],
-    ),
-    // Stake answers its open bets over GraphQL, which the page-side bridge cannot
-    // recognise by URL, so there is no recorded payload to parse. The normalizer
-    // is the same one the settled bets above go through.
-    open: [],
-  },
-];
+it('found the bookmakers at all, so an empty tree cannot pass silently', () => {
+  expect(CASES.length).toBeGreaterThan(0);
+});
 
 const SETTLED_STATUSES = ['won', 'lost', 'void', 'cashed_out'];
 
@@ -60,7 +44,7 @@ describe.each(CASES)('$name records', ({ name, settled, open }) => {
   it('stamps every bet with its own site and account', () => {
     for (const bet of all) {
       expect(bet.bookmaker).toBe(name);
-      expect(bet.accountId).toBe('acc-1');
+      expect(bet.accountId).toBe(SAMPLE_ACCOUNT_ID);
       expect(bet.betId.length).toBeGreaterThan(0);
     }
   });
@@ -118,6 +102,39 @@ describe.each(CASES)('$name records', ({ name, settled, open }) => {
       expect(SETTLED_STATUSES).toContain(bet.status);
     }
   });
+
+  /**
+   * The failure this catches is the quiet one: everything parses, the sync
+   * reports success, the totals are right — and every breakdown card is a list
+   * of blanks, because the fields the dashboard groups by came through null.
+   *
+   * `sport`, `league`, `event`, `marketType` and `selection` are all nullable on
+   * `Bet`, since a site is allowed not to report one. A site that reports none
+   * of them has not really been read, it has only been counted.
+   */
+  it('fills the fields the dashboard groups by, or the views come out blank', () => {
+    const named = (field: keyof Bet): number =>
+      all.filter((bet) => typeof bet[field] === 'string' && bet[field] !== '').length;
+
+    for (const field of ['sport', 'event', 'selection'] as const) {
+      expect(
+        named(field),
+        `no bet carries a ${field}; the dashboard would show an empty breakdown`,
+      ).toBeGreaterThan(0);
+    }
+    // League and market are genuinely absent at some sites, so they are only
+    // required to be present somewhere rather than on every bet.
+    expect(named('league') + named('marketType')).toBeGreaterThan(0);
+  });
+
+  it('describes each leg, so an accumulator is more than a row of blanks', () => {
+    for (const bet of all) {
+      for (const leg of bet.legs) {
+        expect(typeof leg.selection === 'string' && leg.selection !== '').toBe(true);
+        expect(typeof leg.event === 'string' && leg.event !== '').toBe(true);
+      }
+    }
+  });
 });
 
 /**
@@ -140,7 +157,7 @@ describe.each(adapters())('$name adapter surface', (adapter) => {
   });
 
   it('answers a junk open-bets body with nothing rather than throwing', () => {
-    const account = ref(adapter.id);
+    const account = { bookmaker: adapter.id, accountId: SAMPLE_ACCOUNT_ID };
     expect(adapter.parseOpen(null, account)).toEqual([]);
     expect(adapter.parseOpen({}, account)).toEqual([]);
     expect(adapter.parseOpen([{ nonsense: true }], account)).toEqual([]);
@@ -150,44 +167,8 @@ describe.each(adapters())('$name adapter surface', (adapter) => {
     expect(adapter.name.length).toBeGreaterThan(0);
     expect(adapter.id.length).toBeGreaterThan(0);
   });
-});
 
-/**
- * Stake keeps a wallet per coin, so its balance is the one place a bookmaker's
- * own figures are combined by us rather than by the site. The fixture is the
- * real 174-coin answer, of which four were actually held.
- */
-describe('stake balance', () => {
-  // USD per unit, as Stake's own price list states them.
-  const rates = new Map([
-    ['BTC', 113_000],
-    ['LTC', 110],
-    ['SOL', 160],
-    ['DOGE', 0.2],
-  ]);
-  const balance = parseBalance(stakeWalletFixture, rates, ref('stake'));
-
-  it('reports only the coins actually held, richest first', () => {
-    expect(balance?.holdings?.map((h) => h.currency)).toEqual(['LTC', 'SOL', 'BTC', 'DOGE']);
-  });
-
-  it('leaves the vault out, as the site does in its own header', () => {
-    // The fixture's LTC row holds 0.000498… in the vault on top of this.
-    expect(balance?.holdings?.[0]?.amount).toBeCloseTo(0.005562004523654822, 18);
-  });
-
-  it('adds the holdings up into one figure in one currency', () => {
-    const worth =
-      0.005562004523654822 * 110 +
-      0.0000863500000000128 * 160 +
-      2.9233026167339488e-8 * 113_000 +
-      7.278615044015169e-9 * 0.2;
-    expect(balance?.amount).toBeCloseTo(worth, 4);
-    expect(balance?.currency).toBe('USD');
-  });
-
-  it('says nothing rather than zero when it cannot price anything', () => {
-    expect(parseBalance(stakeWalletFixture, new Map(), ref('stake'))).toBeNull();
-    expect(parseBalance(null, rates, ref('stake'))).toBeNull();
+  it('has a folder handing over parsed samples to be checked against', () => {
+    expect(CASES.map((c) => c.name)).toContain(adapter.id);
   });
 });

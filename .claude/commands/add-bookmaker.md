@@ -90,6 +90,11 @@ Create `extension/src/bookmakers/$1/` containing:
 - **`adapter.test.ts`** — parses those fixtures and asserts the normalised
   output. Cover at minimum: a single, an accumulator, each status the site
   reports, and a malformed record being skipped rather than crashing the sync.
+- **`samples.ts`** — exports `samples: Samples`, the folder's own parsed bets,
+  built from the fixtures through the adapter and nothing else. This is what
+  `conformance.test.ts` finds on disk and holds to the rules every site shares.
+  Without it the folder is never checked against them. See `../samples.ts` for
+  the contract and `stake/samples.ts` for a site with no open-bets payload.
 - **`README.md`** — this site's quirks. What is strange about it, what would
   surprise the next person, and how to refresh the fixtures.
 - **`logo.png`** — ask the contributor for it. Around 128px, square, background
@@ -113,9 +118,12 @@ pnpm build
 ```
 
 All three must pass before you report back. `plugin.test.ts` checks the folder
-is complete and registered; `manifest.test.ts` checks every site the extension
-asks to be injected into is one the capture rule recognises. If either fails,
-fix the folder — never the test.
+is complete and registered; `conformance.test.ts` holds your `samples.ts` to the
+rules every site shares, including that the fields the dashboard groups by came
+through filled rather than null; `manifest.test.ts` checks every site the
+extension asks to be injected into is one the capture rule recognises. If any
+fails, fix the folder — never the test. The shared tests are protected paths and
+a diff that touches them is rejected.
 
 Then confirm with `git status` that you changed nothing outside
 `extension/src/bookmakers/$1/` and the three collector files.

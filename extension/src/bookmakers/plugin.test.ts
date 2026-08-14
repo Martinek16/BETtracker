@@ -45,6 +45,12 @@ describe.each(FOLDERS)('%s', (folder) => {
     expect(() => read(folder, 'adapter.ts')).not.toThrow();
   });
 
+  it('hands its parsed bets over, or nothing holds them to the shared rules', () => {
+    // Without this file `conformance.test.ts` cannot see the folder at all, and
+    // the site would ship having proved only that its own tests agree with it.
+    expect(() => read(folder, 'samples.ts')).not.toThrow();
+  });
+
   it('is registered in all three collectors', () => {
     expect(CAPTURE_RULES.map((rule) => rule.bookmaker)).toContain(folder);
     expect(adapters().map((adapter) => adapter.id)).toContain(folder);

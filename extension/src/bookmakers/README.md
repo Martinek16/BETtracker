@@ -11,12 +11,15 @@ bookmakers/
     capture.ts            how credentials are recognised on the page
     adapter.ts            how the site's API is read and normalised
     adapter.test.ts       proves the parser against the fixtures
+    samples.ts            hands the parsed bets to the shared conformance suite
     logo.png              the site's mark, background removed
     README.md             this site's quirks
     __fixtures__/         sanitised recordings of real responses
   capture.ts            <- collector 1: capture rules
   registry.ts           <- collector 2: adapters
   catalog.ts            <- collector 3: metadata for the dashboard
+  samples.ts            <- the contract every folder's samples.ts implements
+  conformance.test.ts   <- the rules every folder is held to
 ```
 
 ## The three collectors
@@ -60,6 +63,7 @@ Keep it that way.
 | `bookmaker.json` | `id` identical to the folder name. Everything keys off it.                 |
 | `capture.ts`     | Export `rule: CaptureRule`. Match hosts and fingerprint the API calls.     |
 | `adapter.ts`     | Export a `BookmakerAdapter`. See `../types.ts` for the interface.          |
+| `samples.ts`     | Export `samples: Samples` — the folder's own parsed bets. See `../samples.ts`.|
 | `__fixtures__/`  | At least one sanitised `.json`, so the parser has something to be proven on.|
 | `logo.png`       | Served at `logos/<id>.png` by the Vite plugin. No path to register.         |
 
