@@ -1,7 +1,9 @@
 name: Release
 
-# There is no store listing, so a GitHub Release is how anyone gets the
-# extension. Tagging is the whole publishing process.
+# Edge has a store listing; Chrome cannot have one, since Google removes
+# gambling-related extensions. So a Release is how everyone else installs it,
+# and the zip here is what gets uploaded to Edge as well. Tagging is the whole
+# publishing process.
 
 on:
   push:
@@ -48,13 +50,17 @@ jobs:
           body: |
             ## Install
 
-            **Chrome, Edge, Brave, Opera**
+            **Edge** — one click, from
+            [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/bettracker/dofgloogkcigmpnkmoaefnejeffdbcmi).
+
+            **Chrome, Brave, Opera, Vivaldi** — Google does not allow
+            gambling-related extensions, so add it by hand:
 
             1. Download `bettracker.zip` below and unzip it.
             2. Open `chrome://extensions`, turn on **Developer mode**.
             3. **Load unpacked**, and pick the unzipped folder.
 
-            **Firefox** — see [the README](https://github.com/${{ github.repository }}#firefox).
+            **Firefox** — not yet; it does not run Manifest V3 background workers.
 
             Verify the download if you like:
             `sha256sum -c bettracker.zip.sha256`
