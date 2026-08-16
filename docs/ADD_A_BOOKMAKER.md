@@ -6,6 +6,13 @@ You do not need to know how the extension works. You do need an account at the
 bookmaker — support is written from a recording of a real signed-in session, and
 there is no way to fake one.
 
+> [!TIP]
+> **Working with an AI tool?** Steps 1 and 2 are yours alone: only you can sign
+> in and record. Do those, then point the tool at [AGENTS.md](../AGENTS.md) and
+> tell it the filename. It writes step 3 from your recording. Steps 5 and 6 come
+> back to you, because only you can look at your own figures and say whether
+> they are right.
+
 ## Before you start
 
 ```bash
@@ -38,27 +45,32 @@ So you make those requests yourself, with the browser writing them down.
    - your balance, wherever it is shown
    - deposits and withdrawals
    - bonuses or free bets, if the site has them
-5. Right-click anywhere in the request list → **Save all as HAR with content**.
-6. Save it into the `har/` folder in the project. Create it if it is not there.
+5. Right-click anywhere in the request list → **Save all as HAR with content**,
+   and let it save wherever your browser normally saves.
 
 > **The file you just saved is dangerous.** It contains your live session
 > cookies, your name, your account number and every deposit you have made.
-> Anyone who gets it can sign in as you. `har/` is gitignored, so git will not
-> pick it up by accident — but do not email it, do not attach it to an issue,
-> and do not put it in a chat.
+> Anyone who gets it can sign in as you. Do not email it, do not attach it to an
+> issue, and do not put it in a chat.
 
 ## 2. Strip it
 
 ```bash
-pnpm sanitize-har har/yoursite.har
+pnpm sanitize-har
 ```
 
-This writes `har/yoursite.sanitized.har` and tells you what it did:
+No filename. It takes the most recent recording out of your Downloads folder,
+cleans it, and puts the clean copy in the project's `har/` folder, which git is
+already told to ignore:
 
 ```
+reading C:\Users\you\Downloads\yoursite.har
 har/yoursite.sanitized.har
   kept 47 API calls, dropped 312 others, redacted 68 values
 ```
+
+(Recorded more than one site in a sitting, or keep your downloads somewhere
+unusual? `pnpm sanitize-har path/to/that.har` instead.)
 
 It removes cookies and tokens, replaces your name, email and account number with
 stand-ins, and throws away everything that is not an API response. Amounts and
@@ -154,12 +166,20 @@ git status
 git diff
 ```
 
-Two things to confirm with your own eyes:
+What you are publishing is **how the site answers**, so that anyone with their
+own account there can read their own history. It is not your history. Three
+things to confirm with your own eyes:
 
 - **No `.har` file.** Not the raw one, not the sanitised one.
 - **Nothing personal left in the fixtures.** Open each JSON file under
   `__fixtures__/` and read it. Your name, your email, your account number, your
   address — none of it should be there.
+- **No real bets either.** The stakes, odds, returns, balances and dates in the
+  fixtures should be invented ones. They exist to show the shape of a response —
+  which fields the site sends and in what format — and that works just as well
+  with made-up figures. The site's own wording stays: its sport names, market
+  names and status strings are the part the code is written against. Your actual
+  numbers get checked in step 6, on your own machine, and stay there.
 
 CI checks both, and CI will miss things. This step is the one that matters.
 
@@ -178,6 +198,19 @@ Then `chrome://extensions` → Developer mode → **Load unpacked** →
 `extension/dist`. Open the bookmaker, sign in, and say yes when the extension
 asks. Wait for the sync to finish, then open the dashboard and go through every
 screen with the bookmaker's own history page open beside it.
+
+`extension/dist` is the folder `pnpm build` writes, and the browser reads it
+where it lies. So from here on it is build, then **Reload** on
+`chrome://extensions`, and your change is in. There is no zip to download and
+nothing to copy anywhere.
+
+> [!IMPORTANT]
+> **Turn off the store copy while you do this.** A bookmaker only exists in a
+> build that contains it, so the copy from Microsoft Edge Add&#8209;ons cannot see
+> your new site — it gets it when the change is released. Leaving both switched
+> on gives you two extensions reading the same accounts into two separate
+> databases, and the figures you are trying to check come from whichever one you
+> happen to have open.
 
 **Overview**
 

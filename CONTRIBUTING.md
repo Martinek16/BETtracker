@@ -27,7 +27,8 @@ signed-in session, and there is no way to fake one. No account there yourself?
 and somebody who plays there may pick it up.
 
 1. Record your own bet history with DevTools open. That gives you a `.har` file.
-2. `pnpm sanitize-har har/yoursite.har` strips the tokens and your identity out.
+2. `pnpm sanitize-har` picks that recording up and strips the tokens and your
+   identity out of it. No filename, no moving the file anywhere.
 3. Copy an existing bookmaker's folder and work through it against your
    recording. Around 300 lines.
 4. Load the built extension, sync your real account, check the numbers on screen.
@@ -47,6 +48,13 @@ everyone's clone within minutes.
 anywhere, and CI rejects a `.har` or an added line shaped like a token. All
 three can be defeated. **Read the fixtures you are committing** — no tool knows
 that `"nickname": "YourNickname87"` is you.
+
+A sanitised recording is not a thing to commit as it stands either. What a
+bookmaker's folder publishes is **how that site answers**, so the next person can
+read their own account there. So the stakes, odds, returns, balances and dates in
+the fixtures should be invented, while the site's own field names, sport names
+and status strings should be exact. Your real figures belong in step 4, on your
+own machine, where they stay.
 
 ## Getting set up
 
@@ -107,6 +115,7 @@ are `feat:`, `fix:`, `refactor:`, `docs:` or `chore:`, and say why in the body.
 | | |
 |:--|:--|
 | [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md) | The whole process, start to finish |
+| [AGENTS.md](AGENTS.md) | The same job written for a coding agent, and what it may not do |
 | [extension/src/bookmakers/README.md](extension/src/bookmakers/README.md) | What each file in a folder owes |
 | [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) | How the extension reads a site and stores it |
 | [SECURITY.md](SECURITY.md) | Reporting a hole, and what counts as one |

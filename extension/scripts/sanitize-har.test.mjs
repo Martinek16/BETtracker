@@ -129,4 +129,27 @@ describe('sanitizeHar', () => {
       expect(entry.request.url).toContain(`${name}=${encodeURIComponent(value)}`);
     }
   });
+
+  /**
+   * A server-rendered site sanitises down to nothing, and the count of what
+   * survived cannot say why. Counting the pages separately is what lets the
+   * command tell a contributor the site is the obstacle, not their capture.
+   */
+  it('counts the pages a site rendered on the server', () => {
+    const page = {
+      startedDateTime: '2026-01-01T00:00:02.000Z',
+      time: 8,
+      request: { method: 'GET', url: 'https://www.example.com/history', headers: [], queryString: [] },
+      response: {
+        status: 200,
+        headers: [],
+        content: { mimeType: 'text/html; charset=utf-8', text: '<table><tr><td>12.50</td></tr></table>' },
+      },
+    };
+    const onlyPages = { log: { entries: [page] } };
+
+    expect(sanitizeHar(structuredClone(onlyPages))).toMatchObject({ kept: 0, rendered: 1 });
+    // The image is not a rendered page, so a normal recording reports none.
+    expect(run().rendered).toBe(0);
+  });
 });

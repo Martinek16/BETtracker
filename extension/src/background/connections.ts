@@ -33,14 +33,24 @@ const keyOf = (bookmaker: Bookmaker, origin: string): string => `${bookmaker}|${
 /** What the worker holds. Mirrored into session storage, never onto disk. */
 let all: Record<string, Connection> = {};
 
+/**
+ * Banking sessions seen before the sportsbook one they belong to. The site loads
+ * its account backend first — on every page, and on the cashier page it is the
+ * only backend called at all — so this is the normal order, not an edge case.
+ */
+let earlyBanking: Record<string, BankingCredentials> = {};
+
 const persist = (): void => {
-  void chrome.storage.session.set({ connections: all });
+  void chrome.storage.session.set({ connections: all, earlyBanking });
 };
 
 export const restoreConnections = async (): Promise<void> => {
-  const stored = await chrome.storage.session.get('connections');
+  const stored = await chrome.storage.session.get(['connections', 'earlyBanking']);
   const value: unknown = stored.connections;
   if (value !== null && typeof value === 'object') all = value as Record<string, Connection>;
+  const early: unknown = stored.earlyBanking;
+  if (early !== null && typeof early === 'object')
+    earlyBanking = early as Record<string, BankingCredentials>;
 };
 
 export const allConnections = (): Connection[] => Object.values(all);
@@ -74,7 +84,7 @@ export const putCredentials = (
     bookmaker,
     origin,
     creds,
-    banking: existing?.banking ?? null,
+    banking: existing?.banking ?? earlyBanking[key] ?? null,
     accountId: existing?.accountId ?? null,
   };
   all = { ...all, [key]: connection };
@@ -87,11 +97,16 @@ export const putBanking = (
   origin: string,
   banking: BankingCredentials,
 ): Connection | null => {
-  const connection = all[keyOf(bookmaker, origin)];
-  // Nothing to attach it to: the banking backend answered before the sportsbook
-  // did, and the session it belongs to has not been seen yet. It arrives again
-  // on the next account page the user opens.
-  if (connection === undefined) return null;
+  const key = keyOf(bookmaker, origin);
+  const connection = all[key];
+  // Nothing to attach it to yet: the banking backend answered before the
+  // sportsbook did. Held rather than dropped — the page sends each session once,
+  // so a discarded one is not offered again until the tab is reloaded.
+  if (connection === undefined) {
+    earlyBanking = { ...earlyBanking, [key]: banking };
+    persist();
+    return null;
+  }
   const next: Connection = { ...connection, banking };
   all = { ...all, [connection.key]: next };
   persist();
@@ -109,10 +124,16 @@ export const setAccountId = (key: string, accountId: AccountId): Connection | nu
 
 /** The session died. The login stays known; only the token it was read with goes. */
 export const dropConnection = (key: string): void => {
-  if (all[key] === undefined) return;
+  const connection = all[key];
+  if (connection === undefined) return;
   const rest = { ...all };
   delete rest[key];
   all = rest;
+  // The banking backend has its own session with its own lifetime, and the page
+  // offers it only once. Dropped with the sportsbook token it would be gone
+  // until the next reload, taking the balance and the deposits with it.
+  if (connection.banking !== null)
+    earlyBanking = { ...earlyBanking, [key]: connection.banking };
   persist();
 };
 
@@ -126,6 +147,9 @@ export const dropBanking = (key: string): void => {
 /** Everything held for one site, dropped — see the background's `forgetSite`. */
 export const dropBookmaker = (bookmaker: Bookmaker): void => {
   all = Object.fromEntries(Object.entries(all).filter(([, c]) => c.bookmaker !== bookmaker));
+  earlyBanking = Object.fromEntries(
+    Object.entries(earlyBanking).filter(([key]) => !key.startsWith(`${bookmaker}|`)),
+  );
   persist();
 };
 
