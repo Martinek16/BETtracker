@@ -144,8 +144,20 @@ extension/src/bookmakers/your-site/
 3. **Write it.** Copy an existing site's folder and work through it against your recording. Around 300 lines.
 4. **Prove it.** Load the extension, check your own numbers, open a pull request.
 
-Steps 1 and 2 are yours: nobody else can sign in as you. Step 3 is the one a
-coding agent can take off your hands — [AGENTS.md](AGENTS.md) is written for it.
+Steps 1 and 2 are yours: nobody else can sign in as you. Step 3 you can hand to
+a coding agent. Open Claude Code, Cursor or whatever you use, and paste this
+with your bookmaker's address in it:
+
+```
+Add the bookmaker https://www.yourbookmaker.com to BETtracker.
+
+The project is https://github.com/Martinek16/BETtracker — clone it,
+read AGENTS.md, and follow it. Ask me for whatever you cannot get
+yourself.
+```
+
+[AGENTS.md](AGENTS.md) tells it the rest: what to ask you for, what it may
+touch, and what it must not claim to have proved.
 
 [**The whole process, step by step**](docs/ADD_A_BOOKMAKER.md)
 
