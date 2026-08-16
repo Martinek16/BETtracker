@@ -47,9 +47,10 @@ const readDone = (): number => {
 };
 
 /** The project, and the folder the recording goes in, in one paste. */
-const CLONE = `git clone ${REPO}.git
-cd BETtracker
-pnpm install`;
+const CLONE = `git clone ${REPO}.git && cd BETtracker && pnpm install`;
+
+/** The same thing for anyone without git: a folder, unzipped, then one command. */
+const ZIP = `${REPO}/archive/refs/heads/main.zip`;
 
 /** What to paste into a coding tool. The address is the only part to change. */
 const PROMPT = `Add the bookmaker https://www.yourbookmaker.com to BETtracker.
@@ -87,46 +88,51 @@ const Step = ({
       done ? 'border-profit/40' : 'border-border',
     )}
   >
-    <button
-      type="button"
-      onClick={onReopen}
-      disabled={!done}
-      className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left disabled:cursor-default"
-    >
-      <span
-        className={cn(
-          'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
-          done
-            ? 'bg-profit text-background'
-            : open
-              ? 'bg-muted text-foreground'
-              : 'bg-muted/40 text-muted-foreground',
-        )}
+    <div className="flex w-full items-center gap-2.5 px-3.5 py-2">
+      <button
+        type="button"
+        onClick={onReopen}
+        disabled={!done}
+        title={done ? 'Open it again' : undefined}
+        className="flex min-w-0 flex-1 items-center gap-2.5 text-left disabled:cursor-default"
       >
-        {done ? <CheckMark size={12} strokeWidth={3} /> : n}
-      </span>
-      <p
-        className={cn(
-          'min-w-0 flex-1 truncate text-sm font-medium',
-          open ? 'text-foreground' : 'text-muted-foreground',
-        )}
-      >
-        {title}
-      </p>
-      {done && <span className="shrink-0 text-[11px] text-muted-foreground">Reopen</span>}
-    </button>
+        <span
+          className={cn(
+            'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
+            done
+              ? 'bg-profit text-background'
+              : open
+                ? 'bg-muted text-foreground'
+                : 'bg-muted/40 text-muted-foreground',
+          )}
+        >
+          {done ? <CheckMark size={12} strokeWidth={3} /> : n}
+        </span>
+        <p
+          className={cn(
+            'min-w-0 flex-1 truncate text-sm font-medium',
+            open ? 'text-foreground' : 'text-muted-foreground',
+          )}
+        >
+          {title}
+        </p>
+      </button>
+      {/* Its own button, not the whole row: a step is finished by saying so,
+          and a row that ticks itself when read is a step nobody did. */}
+      {open && (
+        <button
+          type="button"
+          onClick={onDone}
+          className="shrink-0 rounded-md border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-profit/50 hover:text-foreground"
+        >
+          Mark done
+        </button>
+      )}
+      {done && <span className="shrink-0 text-[11px] text-muted-foreground">Done</span>}
+    </div>
     {open && (
       <div className="border-t border-border/60 px-3.5 py-2.5 text-muted-foreground">
         {children}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onDone}
-          className="mt-3 h-7 gap-1.5 px-2.5 text-xs"
-        >
-          <CheckMark size={12} strokeWidth={2.5} />
-          Mark done
-        </Button>
       </div>
     )}
   </section>
@@ -314,10 +320,23 @@ export const AddBookmakerPage = (): JSX.Element => {
         <div className="flex flex-col gap-2.5">
           <Step n={1} title="Get the project" {...step(1)}>
             <p className="text-xs">
-              Needs Node and pnpm. This also makes the <Key>har/</Key> folder, which is where the
-              next step saves to and where the tool goes looking.
+              Copy the line, paste it into a terminal. It also makes the <Key>har/</Key> folder,
+              which is where the next step saves to.
             </p>
             <Code text={CLONE} />
+            <p className="mt-2 text-xs">
+              No git?{' '}
+              <a
+                href={ZIP}
+                className="text-primary underline-offset-2 hover:underline"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                Download it as a zip
+              </a>{' '}
+              — unzip it, then run <Key>pnpm install</Key> inside. Either way it needs Node and
+              pnpm, and the coding tool in step 3 will install them for you if you ask it.
+            </p>
           </Step>
 
           <Step n={2} title="Record your account at the bookmaker" {...step(2)}>
