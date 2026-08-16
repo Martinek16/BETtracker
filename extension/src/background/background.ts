@@ -257,13 +257,11 @@ const updateStatus = async (
 
 const restoreState = async (): Promise<void> => {
   await restoreConnections();
-  const stored = await chrome.storage.session.get(['cooldowns', 'moneyPaused', 'lastSyncAt']);
+  const stored = await chrome.storage.session.get(['cooldowns', 'lastSyncAt']);
   // A backoff that only lives as long as the worker is no backoff at all:
   // Chromium stops this worker whenever it goes quiet, which is most of the time.
   const paused: unknown = stored.cooldowns;
   if (paused && typeof paused === 'object') cooldowns = paused as typeof cooldowns;
-  const money: unknown = stored.moneyPaused;
-  if (money && typeof money === 'object') moneyPaused = money as typeof moneyPaused;
   const clocks: unknown = stored.lastSyncAt;
   if (clocks && typeof clocks === 'object') lastSyncAt = clocks as typeof lastSyncAt;
 };
@@ -546,7 +544,6 @@ const forgetSite = async (bookmaker: Bookmaker): Promise<void> => {
     apiBalances.delete(connection.key);
     lastBalanceReadAt.delete(connection.key);
     lastActivityAt.delete(connection.key);
-    clearMoneyPause(connection.key);
     const rest = { ...lastSyncAt };
     delete rest[connection.key];
     lastSyncAt = rest;
@@ -642,29 +639,8 @@ const rememberMoneyCheck = async (account: AccountRef): Promise<void> => {
  * sequential requests; afterwards only the recent window can still change, and
  * re-imports upsert anyway.
  */
-/**
- * How long the money walk is left alone after the site refused it outright.
- *
- * A 401 from the transactions endpoint while the bets endpoint keeps answering
- * is not the session dying — it is that one endpoint wanting a session we do not
- * have. Retrying it on every run only wrote the same warning into the log again,
- * hundreds of times over a day, and never once got a different answer.
- */
-const MONEY_BLOCK_MS = 60 * 60_000;
-/** Keyed by connection: one login's missing banking session says nothing about the other's. */
-let moneyPaused: Record<string, number> = {};
-
-const clearMoneyPause = (key: string): void => {
-  if (moneyPaused[key] === undefined) return;
-  const rest = { ...moneyPaused };
-  delete rest[key];
-  moneyPaused = rest;
-  void chrome.storage.session.set({ moneyPaused });
-};
-
 const importMoney = async ({ adapter, connection }: Live, full = false): Promise<string | null> => {
   if (adapter.syncMoney === undefined) return null;
-  if (Date.now() < (moneyPaused[connection.key] ?? 0)) return null;
   const account = await ensureAccount(adapter, connection);
   if (account === null) return null;
   const bank = connection.banking;
@@ -684,7 +660,6 @@ const importMoney = async ({ adapter, connection }: Live, full = false): Promise
     // counted as done, and every later run stayed shallow — history froze at the
     // few recent months the first run happened to cover.
     const imported = await adapter.syncMoney(connection.creds, bank, account, depth);
-    clearMoneyPause(connection.key);
     // Only a run that really walked may reset the clock; otherwise the age
     // backstop would be pushed forward by runs that read nothing but bonuses.
     if (walk) await rememberMoneyCheck(account);
@@ -713,11 +688,11 @@ const importMoney = async ({ adapter, connection }: Live, full = false): Promise
       startCooldown(adapter.id, err.retryAfterMs, err.message);
       return err.message;
     }
-    if (err instanceof SessionExpiredError) {
-      dropBanking(connection.key);
-      moneyPaused = { ...moneyPaused, [connection.key]: Date.now() + MONEY_BLOCK_MS };
-      void chrome.storage.session.set({ moneyPaused });
-    }
+    // The banking session, where the site keeps one apart from the login: it is
+    // refused and a fresh one is captured on the next visit. The money walk
+    // itself is not held back — a walk that is never retried is a walk that
+    // never recovers, and the account then quietly stops importing deposits.
+    if (err instanceof SessionExpiredError) dropBanking(connection.key);
     log('warn', adapter.id, `transaction import skipped: ${(err as Error).message}`);
     // Returned rather than swallowed: a run that imported no transactions used to
     // end on "Up to date", which is why a broken money import stayed invisible.
@@ -1267,8 +1242,7 @@ chrome.runtime.onMessage.addListener(
           const connection = putBanking(message.banking.bookmaker, origin, message.banking);
           if (connection === null) return;
           // The second session is exactly what a refused money walk was missing,
-          // so its arrival is what the pause was waiting for.
-          clearMoneyPause(connection.key);
+          // so its arrival is worth a walk right away.
           const adapter = adapterFor(connection.bookmaker);
           if (adapter !== null) void importMoney({ adapter, connection });
         });

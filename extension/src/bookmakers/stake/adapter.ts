@@ -99,7 +99,17 @@ const SESSION_REFUSED =
 const THROTTLED =
   /try again in a few minutes|too many requests|rate limit|action is not available/i;
 
+/**
+ * A refusal that will read the same way tomorrow: the site does not serve this
+ * operation to this region at all. Not an error to act on — nothing about the
+ * session or the query is wrong — so it is noted once and then left alone.
+ */
+const PERMANENTLY_REFUSED =
+  /unavailable in your country or region|not available in your (country|region)/i;
+
 let saidTokenOnly = false;
+/** Operations already reported as region-locked, so the log says it once. */
+const saidRefused = new Set<string>();
 
 const gql = async (
   creds: Credentials,
@@ -108,7 +118,19 @@ const gql = async (
 ): Promise<Record<string, unknown> | null> => {
   const accessToken = creds.fields.accessToken;
   const operationName = /query\s+(\w+)/.exec(query)?.[1];
-  const ask = (viaPage: boolean): Promise<unknown> =>
+  // Which query was turned away. Every one of them goes to the same URL, so a
+  // refusal that names only the endpoint names nothing: "the wallet is refused
+  // while the bets import" and "the login is dead" read identically.
+  const ask = async (viaPage: boolean): Promise<unknown> => {
+    try {
+      return await asked(viaPage);
+    } catch (err) {
+      if (err instanceof SessionExpiredError)
+        throw new SessionExpiredError(err.status, `${operationName ?? 'GraphQL'}, ${err.detail}`);
+      throw err;
+    }
+  };
+  const asked = (viaPage: boolean): Promise<unknown> =>
     authedJson(
       field(creds, 'apiBase') + GRAPHQL_PATH,
       {
@@ -126,7 +148,9 @@ const gql = async (
           'x-language': 'en',
         },
         credentials: 'include',
-        body: JSON.stringify({ query, variables }),
+        body: JSON.stringify(
+          operationName === undefined ? { query, variables } : { operationName, query, variables },
+        ),
       },
       viaPage,
     );
@@ -152,7 +176,18 @@ const gql = async (
       saidTokenOnly = true;
       log('info', BOOKMAKER, 'no stake.com tab open; asking with the token alone');
     }
-    json = await ask(false);
+    try {
+      json = await ask(false);
+    } catch (tokenErr) {
+      // A cookie-authenticated endpoint refusing a request that carries no cookie
+      // says nothing about the session — the wallet answers the page and 401s the
+      // worker while the very same login keeps importing bets. Read as an expiry
+      // it threw away a live session, paused the money walk for an hour, and left
+      // deposits importing only when a tab happened to be open. It is the same
+      // "nowhere to ask from" as having no tab at all: wait for the next visit.
+      if (tokenErr instanceof SessionExpiredError) throw err;
+      throw tokenErr;
+    }
   }
 
   // GraphQL answers 200 even when it refuses, so a dead session has to be read
@@ -171,7 +206,18 @@ const gql = async (
     if (SESSION_REFUSED.test(message)) throw new SessionExpiredError(401, message);
     // Named, because one refused field in one query reads exactly like every
     // query failing once the message reaches the console.
-    const named = `Stake ${/query\s+(\w+)/.exec(query)?.[1] ?? 'GraphQL'}: ${message}`;
+    const named = `Stake ${operationName ?? 'GraphQL'}: ${message}`;
+    // A list the region is not served is not a fault to report on every run. It
+    // is still asked for each time — a region is a property of where the user is,
+    // not of the account — but it is only ever said once.
+    if (PERMANENTLY_REFUSED.test(message)) {
+      const key = operationName ?? named;
+      if (!saidRefused.has(key)) {
+        saidRefused.add(key);
+        log('info', BOOKMAKER, named);
+      }
+      return (root.data ?? null) as Record<string, unknown> | null;
+    }
     if (THROTTLED.test(message)) throw new RateLimitedError(RATE_LIMIT_BACKOFF_MS, named);
     // Partial answers are the normal shape of a GraphQL failure: the fields that
     // resolved are in `data` and only the ones that did not are in `errors`.
@@ -1309,27 +1355,6 @@ const importLedger = async (
 };
 
 /**
- * A refusal that will read the same way tomorrow: the site does not serve this
- * list to this region at all. Retrying it every sync only fills the log with the
- * same line, so the ledger is remembered as closed and left alone.
- */
-const PERMANENTLY_REFUSED =
-  /unavailable in your country or region|not available in your (country|region)/i;
-
-const CLOSED_LEDGERS_KEY = 'stake:closedLedgers';
-
-const closedLedgers = async (): Promise<Set<string>> => {
-  const stored = (await chrome.storage.local.get(CLOSED_LEDGERS_KEY))[CLOSED_LEDGERS_KEY];
-  return new Set(Array.isArray(stored) ? (stored as string[]) : []);
-};
-
-const closeLedger = async (label: string): Promise<void> => {
-  const closed = await closedLedgers();
-  closed.add(label);
-  await chrome.storage.local.set({ [CLOSED_LEDGERS_KEY]: [...closed] });
-};
-
-/**
  * Everything the bookmaker gave this account, and what it is standing on right
  * now. Each ledger is walked on its own so one refused list — a permission the
  * account does not have, a field the site retires — costs only itself.
@@ -1394,20 +1419,12 @@ const importRewards = async (
     ],
   ];
 
-  const closed = await closedLedgers();
   for (const [label, query, read] of ledgers) {
-    if (closed.has(label)) continue;
     try {
       imported += await importLedger(creds, query, read, deep);
     } catch (err) {
       if (err instanceof SessionExpiredError || err instanceof RelayUnavailableError) throw err;
-      const message = (err as Error).message;
-      if (PERMANENTLY_REFUSED.test(message)) {
-        await closeLedger(label);
-        log('info', 'stake', `${label} ledger not served in this region — no longer asked for`);
-        continue;
-      }
-      log('warn', 'stake', `${label} ledger failed: ${message}`);
+      log('warn', 'stake', `${label} ledger failed: ${(err as Error).message}`);
     }
   }
 

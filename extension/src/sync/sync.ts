@@ -34,7 +34,7 @@ export class SessionExpiredError extends Error {
   constructor(
     public readonly status: number,
     /** What the site said, and where we asked from. A bare status names neither. */
-    detail = '',
+    public readonly detail = '',
   ) {
     super(`Session expired (HTTP ${status})${detail === '' ? '' : `: ${detail}`}`);
     this.name = 'SessionExpiredError';

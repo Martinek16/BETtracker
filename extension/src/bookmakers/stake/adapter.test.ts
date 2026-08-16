@@ -296,6 +296,21 @@ describe('stake GraphQL failures', () => {
     expect(err?.message).toBe('Stake UserId: You are not allowed to do that.');
   });
 
+  it('waits for a tab rather than dropping the session when only the token was sent', async () => {
+    // The wallet answers the page and refuses the worker, whose request carries
+    // no cookie. Read as an expiry it threw away a live session and paused the
+    // deposits for an hour, so they imported only when a tab happened to be open.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 401, text: async () => 'Unauthorized' }),
+    );
+    const err = await stake.accountId(creds).then(
+      () => null,
+      (e: unknown) => e as Error,
+    );
+    expect(err?.name).toBe('RelayUnavailableError');
+  });
+
   it('says a repeated refusal once rather than once per field', async () => {
     // A throttled page of fifty bets came back as the same sentence fifty times,
     // which is what filled the log with thousand-character lines.
