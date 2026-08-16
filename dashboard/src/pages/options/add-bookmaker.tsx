@@ -35,19 +35,16 @@ const canAddBookmaker = (): boolean =>
   chrome.runtime.getManifest().update_url === undefined;
 
 /**
- * How many steps are behind you. Adding a site spans several sittings and at
- * least one extension reload, so this has to outlive the page. One number
- * rather than a set of ticks: the steps only make sense in order, and a count
- * cannot hold the state where the third is done and the first is not.
+ * The project, its packages, and the folder the recording goes in.
+ *
+ * One command to a line, and no `&&`: Windows PowerShell rejects that as a parse
+ * error before it runs a thing. `npx` ships with Node and fetches pnpm for the
+ * one command, so nothing has to be installed first and nothing depends on a
+ * PATH the open terminal has not picked up yet.
  */
-const DONE_KEY = 'bettracker.add-bookmaker.done';
-const readDone = (): number => {
-  const stored = Number(localStorage.getItem(DONE_KEY));
-  return Number.isInteger(stored) && stored > 0 ? stored : 0;
-};
-
-/** The project, and the folder the recording goes in, in one paste. */
-const CLONE = `git clone ${REPO}.git && cd BETtracker && pnpm install`;
+const CLONE = `git clone ${REPO}.git
+cd BETtracker
+npx -y pnpm install`;
 
 /** The same thing for anyone without git: a folder, unzipped, then one command. */
 const ZIP = `${REPO}/archive/refs/heads/main.zip`;
@@ -58,7 +55,8 @@ const PROMPT = `Add the bookmaker https://www.yourbookmaker.com to BETtracker.
 Read AGENTS.md in this project and follow it. My recording is in har/. Ask me for whatever you cannot get yourself.`;
 
 /** What proves the site is in the build the browser will load, not only on disk. */
-const CHECK = 'pnpm test && pnpm build';
+const CHECK = `npx -y pnpm test
+npx -y pnpm build`;
 
 /**
  * One numbered thing to do, as its own card. Only the step you are on is open:
@@ -264,12 +262,14 @@ export const AddBookmakerPage = (): JSX.Element => {
   const { accountBalances } = useDashboard();
   const canAdd = canAddBookmaker();
   const added = CATALOG.filter((meta) => !isReleased(meta.id));
-  const [done, setDone] = useState(readDone);
-
-  const moveTo = (count: number): void => {
-    localStorage.setItem(DONE_KEY, String(count));
-    setDone(count);
-  };
+  /**
+   * How far the reader says they have got, for this sitting only. Deliberately
+   * not stored: a tick on a step nothing can verify is a claim, and a claim
+   * that outlives the tab it was made in reads later as a fact.
+   */
+  const [said, setSaid] = useState(0);
+  /** Set when they start on a second site, which the first one's ticks would hide. */
+  const [again, setAgain] = useState(false);
 
   const all = {
     bets: records.bets,
@@ -303,15 +303,17 @@ export const AddBookmakerPage = (): JSX.Element => {
       : reports.every((report) => report.score.failed === 0 && report.score.passed > 0)
         ? 6
         : 5;
-  const at = Math.max(done, seen);
+  // Starting on a second site means going back to the top: what the first one
+  // proved is still true, and says nothing about this one.
+  const at = again ? said : Math.max(said, seen);
 
   const step = (
     n: number,
   ): { done: boolean; open: boolean; onReopen: () => void; onDone: () => void } => ({
     done: n <= at,
     open: n === at + 1,
-    onReopen: () => moveTo(n - 1),
-    onDone: () => moveTo(n),
+    onReopen: () => setSaid(n - 1),
+    onDone: () => setSaid(n),
   });
 
   return (
@@ -338,8 +340,9 @@ export const AddBookmakerPage = (): JSX.Element => {
         <div className="flex flex-col gap-2.5">
           <Step n={1} title="Get the project" {...step(1)}>
             <p className="text-xs">
-              Copy the line, paste it into a terminal. It also makes the <Key>har/</Key> folder,
-              which is where the next step saves to.
+              Paste all three into a terminal — they run one after another, and the last one waits a
+              minute. It also makes the <Key>har/</Key> folder, which is where the next step saves
+              to.
             </p>
             <Code text={CLONE} />
             <p className="mt-2 text-xs">
@@ -352,8 +355,17 @@ export const AddBookmakerPage = (): JSX.Element => {
               >
                 Download it as a zip
               </a>{' '}
-              — unzip it, then run <Key>pnpm install</Key> inside. Either way it needs Node and
-              pnpm, and the coding tool in step 3 will install them for you if you ask it.
+              — unzip it, open that folder in a terminal, and run the last line only. Either way it
+              needs{' '}
+              <a
+                href="https://nodejs.org"
+                className="text-primary underline-offset-2 hover:underline"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                Node
+              </a>
+              , which brings <Key>npx</Key> with it.
             </p>
           </Step>
 
@@ -399,13 +411,15 @@ export const AddBookmakerPage = (): JSX.Element => {
 
           <Step n={4} title="Run the tests and the build" {...step(4)}>
             <p className="text-xs">
-              In the project folder. The tests read the new site&apos;s own recording back through
-              it; the build refuses outright if the folder was not registered, and copies everything
-              into <Key>extension/dist</Key> — the folder the browser loads.
+              In the project folder, one line then the other. The tests read the new site&apos;s own
+              recording back through it; the build refuses outright if the folder was not
+              registered, and copies everything into <Key>extension/dist</Key> — the folder the
+              browser loads.
             </p>
             <Code text={CHECK} />
             <p className="mt-2 text-xs">
-              Red? Give the tool the output as it stands. It is written for it.
+              Red? Give the tool the output as it stands. It is written for it. Only build once the
+              tests are green — a build off a broken site loads a broken site.
             </p>
           </Step>
 
@@ -457,12 +471,25 @@ export const AddBookmakerPage = (): JSX.Element => {
         </section>
       )}
 
-      {seen > 0 && (
-        <p className="px-1 text-xs text-muted-foreground">
-          {reports.map((report) => report.meta.name).join(', ')}{' '}
-          {reports.length === 1 ? 'is' : 'are'} in this build, so the steps up to loading it are
-          ticked for you — a folder reaches the browser only by passing all of them.
-        </p>
+      {seen > 0 && canAdd && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-muted-foreground">
+          <span>
+            {reports.map((report) => report.meta.name).join(', ')}{' '}
+            {reports.length === 1 ? 'is' : 'are'} in this build, so the steps up to loading{' '}
+            {reports.length === 1 ? 'it' : 'them'} are ticked for you — a folder reaches the browser
+            only by passing all of them.
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setAgain(!again);
+              setSaid(0);
+            }}
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            {again ? 'Hide the steps' : 'Add another bookmaker'}
+          </button>
+        </div>
       )}
 
       {reports.map((report) => (
