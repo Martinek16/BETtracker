@@ -8,7 +8,7 @@ type Tone = 'profit' | 'loss' | 'neutral';
 interface QuestionCardProps {
   /** The question, asked the way a bettor would ask it. */
   title: string;
-  /** The whole answer in a word or two — all a collapsed card shows. */
+  /** The whole answer in a word or two - all a collapsed card shows. */
   answer: ReactNode;
   tone?: Tone;
   open: boolean;

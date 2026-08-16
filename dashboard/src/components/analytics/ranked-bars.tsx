@@ -7,7 +7,7 @@ export interface RankedRow {
   /** Optional extra right-hand columns, e.g. units and the money behind them. */
   note?: string;
   extra?: string;
-  /** Draw muted regardless of sample size — the figure is real, the pattern is not. */
+  /** Draw muted regardless of sample size - the figure is real, the pattern is not. */
   unreliable?: boolean;
   /** Hover text on the label, for anything that did not earn a column. */
   title?: string;

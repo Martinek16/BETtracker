@@ -8,7 +8,7 @@
  *
  * What is shown inside it is the popup document itself, in an iframe: there it is
  * still an extension page, with the same privileged access and the same isolation
- * from the site — the bookmaker's page cannot read a line of it, and nothing about
+ * from the site - the bookmaker's page cannot read a line of it, and nothing about
  * the account is written into the page's own DOM. Only the frame around it lives
  * here, in a closed shadow root so the site's stylesheets cannot reach in either.
  */

@@ -4,10 +4,7 @@ import { makeBet, makeLeg } from './__fixtures__/make-bet';
 
 describe('selectionsOf', () => {
   it('expands each leg once and synthesises one for legless singles', () => {
-    const bets = [
-      makeBet({ legs: [makeLeg(), makeLeg(), makeLeg()] }),
-      makeBet({ legs: [] }),
-    ];
+    const bets = [makeBet({ legs: [makeLeg(), makeLeg(), makeLeg()] }), makeBet({ legs: [] })];
     expect(selectionsOf(bets)).toHaveLength(4);
   });
 
@@ -50,7 +47,7 @@ describe('groupSelectionsBy', () => {
     expect(groups.find((g) => g.key === 'Tennis')!.flatUnitsPl).toBeCloseTo(3, 6);
   });
 
-  it('never exposes money fields — a leg of a combo has no stake of its own', () => {
+  it('never exposes money fields - a leg of a combo has no stake of its own', () => {
     const [group] = groupSelectionsBy(bets, 'sport');
     expect(group).not.toHaveProperty('stake');
     expect(group).not.toHaveProperty('staked');

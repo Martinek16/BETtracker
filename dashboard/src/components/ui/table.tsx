@@ -7,7 +7,7 @@ import {
 import { cn } from '@/lib/utils';
 
 interface TableProps extends HTMLAttributes<HTMLTableElement> {
-  /** Styles the scroll wrapper — needed to bound its height so `sticky` headers stick. */
+  /** Styles the scroll wrapper - needed to bound its height so `sticky` headers stick. */
   containerClassName?: string;
   /**
    * Header rows. Given here rather than as a child, they are rendered in their
@@ -75,10 +75,7 @@ export const TableRow = ({
   className,
   ...props
 }: HTMLAttributes<HTMLTableRowElement>): JSX.Element => (
-  <tr
-    className={cn('border-b hover:bg-muted/50', className)}
-    {...props}
-  />
+  <tr className={cn('border-b hover:bg-muted/50', className)} {...props} />
 );
 
 export const TableHead = ({
@@ -86,10 +83,7 @@ export const TableHead = ({
   ...props
 }: ThHTMLAttributes<HTMLTableCellElement>): JSX.Element => (
   <th
-    className={cn(
-      'h-10 px-3 text-left align-middle font-medium text-muted-foreground',
-      className,
-    )}
+    className={cn('h-10 px-3 text-left align-middle font-medium text-muted-foreground', className)}
     {...props}
   />
 );

@@ -4,7 +4,7 @@
  * Deliberately free of runtime imports: the MAIN-world inject script runs inside
  * the site's own JS context, so anything the rules pull in would reach the
  * *page's* globals rather than ours. Only this file and the rules themselves
- * cross over — the adapters, which are the bulk of a bookmaker, stay out of
+ * cross over - the adapters, which are the bulk of a bookmaker, stay out of
  * reach on the background side.
  */
 
@@ -30,7 +30,7 @@ export interface CaptureRule {
   /** Requests whose response body is worth relaying as the page receives it. */
   openBets?(url: string): boolean;
   /**
-   * Whether this request is the user doing something to their money — placing a
+   * Whether this request is the user doing something to their money - placing a
    * bet, cashing out, depositing, withdrawing. Only that it happened: the body is
    * read for the name of the operation and nothing else, and no answer is kept.
    *

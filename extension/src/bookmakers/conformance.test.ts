@@ -10,7 +10,7 @@
  *
  * Nothing here names a bookmaker. The folders are found on disk and each hands
  * over its own parsed output through `samples.ts`, so adding a site never means
- * editing this file — which is just as well, because contributors are not
+ * editing this file - which is just as well, because contributors are not
  * allowed to. An invariant weakened here would be weakened for every site.
  */
 
@@ -22,7 +22,7 @@ import { adapters } from './registry';
 
 /**
  * `import.meta.glob` belongs to the test runner's bundler, not to the extension
- * build, so it is typed here rather than project-wide — declaring it globally
+ * build, so it is typed here rather than project-wide - declaring it globally
  * would offer it to adapter code, where esbuild would leave the call unresolved.
  */
 type Globber = {
@@ -30,10 +30,9 @@ type Globber = {
 };
 
 /** Every `<bookmaker>/samples.ts` that exists, keyed by the folder it is in. */
-const modules = (import.meta as unknown as Globber).glob<{ samples: Samples }>(
-  './*/samples.ts',
-  { eager: true },
-);
+const modules = (import.meta as unknown as Globber).glob<{ samples: Samples }>('./*/samples.ts', {
+  eager: true,
+});
 
 const CASES = Object.entries(modules).map(([path, module]) => ({
   name: path.split('/')[1] as string,
@@ -117,7 +116,7 @@ describe.each(CASES)('$name records', ({ name, settled, open }) => {
 
   /**
    * The failure this catches is the quiet one: everything parses, the sync
-   * reports success, the totals are right — and every breakdown card is a list
+   * reports success, the totals are right - and every breakdown card is a list
    * of blanks, because the fields the dashboard groups by came through null.
    *
    * `sport`, `league`, `event`, `marketType` and `selection` are all nullable on

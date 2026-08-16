@@ -115,7 +115,7 @@ const dayExtremes = (bets: readonly Bet[]): { best: DayResult | null; worst: Day
 
 /**
  * The longest-priced pick that came in, and the shortest-priced one that did
- * not — the two picks a bettor actually remembers. Both are legs, so neither
+ * not - the two picks a bettor actually remembers. Both are legs, so neither
  * carries money: a leg of a combo never had a stake of its own.
  */
 const pickExtremes = (

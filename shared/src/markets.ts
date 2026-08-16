@@ -1,8 +1,8 @@
 /**
  * Markets in families, in the words a bettor uses.
  *
- * Books name a market per line — "Over/Under 2.5", "Over/Under 1.5", "Corners
- * Over/Under 9.5" — so the market list runs to hundreds of rows that each hold
+ * Books name a market per line - "Over/Under 2.5", "Over/Under 1.5", "Corners
+ * Over/Under 9.5" - so the market list runs to hundreds of rows that each hold
  * a handful of bets. The family is the question that was asked; the line is the
  * detail under it.
  */
@@ -50,7 +50,7 @@ const FAMILIES: ReadonlyArray<{ label: string; match: readonly string[] }> = [
 
 export const OTHER_MARKETS = 'Other markets';
 
-/** A token starts a word — so "Corners" still matches `corner`, while "Winning
+/** A token starts a word - so "Corners" still matches `corner`, while "Winning
  * margin" is not an innings bet. */
 const RULES = FAMILIES.map(({ label, match }) => ({
   label,
@@ -67,7 +67,7 @@ export const marketFamily = (marketType: string | null): string => {
 /**
  * The market without whose name it was: books print the participant into it, so
  * "Ferran Torres Shots On Target Over/Under 0.5" and the same bet on anyone else
- * are two rows of one pick each. The bet is the same bet — the name is not part
+ * are two rows of one pick each. The bet is the same bet - the name is not part
  * of it.
  */
 
@@ -194,7 +194,7 @@ export const marketLine = (
   name = name.charAt(0).toUpperCase() + name.slice(1);
   if (!LINE_MARKET.test(name)) return name;
 
-  // What was bet is the subject and the direction — "Points Over" — not the
+  // What was bet is the subject and the direction - "Points Over" - not the
   // number, which the book moves for every fixture.
   const stem = name
     .replace(LINE_WORDS, ' ')

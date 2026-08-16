@@ -8,7 +8,7 @@ import { cn, formatMoney, tightMoney } from '@/lib/utils';
  * A wallet holding a dozen coins is only comparable once everything is in one
  * currency, but a figure converted out of BTC no longer says what was staked.
  * Both are shown: the converted one to be read, the original one to be
- * recognised. The second half stays away when there is nothing to add — a
+ * recognised. The second half stays away when there is nothing to add - a
  * record already in the display currency would only repeat itself.
  */
 export const Money = ({

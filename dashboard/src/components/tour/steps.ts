@@ -90,7 +90,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     anchor: 'nav:/bets',
     route: '/bets',
     title: 'Bets',
-    body: 'We are on Bets now — this is the link that brings you back. The page is one long list of every slip you placed, with the filters for it above.',
+    body: 'We are on Bets now - this is the link that brings you back. The page is one long list of every slip you placed, with the filters for it above.',
   },
   {
     anchor: 'bets-search',
@@ -102,13 +102,13 @@ export const TOUR_STEPS: readonly TourStep[] = [
     anchor: 'bets-status',
     route: '/bets',
     title: 'Keep only what you want to see',
-    body: 'Won, Lost, or Other — which is everything else: void, cashed out and still running.',
+    body: 'Won, Lost, or Other - which is everything else: void, cashed out and still running.',
   },
   {
     anchor: 'bets-sort',
     route: '/bets',
     title: 'Sort by any column',
-    body: 'Click a heading to sort by it, click again to turn it around. Biggest stake, longest odds, worst loss — whichever you want at the top.',
+    body: 'Click a heading to sort by it, click again to turn it around. Biggest stake, longest odds, worst loss - whichever you want at the top.',
   },
   {
     anchor: 'bets-table',
@@ -192,7 +192,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     anchor: 'nav:/options',
     route: '/options',
     title: 'Settings',
-    body: 'Last stop, at the bottom of the rail. Everything here changes how the other pages look and count — nothing on this page is about a single bet.',
+    body: 'Last stop, at the bottom of the rail. Everything here changes how the other pages look and count - nothing on this page is about a single bet.',
   },
   {
     anchor: 'options-tabs',
@@ -222,13 +222,13 @@ export const TOUR_STEPS: readonly TourStep[] = [
     anchor: 'settings-notifications',
     route: '/options',
     title: 'When it should speak up',
-    body: 'A note when new bets come in, or when an account quietly stops updating. Off is fine — nothing is lost either way.',
+    body: 'A note when new bets come in, or when an account quietly stops updating. Off is fine - nothing is lost either way.',
   },
   {
     anchor: 'settings-data',
     route: '/options',
     title: 'Your own backup',
-    body: 'Save everything to a file on your computer, or pick out single accounts. Nothing is uploaded anywhere — the file is yours alone. This is also where you can replay this tour.',
+    body: 'Save everything to a file on your computer, or pick out single accounts. Nothing is uploaded anywhere - the file is yours alone. This is also where you can replay this tour.',
   },
   // ── Accounts ───────────────────────────────────────────────────────────────
   {

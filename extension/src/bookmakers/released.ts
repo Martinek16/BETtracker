@@ -6,7 +6,7 @@
  * review. The difference is real: a released site has been read by somebody
  * other than its author, and an added one has been read by nobody.
  *
- * A pull request that adds a bookmaker leaves this file alone — and cannot do
+ * A pull request that adds a bookmaker leaves this file alone - and cannot do
  * otherwise, since it is outside the paths a contribution may touch. Only a
  * release adds a line here, when the site actually goes out to everyone.
  */

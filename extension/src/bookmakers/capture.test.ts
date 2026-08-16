@@ -4,7 +4,7 @@ import { CAPTURE_RULES, bookmakerForHost, bookmakerForRequests } from './capture
 describe('bookmakerForRequests', () => {
   it('names a mirror no rule lists, from the API the page calls', () => {
     // An address no pattern of ours anticipated, running the same EveryMatrix
-    // sportsbook — which it says itself on every request it makes.
+    // sportsbook - which it says itself on every request it makes.
     expect(bookmakerForHost('www.spela-tukaj7.net')).toBeNull();
     expect(
       bookmakerForRequests([
@@ -34,9 +34,9 @@ describe('stake activity', () => {
       true,
     );
     expect(acted({ operationName: 'CashoutBet', query: 'mutation CashoutBet { x }' })).toBe(true);
-    expect(acted({ operationName: 'CreateWithdrawal', query: 'mutation CreateWithdrawal { x }' })).toBe(
-      true,
-    );
+    expect(
+      acted({ operationName: 'CreateWithdrawal', query: 'mutation CreateWithdrawal { x }' }),
+    ).toBe(true);
   });
 
   it('ignores browsing, which is every query and the mutations that touch no money', () => {

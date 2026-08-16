@@ -7,7 +7,7 @@ const out = fileURLToPath(new URL('../bettracker.zip', import.meta.url));
 
 const entries = readdirSync(dist);
 if (!entries.includes('manifest.json')) {
-  throw new Error('dist/manifest.json missing — run `pnpm package` first');
+  throw new Error('dist/manifest.json missing - run `pnpm package` first');
 }
 
 rmSync(out, { force: true });

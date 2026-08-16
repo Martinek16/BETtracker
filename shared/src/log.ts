@@ -1,7 +1,7 @@
 /**
  * What the extension has been doing, kept where the user can read it. The pieces
  * that do the work run in a service worker and in the bookmaker's own page, and
- * neither has a console anyone thinks to open — so what they have to say is
+ * neither has a console anyone thinks to open - so what they have to say is
  * written to the database instead and shown on a page in the app.
  */
 
@@ -59,7 +59,7 @@ export const clearLog = async (): Promise<void> => {
 };
 
 /**
- * Records a line and returns at once — nothing waits on the log. The console it
+ * Records a line and returns at once - nothing waits on the log. The console it
  * also writes to is the extension's own; the bookmaker's page is never written
  * to, because a tracker announcing itself there is the site's to read too.
  */

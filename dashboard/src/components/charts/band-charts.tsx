@@ -1,5 +1,14 @@
 import { useMemo } from 'react';
-import { Bar, BarChart, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+  Bar,
+  BarChart,
+  Cell,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import {
   decisiveBets,
   groupBy,
@@ -33,7 +42,7 @@ const toneOf = (value: number): string => (value >= 0 ? 'hsl(var(--profit))' : '
 const tickPercent = (value: number): string => `${String(Math.round(value))}%`;
 
 /**
- * A band's own name is its span — "1.75–2.00" — which is four times the width a
+ * A band's own name is its span - "1.75–2.00" - which is four times the width a
  * tick has. Written as where the band starts, the axis reads as one climbing
  * scale and the tooltip still says the span in full. Names without a span, like
  * a leg count, are already the number.
@@ -43,7 +52,7 @@ const bandStart = (key: string): string => key.split('–')[0]?.replace(/\s+/g, 
 /**
  * The two ends of the split, in the reader's own numbers. A plot is worth its
  * room only if it names what it found, and the ends are what a band chart is
- * read for — the middle is the same story told quieter. Thin bands are left out
+ * read for - the middle is the same story told quieter. Thin bands are left out
  * of the naming unless there is nothing else, since one slip is not an end.
  */
 const extremesOf = (
@@ -63,7 +72,11 @@ const extremesOf = (
  * Bands sorted by their own average rather than by label, so the order holds
  * whatever the band edges are named.
  */
-const bandsOf = (bets: readonly Bet[], by: (g: GroupStats) => number, dimension: SlipDimension): Row[] =>
+const bandsOf = (
+  bets: readonly Bet[],
+  by: (g: GroupStats) => number,
+  dimension: SlipDimension,
+): Row[] =>
   groupBy(decisiveBets(bets), dimension)
     .filter((g) => g.bets > 0)
     .sort((a, b) => by(a) - by(b))
@@ -92,12 +105,7 @@ const Bars = ({
       {/* Left to recharts to thin: forcing every band label draws them into each
           other on a narrow card, and an unreadable label says less than none. */}
       <XAxis dataKey="key" minTickGap={4} tickFormatter={bandStart} {...AXIS} />
-      <YAxis
-        {...AXIS}
-        width={30}
-        tickCount={4}
-        tickFormatter={tickPercent}
-      />
+      <YAxis {...AXIS} width={30} tickCount={4} tickFormatter={tickPercent} />
       {guides.map((guide) => (
         <ReferenceLine
           key={guide.y}
@@ -113,18 +121,16 @@ const Bars = ({
             heading={(row) => row.key}
             lines={(row) => [
               ...lines(row),
-              ...(row.thin ? [`Under ${String(MIN_SAMPLE)} slips — a figure, not yet a pattern.`] : []),
+              ...(row.thin
+                ? [`Under ${String(MIN_SAMPLE)} slips - a figure, not yet a pattern.`]
+                : []),
             ]}
           />
         }
       />
       <Bar dataKey={dataKey} radius={[2, 2, 0, 0]} isAnimationActive={false}>
         {data.map((row) => (
-          <Cell
-            key={row.key}
-            fill={toneOf(row[dataKey])}
-            fillOpacity={row.thin ? 0.35 : 0.85}
-          />
+          <Cell key={row.key} fill={toneOf(row[dataKey])} fillOpacity={row.thin ? 0.35 : 0.85} />
         ))}
       </Bar>
     </BarChart>
@@ -162,7 +168,10 @@ export const OddsPnlChart = ({
         .join(' ')}
     >
       {data.length === 0 ? (
-        <ChartEmpty title="No settled slips" hint="Prices are read from slips that have won or lost." />
+        <ChartEmpty
+          title="No settled slips"
+          hint="Prices are read from slips that have won or lost."
+        />
       ) : (
         <Bars
           data={data}
@@ -200,7 +209,10 @@ export const LegCountChart = ({
         .join(' ')}
     >
       {data.length === 0 ? (
-        <ChartEmpty title="No settled slips" hint="Leg counts are read from slips that have won or lost." />
+        <ChartEmpty
+          title="No settled slips"
+          hint="Leg counts are read from slips that have won or lost."
+        />
       ) : (
         <Bars
           data={data}
@@ -219,7 +231,7 @@ export const LegCountChart = ({
 
 /**
  * Whether the bigger stakes were the better bets. Return per 100 staked rather
- * than raw profit — a band holding one large slip would otherwise tower over
+ * than raw profit - a band holding one large slip would otherwise tower over
  * every other band without being any better.
  */
 export const StakeOutcomeChart = ({
@@ -245,7 +257,10 @@ export const StakeOutcomeChart = ({
         .join(' ')}
     >
       {data.length === 0 ? (
-        <ChartEmpty title="No settled slips" hint="Stake sizes are read from slips that have won or lost." />
+        <ChartEmpty
+          title="No settled slips"
+          hint="Stake sizes are read from slips that have won or lost."
+        />
       ) : (
         <Bars
           data={data}

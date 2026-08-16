@@ -24,7 +24,7 @@ export const formatLegSelection = (leg: BetLeg, oddsFormat?: OddsFormat): string
 export const formatLegLine = (leg: BetLeg): string => {
   const event = leg.event;
   const pick = leg.selection ?? leg.marketType;
-  if (event && pick) return `${event} — ${pick}`;
+  if (event && pick) return `${event} - ${pick}`;
   return event ?? pick ?? '—';
 };
 
@@ -110,7 +110,7 @@ export const betSearchText = (bet: Bet): string =>
     .join(' ')
     .toLowerCase();
 
-/** One line per leg — full detail for tables and lists. */
+/** One line per leg - full detail for tables and lists. */
 export const betLegLines = (bet: Bet): string[] => {
   if (bet.legs.length > 0) return bet.legs.map(formatLegLine);
   const fallback = formatLegLine({
@@ -126,4 +126,3 @@ export const betLegLines = (bet: Bet): string[] => {
   });
   return [fallback];
 };
-

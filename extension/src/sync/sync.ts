@@ -46,7 +46,7 @@ export class SessionExpiredError extends Error {
  * Deliberately not a `SessionExpiredError`: the session is very probably alive,
  * there is simply nowhere to ask from right now. Treating the two as one made
  * every run without an open tab drop a live token, reload a tab to get it back,
- * and fail again on the next run — the reconnect loop in the log.
+ * and fail again on the next run - the reconnect loop in the log.
  */
 export class RelayUnavailableError extends Error {
   constructor(host: string) {
@@ -58,7 +58,7 @@ export class RelayUnavailableError extends Error {
 /**
  * The site is asking us to stop for a while: a throttle, a 429, or a gateway
  * that is down. Its own class because the answer to it is neither "retry now"
- * nor "the session died" — it is to leave that bookmaker alone until it has had
+ * nor "the session died" - it is to leave that bookmaker alone until it has had
  * time to recover, which is what the caller reads `retryAfterMs` for.
  */
 export class RateLimitedError extends Error {
@@ -80,7 +80,7 @@ export const RATE_LIMIT_BACKOFF_MS = 10 * 60_000;
  * A site whose session is a cookie only answers its own page: a request from the
  * service worker is never same-site with it, so the browser leaves the cookie off
  * and the site replies as if nobody were signed in. Null when no such tab is
- * open, which is not an error — there is simply nowhere to ask from.
+ * open, which is not an error - there is simply nowhere to ask from.
  */
 const fetchInPage = async (url: string, init: RequestInit): Promise<PageFetchResult | null> => {
   const message: ToContent = {
@@ -107,15 +107,15 @@ const fetchInPage = async (url: string, init: RequestInit): Promise<PageFetchRes
 };
 
 /**
- * What the site said when it refused. A status alone names no cause — a GraphQL
+ * What the site said when it refused. A status alone names no cause - a GraphQL
  * server answers 400 to a query it will not accept and puts the reason, the field
  * it choked on, in the body. Trimmed, because the body can be a whole page.
  */
 const refusal = (body: string): string => {
   // A maintenance or error page says what it is in its title and then spends
   // several kilobytes on a base64 font. Cutting the first 300 characters of that
-  // yields the font, which is unreadable and — being slightly different every
-  // time — also defeats the log's "same line again" folding.
+  // yields the font, which is unreadable and - being slightly different every
+  // time - also defeats the log's "same line again" folding.
   const title = /<title[^>]*>([^<]*)<\/title>/i.exec(body)?.[1]?.trim();
   if (title !== undefined && title !== '') return title;
   return body.replace(/\s+/g, ' ').trim().slice(0, 300);
@@ -200,7 +200,7 @@ export const runCursorSync = async (
   // ── Phase A: forward catch ────────────────────────────────────────────────
   // Pull everything newer than the latest stored bet (and re-check the oldest
   // still-pending bet to pick up freshly-settled results). Cheap: usually 0-1
-  // pages. Skipped on a fresh DB — Phase B handles the initial load.
+  // pages. Skipped on a fresh DB - Phase B handles the initial load.
   const latest = await getLatestPlacedAt(cfg.account);
   const pending = await getPendingBets(cfg.account);
   const oldestPending = pending.reduce<string | null>(
@@ -238,7 +238,7 @@ export const runCursorSync = async (
   // ── Phase B: resumable backward backfill ──────────────────────────────────
   // Walk old history newest→oldest, persisting the cursor after every page so
   // an interrupted run (MV3 SW termination, token expiry) resumes here instead
-  // of restarting from "now" — which is why old history previously never loaded.
+  // of restarting from "now" - which is why old history previously never loaded.
   // `full` mode restarts the backfill from scratch.
   if (mode === 'full')
     await setBackfillState(cfg.account, { oldestFetchedAt: null, historyComplete: false });
@@ -296,7 +296,7 @@ export interface OpenBetsSync {
 }
 
 /**
- * Fetch the currently open bets and upsert them. Throws on a dead token — the
+ * Fetch the currently open bets and upsert them. Throws on a dead token - the
  * panel needs to know, while a full sync swallows it so the run still succeeds.
  */
 export const syncOpenBets = async (
@@ -312,7 +312,7 @@ export const syncOpenBets = async (
 };
 
 /**
- * Ids that were open at the previous poll and are missing now — i.e. just
+ * Ids that were open at the previous poll and are missing now - i.e. just
  * settled. Deliberately not diffed against all locally-pending bets: those
  * include old records the paged endpoint never returns, so the diff would be
  * non-empty on every single poll.

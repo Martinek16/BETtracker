@@ -27,7 +27,7 @@ export const camelId = (id) => id.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCas
 const addImport = (source, kind, line) => {
   const last = [...source.matchAll(kind)].pop();
   if (last === undefined)
-    throw new Error(`${line}: no import to follow — the collector has changed shape`);
+    throw new Error(`${line}: no import to follow - the collector has changed shape`);
   const at = last.index + last[0].length;
   return `${source.slice(0, at)}\n${line}${source.slice(at)}`;
 };
@@ -153,7 +153,7 @@ export const pickIcon = (entries) =>
  * Read the site's own identity out of the recording the contributor just made.
  *
  * Asked over the network instead, a bookmaker answers a script with 403 or with
- * nothing at all — they are behind exactly the sort of thing that tells a robot
+ * nothing at all - they are behind exactly the sort of thing that tells a robot
  * from a browser. The recording was made by a real browser, signed in, and it
  * already holds the front page, the colour in its head and the icon a phone
  * would put on a home screen.
@@ -243,7 +243,7 @@ const main = async () => {
 
   const folder = join(BOOKMAKERS, id);
   if (existsSync(folder)) {
-    console.error(`${folder} already exists — nothing written.`);
+    console.error(`${folder} already exists - nothing written.`);
     process.exit(1);
   }
 
@@ -279,7 +279,7 @@ const main = async () => {
   }
 
   console.log(
-    `extension/src/bookmakers/${id}/ — registered in capture.ts, registry.ts and catalog.ts.\n` +
+    `extension/src/bookmakers/${id}/ - registered in capture.ts, registry.ts and catalog.ts.\n` +
       `It is a copy of ${from}/ answering to its own name, so it compiles and does the wrong thing.\n` +
       `Taken from the site itself: ${
         [
@@ -288,14 +288,14 @@ const main = async () => {
           found.logo && 'its icon',
         ]
           .filter(Boolean)
-          .join(', ') || 'nothing — it answered neither the recording nor a request'
+          .join(', ') || 'nothing - it answered neither the recording nor a request'
       }.\n` +
       'What it still needs, none of which can be guessed:\n' +
       `  __fixtures__/*.json  the site's own answers, from har/<site>.sanitized.har\n` +
       (found.logo ? '' : "  logo.png             the site's mark, ~128px square, transparent\n") +
-      `  bookmaker.json       its real hosts — sites, siteRanges, apiHosts\n` +
+      `  bookmaker.json       its real hosts - sites, siteRanges, apiHosts\n` +
       `  capture.ts           the host and fingerprint patterns, and where the session lives\n` +
-      `  adapter.ts           the endpoints, the paging and the bet shape — and the '${from}-' id prefix\n` +
+      `  adapter.ts           the endpoints, the paging and the bet shape - and the '${from}-' id prefix\n` +
       '  README.md            what is odd about this site\n' +
       'Then: pnpm lint && pnpm test && pnpm build',
   );

@@ -36,8 +36,8 @@ export const ACCOUNTS: readonly AccountInfo[] = CATALOG;
 
 /**
  * The bookmaker's mark with the background cut away. It is shipped from the
- * bookmaker's own folder — see the `bookmaker-logos` plugin in `vite.config.ts`
- * — so a new site brings its logo with it. Fetching each site's favicon instead
+ * bookmaker's own folder - see the `bookmaker-logos` plugin in `vite.config.ts`
+ * - so a new site brings its logo with it. Fetching each site's favicon instead
  * would drag its opaque plate along, and the sites are behind a proxy that does
  * not always answer.
  */
@@ -83,7 +83,7 @@ export interface SiteLink {
 
 /**
  * The mirror as the punter knows it. A bookmaker serves its sportsbook from a
- * subdomain of the mirror — `sports2.bah26.com` — and that is the host the
+ * subdomain of the mirror - `sports2.bah26.com` - and that is the host the
  * extension recorded, because that is where its pages are read from. Nobody
  * types it, and it lands on a section of the site rather than on the site.
  *
@@ -119,7 +119,7 @@ export const siteLinkOf = (
 /**
  * Sync state is owned by the background worker, so it is re-read whenever the
  * worker reports progress rather than kept in React state. One record per login,
- * keyed by account key — a site with two logins reports two of them.
+ * keyed by account key - a site with two logins reports two of them.
  */
 export const useSyncMetaByAccount = (): Record<string, SyncMeta> => {
   const [metas, setMetas] = useState<Record<string, SyncMeta>>({});
@@ -143,7 +143,7 @@ export const useSyncMetaByAccount = (): Record<string, SyncMeta> => {
 };
 
 /**
- * Everything stored, ignoring which accounts are switched off — an account that
+ * Everything stored, ignoring which accounts are switched off - an account that
  * is hidden from the views must still report an honest count on its own card.
  */
 const useStored = <T>(load: () => Promise<T>, initial: T): T => {
@@ -176,18 +176,24 @@ const useStored = <T>(load: () => Promise<T>, initial: T): T => {
 const NO_ACCOUNTS: KnownAccount[] = [];
 
 /**
- * Every login at every site — one entry per card on the accounts page. The
+ * Every login at every site - one entry per card on the accounts page. The
  * browser can only be signed in to one of them at a time, so the others are
  * shown from what they left behind rather than from a live session.
  */
 export const useAllKnownAccounts = (): KnownAccount[] =>
-  useStored(useCallback(() => getKnownAccounts(), []), NO_ACCOUNTS);
+  useStored(
+    useCallback(() => getKnownAccounts(), []),
+    NO_ACCOUNTS,
+  );
 
 const NO_BOOKMAKERS: Bookmaker[] = [];
 
 /** Bookmakers an open bet has ever been read from, however long ago. */
 export const useOpenBetsSeen = (): Bookmaker[] =>
-  useStored(useCallback(() => loadOpenBetsSeen(), []), NO_BOOKMAKERS);
+  useStored(
+    useCallback(() => loadOpenBetsSeen(), []),
+    NO_BOOKMAKERS,
+  );
 
 export interface StoredRecords {
   bets: Bet[];
@@ -230,16 +236,14 @@ const loadRecords = async (): Promise<StoredRecords> => {
     bonuses: convertedBonuses.converted,
     currency,
     unconvertible:
-      convertedBets.skipped.length +
-      convertedTxs.skipped.length +
-      convertedBonuses.skipped.length,
+      convertedBets.skipped.length + convertedTxs.skipped.length + convertedBonuses.skipped.length,
   };
 };
 
 export const useStoredRecords = (): StoredRecords => useStored(loadRecords, NO_RECORDS);
 
 /**
- * The whole history, minus the logins that are switched off — what a view falls
+ * The whole history, minus the logins that are switched off - what a view falls
  * back to when the chosen period holds too few bets to say anything. Read only
  * once `enabled` turns true: this is the one load whose cost grows with the
  * history, and most periods never need it.
@@ -305,7 +309,7 @@ interface AccountVisibility {
 }
 
 /**
- * Which logins feed the dashboard. Hiding one only filters the views — the bets
+ * Which logins feed the dashboard. Hiding one only filters the views - the bets
  * stay in the database and come back the moment it is switched on again.
  */
 export const useAccountVisibility = (): AccountVisibility => {

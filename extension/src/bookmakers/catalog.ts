@@ -1,5 +1,5 @@
 /**
- * What each bookmaker is called and how it is drawn — the part the dashboard
+ * What each bookmaker is called and how it is drawn - the part the dashboard
  * needs and the background worker does not.
  *
  * ── Adding a bookmaker: one import and one array entry below. ──
@@ -22,7 +22,7 @@ export interface BookmakerMeta {
   /** The plate the logo is drawn on, taken from the bookmaker's own icon. */
   brand: string;
   /**
-   * The bookmaker's ink, for anything that has to be drawn in its colour — chart
+   * The bookmaker's ink, for anything that has to be drawn in its colour - chart
    * lines above all. Deliberately not `brand`: those are a near-white and a
    * near-black plate, which vanish against one theme or the other.
    */

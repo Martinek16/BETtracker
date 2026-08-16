@@ -34,7 +34,7 @@ import { cn } from '@/lib/utils';
  */
 
 /**
- * The sport's own ball — or bat, wheel or controller. Matched on a word inside
+ * The sport's own ball - or bat, wheel or controller. Matched on a word inside
  * the book's own name for the sport, so "Table Tennis" and "Football (women)"
  * both land. Order counts: the narrower name has to be tried before the word it
  * contains, or table tennis reads as tennis. A sport nobody mapped takes the
@@ -77,12 +77,11 @@ const SPORT_ICON: Record<string, SportIcon> = {
   biathlon: Snowflake,
 };
 
-
 /**
  * The glyph a fixture in this sport is read by; a trophy when it is unknown.
  * Matched on the sport's one name rather than the book's own, so a slip from a
  * book that says "Soccer" is drawn with the same ball as one that says
- * "Football" — and that book's "Football" gets the American one it means.
+ * "Football" - and that book's "Football" gets the American one it means.
  */
 export const sportIconFor = (sport: string | null, bookmaker?: Bookmaker): SportIcon => {
   const canonical = canonicalSport(sport, bookmaker);
@@ -104,7 +103,7 @@ export const statForLeg = (leg: BetLeg, stats: LiveScore[] | undefined): LiveSco
   return wanted ?? stats.find((s) => s.kind === undefined) ?? stats[0];
 };
 
-/** The result of what a pick backed — always on the right of the pick's own row. */
+/** The result of what a pick backed - always on the right of the pick's own row. */
 export const Stat = ({ score }: { score: LiveScore | undefined }): JSX.Element | null => {
   if (score === undefined) return null;
   return (
@@ -133,7 +132,7 @@ export const liveOf = (stats: LiveScore[] | undefined): LiveScore | undefined =>
 /**
  * How far the match is, in the figure that sport is followed by: a minute for
  * football, the set for tennis, the quarter or period for the rest. Never
- * counted from kickoff — only what the book itself said.
+ * counted from kickoff - only what the book itself said.
  */
 const clockOf = (live: LiveScore | undefined, sport: string | null): string | undefined => {
   // A fixture the book still calls not started says nothing a kickoff does not.
@@ -145,7 +144,7 @@ const clockOf = (live: LiveScore | undefined, sport: string | null): string | un
  * Once a match is running, when it started stops being the useful number, and
  * once it has been played out neither is: the row falls silent and the pick's
  * own dot says how it went. A fixture called off keeps its kickoff, struck
- * through — that time is the reason the rest of the slip now hangs where it does.
+ * through - that time is the reason the rest of the slip now hangs where it does.
  */
 export const LegClock = ({
   leg,

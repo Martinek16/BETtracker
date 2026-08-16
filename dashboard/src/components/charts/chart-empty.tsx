@@ -4,7 +4,7 @@ interface ChartEmptyProps {
   icon?: LucideIcon;
   /**
    * True when nothing has ever been imported, so the chart is empty because no
-   * account is connected — not because the chosen window happens to be quiet.
+   * account is connected - not because the chosen window happens to be quiet.
    * The two read the same on screen but need opposite next steps.
    */
   noSource?: boolean;
@@ -12,7 +12,12 @@ interface ChartEmptyProps {
   hint?: string;
 }
 
-export const ChartEmpty = ({ icon, noSource = false, title, hint }: ChartEmptyProps): JSX.Element => {
+export const ChartEmpty = ({
+  icon,
+  noSource = false,
+  title,
+  hint,
+}: ChartEmptyProps): JSX.Element => {
   const Icon = icon ?? (noSource ? PlugZap : CalendarOff);
 
   return (

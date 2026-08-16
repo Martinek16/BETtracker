@@ -4,7 +4,7 @@ This is the whole process, start to finish. It takes a few minutes, most of them
 spent waiting on the tool rather than on you.
 
 You do not need to know how the extension works. You do need an account at the
-bookmaker — support is written from a recording of a real signed-in session, and
+bookmaker - support is written from a recording of a real signed-in session, and
 there is no way to fake one.
 
 > [!TIP]
@@ -14,14 +14,14 @@ there is no way to fake one.
 > ```
 > Add the bookmaker https://www.yourbookmaker.com to BETtracker.
 >
-> The project is https://github.com/Martinek16/BETtracker — clone it,
+> The project is https://github.com/Martinek16/BETtracker - clone it,
 > read AGENTS.md, and follow it. Ask me for whatever you cannot get
 > yourself.
 > ```
 >
 > It will set the project up and then stop and ask you to record your history,
 > because only you can sign in. Steps 1, 2 and 6 below stay yours; it does the
-> rest. Read them anyway — knowing what it is doing is what lets you tell when
+> rest. Read them anyway - knowing what it is doing is what lets you tell when
 > it has got something wrong.
 
 ## Before you start
@@ -46,7 +46,7 @@ cannot load a browser extension into a Codespace.)
 Then you are about to have two. A bookmaker only exists in a build that contains
 it, so the copy you installed cannot read your new site until the change is
 released. What you build here is a second copy that can, and you run it
-alongside — or instead of — the one you have.
+alongside - or instead of - the one you have.
 
 They do not share anything. Your existing copy keeps its history and is not
 touched, and whatever the new one syncs while you are testing stays in the new
@@ -68,7 +68,7 @@ So you make those requests yourself, with the browser writing them down.
    recorded so far.
 4. Now **click through your account**, slowly, giving each page a second to
    finish loading:
-   - your settled bet history — and **page back several pages**, this is how
+   - your settled bet history - and **page back several pages**, this is how
      paging is discovered
    - your open bets
    - your balance, wherever it is shown
@@ -77,7 +77,7 @@ So you make those requests yourself, with the browser writing them down.
 5. Right-click anywhere in the request list → **Save all as HAR with content**,
    and save it into the project's `har/` folder, which `pnpm install` made for
    you. (Downloads works too, but the folder is where the next steps look
-   first — and where the site's own name, colour and icon are read from.)
+   first - and where the site's own name, colour and icon are read from.)
 
 > **The file you just saved is dangerous.** It contains your live session
 > cookies, your name, your account number and every deposit you have made.
@@ -105,7 +105,7 @@ unusual? `pnpm sanitize-har path/to/that.har` instead.)
 
 It removes cookies and tokens, replaces your name, email and account number with
 stand-ins, and throws away everything that is not an API response. Amounts and
-odds stay — they are what the code has to be tested against, and on their own
+odds stay - they are what the code has to be tested against, and on their own
 they identify nobody.
 
 It refuses to write the file at all if something in it still looks like a
@@ -124,12 +124,12 @@ write them down. Everything in the folder falls out of them.
 - **Hosts.** Which host serves the API. Whether the site renumbers its domains
   (`site42.com`), because that becomes a `siteRanges` block instead of a list.
 - **Authentication.** Which request headers carry the session. Cookie-only
-  counts — say so, because then no header is captured. If the money history
+  counts - say so, because then no header is captured. If the money history
   lives on a second host with a second credential, note both.
 - **A fingerprint.** One URL pattern that appears when, and only when, you are
   on this bookmaker. It is how a page is recognised.
 - **Endpoints.** Settled bets, open bets, balance, deposits and withdrawals,
-  bonuses. Note which exist — several are optional.
+  bonuses. Note which exist - several are optional.
 - **Paging.** Timestamp cursor, page number, offset, or a continuation token.
   Each site pages its own way; do not force it to look like another's.
 - **The bet shape.** How a selection, a market, odds, stake, return and status
@@ -144,7 +144,7 @@ pnpm new-bookmaker yoursite yoursite.com "Your Site"
 That writes `extension/src/bookmakers/yoursite/` as a copy of `stake/` under
 its own name, and adds the three lines that register it. `yoursite` is the id:
 lowercase, hyphens instead of spaces. It becomes the folder name, the JSON
-`id`, the logo filename and the storage key, and they all have to agree —
+`id`, the logo filename and the storage key, and they all have to agree -
 which is the whole reason the command writes them rather than you.
 `bet365`, `william-hill`, `bwin`.
 
@@ -156,7 +156,7 @@ folder against the sanitised recording and replace Stake's answers with your
 site's.
 
 Stake is one endpoint and one credential. If your site keeps its banking
-history behind a second session, read `bet-at-home/` as well — it does that.
+history behind a second session, read `bet-at-home/` as well - it does that.
 
 [`extension/src/bookmakers/README.md`](../extension/src/bookmakers/README.md)
 is the contract: what each file owes, what `capture.ts` may import, and the
@@ -186,17 +186,17 @@ pnpm build
 All three, all green. Four tests exist specifically to catch what is easy to get
 wrong here:
 
-- **`plugin.test.ts`** — your folder is complete, and registered in all three
+- **`plugin.test.ts`** - your folder is complete, and registered in all three
   collectors. Forget one and the extension does nothing, silently.
-- **`manifest.test.ts`** — the addresses you declared match the ones your
+- **`manifest.test.ts`** - the addresses you declared match the ones your
   capture rule recognises. Get these out of step and the extension either is not
   injected where it should be, or is injected and then does nothing.
-- **`conformance.test.ts`** — your bets obey the rules every site's bets obey.
+- **`conformance.test.ts`** - your bets obey the rules every site's bets obey.
   It reads your folder's `samples.ts`, so a folder without that file is never
   checked at all. Two of its rules exist for the failure that wastes the most
   time: the parse succeeds, the totals look right, and every breakdown on screen
   is a list of blanks, because `sport`, `event` or `selection` came through null.
-- **`privacy.test.ts`** — your folder talks to the bookmaker and to nothing else.
+- **`privacy.test.ts`** - your folder talks to the bookmaker and to nothing else.
 
 If a test fails, fix the folder. Never the test. They are shared files, and CI
 rejects a pull request that changes one.
@@ -215,10 +215,10 @@ things to confirm with your own eyes:
 - **No `.har` file.** Not the raw one, not the sanitised one.
 - **Nothing personal left in the fixtures.** Open each JSON file under
   `__fixtures__/` and read it. Your name, your email, your account number, your
-  address — none of it should be there.
+  address - none of it should be there.
 - **No real bets either.** The stakes, odds, returns, balances and dates in the
-  fixtures should be invented ones. They exist to show the shape of a response —
-  which fields the site sends and in what format — and that works just as well
+  fixtures should be invented ones. They exist to show the shape of a response -
+  which fields the site sends and in what format - and that works just as well
   with made-up figures. The site's own wording stays: its sport names, market
   names and status strings are the part the code is written against. Your actual
   numbers get checked in step 6, on your own machine, and stay there.
@@ -242,7 +242,7 @@ asks. Wait for the sync to finish.
 
 **Read the report first.** In the extension: **Options → Accounts → Add a
 bookmaker**. A site added to your own copy is listed there with one line per
-thing it has to have proved — bets read, every bet naming a sport, a match and
+thing it has to have proved - bets read, every bet naming a sport, a match and
 a selection, won/lost/void all seen, accumulators carrying their legs, open
 bets, the balance, money in and out, bonuses, and a sync without an error. It
 reads that off what was actually stored, so it finds in a second the failure
@@ -250,7 +250,7 @@ that otherwise costs a day: the sync says done, the total looks right, and
 every breakdown is blank because `sport` came through null.
 
 A line reading *untested* is not a failure. It means your account has never had
-one of those — no accumulator, no bonus — so nothing has been proved either
+one of those - no accumulator, no bonus - so nothing has been proved either
 way. Send the wrong and untested lines to the tool; that is the whole of the
 bug report it needs.
 
@@ -266,7 +266,7 @@ nothing to copy anywhere.
 > [!IMPORTANT]
 > **Turn off the store copy while you do this.** A bookmaker only exists in a
 > build that contains it, so the copy from Microsoft Edge Add&#8209;ons cannot see
-> your new site — it gets it when the change is released. Leaving both switched
+> your new site - it gets it when the change is released. Leaving both switched
 > on gives you two extensions reading the same accounts into two separate
 > databases, and the figures you are trying to check come from whichever one you
 > happen to have open.
@@ -279,7 +279,7 @@ nothing to copy anywhere.
 
 **Bets**
 
-- [ ] The oldest bet you have is there — paging reached the end, not page one
+- [ ] The oldest bet you have is there - paging reached the end, not page one
 - [ ] Every row names a sport, a match and a selection. No blanks, no "—"
 - [ ] Stake, odds and return match the bookmaker's own figures
 - [ ] Won, lost, void and cashed-out bets each read as what they are
@@ -289,7 +289,7 @@ nothing to copy anywhere.
 
 **Analytics**
 
-- [ ] Every breakdown card has bars in it — by sport, by league, by market
+- [ ] Every breakdown card has bars in it - by sport, by league, by market
 - [ ] None of them is one big bucket named "Unknown" or empty
 
 **Cashflow and Bonuses**
@@ -303,7 +303,7 @@ nothing to copy anywhere.
 
 **And then**
 
-- [ ] Place or settle nothing — just sync a second time. Nothing duplicates, and
+- [ ] Place or settle nothing - just sync a second time. Nothing duplicates, and
       the counts stay the same
 - [ ] Sign out at the bookmaker and sync again. You are asked to sign in, rather
       than shown a silent zero

@@ -74,7 +74,7 @@ const send = (message: ToBackground): void => {
       /* background may be asleep; it wakes on next event */
     });
   } catch {
-    // Orphaned after an extension reload — stop trying.
+    // Orphaned after an extension reload - stop trying.
     teardown();
   }
 };

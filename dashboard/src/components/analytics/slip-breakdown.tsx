@@ -57,11 +57,11 @@ const RECENT = 14;
 const COL = {
   lead: 'w-4 shrink-0',
   rank: 'w-8 shrink-0',
-  /* Slip groups are short words — 'Treble', 'Monday', '1.50–2.00' — so the
+  /* Slip groups are short words - 'Treble', 'Monday', '1.50–2.00' - so the
      column is sized for them and the slack goes to the bar, which uses it. */
   group: 'w-44 min-w-0 shrink-0',
   bar: 'hidden flex-1 lg:block',
-  /* The column takes its share of the slack, the bar sits centred inside it —
+  /* The column takes its share of the slack, the bar sits centred inside it -
      filling the column edge to edge would park it against Staked and read as
      that column's own. */
   barInner: 'mx-auto w-full max-w-[22rem]',
@@ -173,7 +173,9 @@ const MatchRows = ({ bets, currency }: { bets: readonly Bet[]; currency: string 
               className="w-16 shrink-0 text-center text-[11px] font-medium tabular-nums"
               style={{
                 color:
-                  bet.status === 'pending' ? undefined : `hsl(var(--${pl >= 0 ? 'profit' : 'loss'}))`,
+                  bet.status === 'pending'
+                    ? undefined
+                    : `hsl(var(--${pl >= 0 ? 'profit' : 'loss'}))`,
               }}
             >
               {bet.status === 'pending' ? '—' : formatMoney(pl, currency)}
@@ -243,7 +245,10 @@ const GroupRow = ({
   currency: string;
 }): JSX.Element => {
   const { oddsFormat } = useDashboard();
-  const [open, setOpen] = usePersistedState(`analytics.slips.${dimension}.open.${group.key}`, false);
+  const [open, setOpen] = usePersistedState(
+    `analytics.slips.${dimension}.open.${group.key}`,
+    false,
+  );
   const matches = useMemo(
     () => (open ? bets.filter((b) => betMatchesGroup(b, dimension, group.key)) : []),
     [open, bets, dimension, group.key],
@@ -261,9 +266,15 @@ const GroupRow = ({
         className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/20"
       >
         <ChevronRight
-          className={cn(COL.lead, 'h-3.5 text-muted-foreground transition-transform', open && 'rotate-90')}
+          className={cn(
+            COL.lead,
+            'h-3.5 text-muted-foreground transition-transform',
+            open && 'rotate-90',
+          )}
         />
-        <span className={cn(COL.rank, 'text-[10px] font-medium tabular-nums text-muted-foreground')}>
+        <span
+          className={cn(COL.rank, 'text-[10px] font-medium tabular-nums text-muted-foreground')}
+        >
           {rank}.
         </span>
         <span className={cn(COL.group, 'flex min-w-0 items-center gap-2')}>
@@ -280,14 +291,20 @@ const GroupRow = ({
             )}
           </div>
         </div>
-        <span className={cn(COL.staked, 'text-center text-[11px] tabular-nums text-muted-foreground')}>
+        <span
+          className={cn(COL.staked, 'text-center text-[11px] tabular-nums text-muted-foreground')}
+        >
           {formatMoney(group.staked, currency)}
         </span>
-        <span className={cn(COL.count, 'text-center text-[11px] tabular-nums text-muted-foreground')}>
+        <span
+          className={cn(COL.count, 'text-center text-[11px] tabular-nums text-muted-foreground')}
+        >
           {group.bets}
         </span>
         {showOdds ? (
-          <span className={cn(COL.odds, 'text-center text-[11px] tabular-nums text-muted-foreground')}>
+          <span
+            className={cn(COL.odds, 'text-center text-[11px] tabular-nums text-muted-foreground')}
+          >
             @{formatOdds(group.averageOdds, oddsFormat)}
           </span>
         ) : null}
@@ -365,7 +382,7 @@ export const SlipBreakdown = ({
     const staked = resolvedStake(bets);
     const globalYield = staked === 0 ? 0 : (totalProfit(bets) / staked) * 100;
     // Ranked by yield shrunk toward the book average, so a lucky n=1 segment
-    // cannot head the table. The displayed ROI stays raw — shrinking it would lie.
+    // cannot head the table. The displayed ROI stays raw - shrinking it would lie.
     return groupBy(bets, dimension)
       .filter((g) => g.bets > 0)
       .map((g) => ({ ...g, ranked: shrunkYield(g.bets, g.roi, globalYield) }));
@@ -373,7 +390,8 @@ export const SlipBreakdown = ({
 
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = q === '' ? allGroups : allGroups.filter((g) => g.key.toLowerCase().includes(q));
+    const filtered =
+      q === '' ? allGroups : allGroups.filter((g) => g.key.toLowerCase().includes(q));
     return [...filtered].sort((a, b) => {
       const diff =
         sortKey === 'key' ? compareGroupKeys(dimension, a.key, b.key) : a[sortKey] - b[sortKey];
@@ -425,15 +443,57 @@ export const SlipBreakdown = ({
         >
           {strip === 'profit' ? 'Loss / profit' : `Last ${RECENT} results`}
         </button>
-        <SortHeaderCell label="Staked" sortKey="staked" numeric widthClass={COL.staked} {...header('staked')} />
-        <SortHeaderCell label="Slips" sortKey="bets" numeric widthClass={COL.count} {...header('bets')} />
+        <SortHeaderCell
+          label="Staked"
+          sortKey="staked"
+          numeric
+          widthClass={COL.staked}
+          {...header('staked')}
+        />
+        <SortHeaderCell
+          label="Slips"
+          sortKey="bets"
+          numeric
+          widthClass={COL.count}
+          {...header('bets')}
+        />
         {showOdds ? (
-          <SortHeaderCell label="Odds" sortKey="averageOdds" numeric widthClass={COL.odds} {...header('averageOdds')} />
+          <SortHeaderCell
+            label="Odds"
+            sortKey="averageOdds"
+            numeric
+            widthClass={COL.odds}
+            {...header('averageOdds')}
+          />
         ) : null}
-        <SortHeaderCell label="Won" sortKey="winRate" numeric widthClass={COL.wr} {...header('winRate')} />
-        <SortHeaderCell label="Return" sortKey="roi" numeric widthClass={COL.roi} {...header('roi')} />
-        <SortHeaderCell label="Profit" sortKey="profit" numeric widthClass={COL.pl} {...header('profit')} />
-        <SortHeaderCell label="Units" sortKey="unitsPl" numeric widthClass={COL.units} {...header('unitsPl')} />
+        <SortHeaderCell
+          label="Won"
+          sortKey="winRate"
+          numeric
+          widthClass={COL.wr}
+          {...header('winRate')}
+        />
+        <SortHeaderCell
+          label="Return"
+          sortKey="roi"
+          numeric
+          widthClass={COL.roi}
+          {...header('roi')}
+        />
+        <SortHeaderCell
+          label="Profit"
+          sortKey="profit"
+          numeric
+          widthClass={COL.pl}
+          {...header('profit')}
+        />
+        <SortHeaderCell
+          label="Units"
+          sortKey="unitsPl"
+          numeric
+          widthClass={COL.units}
+          {...header('unitsPl')}
+        />
       </div>
 
       {/* The list always scrolls, never auto: one short enough to lose its

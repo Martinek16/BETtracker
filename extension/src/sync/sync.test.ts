@@ -136,7 +136,7 @@ describe('syncTransactions window walk', () => {
     const fetchMock = stubFetch();
     await syncTransactions(creds, account, 240);
 
-    // One empty year per type, then give up — not a grind back to 2005.
+    // One empty year per type, then give up - not a grind back to 2005.
     expect(fetchMock.mock.calls.length).toBe(2);
   });
 });
@@ -185,7 +185,7 @@ describe('authedJson relayed through a page', () => {
 
   it('separates having no tab to ask from a refused session', async () => {
     // Dropping the token for this reloaded the site to get a new one, which was
-    // refused the same way on the next run — the reconnect loop.
+    // refused the same way on the next run - the reconnect loop.
     vi.stubGlobal('chrome', { tabs: { query: () => Promise.resolve([]) } });
     await expect(authedJson('https://stake.com/_api/graphql', {}, true)).rejects.toBeInstanceOf(
       RelayUnavailableError,
@@ -203,7 +203,7 @@ describe('authedJson on a refused request', () => {
 
   it('backs the bookmaker off on a gateway failure instead of retrying it', async () => {
     // 504 means the site cannot answer at all, so the next request is no more
-    // likely to work — retrying at poll speed only deepened the hole.
+    // likely to work - retrying at poll speed only deepened the hole.
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({ ok: false, status: 504, text: async () => MAINTENANCE }),
@@ -216,8 +216,6 @@ describe('authedJson on a refused request', () => {
     // The page's title, not the first 300 characters of its embedded base64
     // font: that was unreadable, and slightly different every time, which also
     // stopped the log folding the repeats into one line.
-    expect((err as Error).message).toBe(
-      'HTTP 504 for https://stake.com/_api/graphql: Maintenance',
-    );
+    expect((err as Error).message).toBe('HTTP 504 for https://stake.com/_api/graphql: Maintenance');
   });
 });

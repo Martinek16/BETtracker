@@ -29,7 +29,7 @@ bookmakers/
 the folder did not declare in its `bookmaker.json`, or if it uses one of the
 calls that can move data without showing a request: `sendBeacon`, `WebSocket`,
 `XMLHttpRequest`, `new Image`, `eval`, an injected `<script>`, or
-`chrome.storage.sync` — which is not local storage, it copies to the browser
+`chrome.storage.sync` - which is not local storage, it copies to the browser
 account.
 
 Both the test and the manifest read the same `bookmaker.json`, so an undeclared
@@ -61,7 +61,7 @@ that have gone out to everyone, so the app can draw a site somebody added to
 their own copy apart from one that has been through review. A contribution never
 touches it; a release does.
 
-Forget one and `plugin.test.ts` fails by name — which is the point. An
+Forget one and `plugin.test.ts` fails by name - which is the point. An
 unregistered capture rule means the page is read and nothing happens; a missing
 catalogue entry means a bookmaker with no name and no colour on screen. Both are
 silent at runtime, so they are caught in CI instead.
@@ -70,7 +70,7 @@ silent at runtime, so they are caught in CI instead.
 
 The capture rules are loaded by the **MAIN-world inject script**, which runs
 inside the page's own JavaScript context. It must never transitively import an
-adapter — that would drag the whole sync engine into every page you visit.
+adapter - that would drag the whole sync engine into every page you visit.
 
 `capture-rule.ts` holds the contract both sides agree on and imports nothing.
 Keep it that way.
@@ -82,7 +82,7 @@ Keep it that way.
 | `bookmaker.json` | `id` identical to the folder name. Everything keys off it.                 |
 | `capture.ts`     | Export `rule: CaptureRule`. Match hosts and fingerprint the API calls.     |
 | `adapter.ts`     | Export a `BookmakerAdapter`. See `../types.ts` for the interface.          |
-| `samples.ts`     | Export `samples: Samples` — the folder's own parsed bets. See `../samples.ts`.|
+| `samples.ts`     | Export `samples: Samples` - the folder's own parsed bets. See `../samples.ts`.|
 | `__fixtures__/`  | At least one sanitised `.json`, so the parser has something to be proven on.|
 | `logo.png`       | Served at `logos/<id>.png` by the Vite plugin. No path to register.         |
 
@@ -102,7 +102,7 @@ into is one a capture rule actually recognises.
 ## Adding one
 
 Capture a HAR of your own bet history, sanitise it, then copy `stake/` and work
-through it against the recording — see
+through it against the recording - see
 [docs/ADD_A_BOOKMAKER.md](../../../docs/ADD_A_BOOKMAKER.md).
 
 **Never commit a raw `.har` file.** It contains live session tokens and your own

@@ -14,7 +14,7 @@ export interface Finding {
 
 /** Below this the card says the read is early: the checks still run. */
 const MIN_BETS = 20;
-/** A single outlier needs far fewer slips than a habit — it is one fact, not a rate. */
+/** A single outlier needs far fewer slips than a habit - it is one fact, not a rate. */
 const SPIKE_MIN_BETS = 5;
 /** Share of the period's damage one slip or one day has to carry to be its story. */
 const DOMINANT_SHARE = 30;
@@ -71,7 +71,7 @@ const repeatedPicks = (bets: readonly Bet[]): { picks: number; slips: number } =
   };
 };
 
-/** Deposits made within a day of losing money — the classic top-up after a bad run. */
+/** Deposits made within a day of losing money - the classic top-up after a bad run. */
 const depositsAfterLoss = (bets: readonly Bet[], transactions: readonly Transaction[]): number => {
   const settled = decisiveBets(bets).map((b) => ({
     at: Date.parse(resolutionDate(b)),
@@ -88,7 +88,7 @@ const depositsAfterLoss = (bets: readonly Bet[], transactions: readonly Transact
 /**
  * The outliers of a period, which a rate would bury. A single slip or a single
  * day can be most of what happened, and averaging it away reads as a habit when
- * it was one event — the opposite of what the reader needs to know.
+ * it was one event - the opposite of what the reader needs to know.
  */
 const spikes = (bets: readonly Bet[], money: (amount: number) => string): Finding[] => {
   const decisive = decisiveBets(bets);
@@ -106,7 +106,7 @@ const spikes = (bets: readonly Bet[], money: (amount: number) => string): Findin
       id: 'one-slip-loss',
       kind: 'problem',
       title: 'One slip carried the damage',
-      detail: `${money(-worst)} on a single slip — ${pct(share(-worst, lost))} of everything you lost here.`,
+      detail: `${money(-worst)} on a single slip - ${pct(share(-worst, lost))} of everything you lost here.`,
     });
   }
 
@@ -158,7 +158,7 @@ export const findings = (
       id: 'early',
       kind: 'good',
       title: 'Early read',
-      detail: `${String(decisive.length)} settled slips so far — every figure below still moves a lot.`,
+      detail: `${String(decisive.length)} settled slips so far - every figure below still moves a lot.`,
     });
   }
 
@@ -218,7 +218,7 @@ export const findings = (
       id: 'stake-spikes',
       kind: 'problem',
       title: 'Your stake jumps',
-      detail: `Usual ${money(usual)}, biggest ${money(biggest)} — ${(biggest / usual).toFixed(1)}× that.`,
+      detail: `Usual ${money(usual)}, biggest ${money(biggest)} - ${(biggest / usual).toFixed(1)}× that.`,
     });
   } else if (usual > 0) {
     out.push({

@@ -25,7 +25,7 @@ docs/**  *.md
 ```
 
 Anything else fails `.github/workflows/guard.yml` before a human reads it. If the
-site cannot work without a core change, stop and say so — that is a Discussion,
+site cannot work without a core change, stop and say so - that is a Discussion,
 not a workaround.
 
 ## Read this before you write anything
@@ -46,8 +46,8 @@ and there is no other way to it.
 Everything else, including the logo, you do yourself. Do not hand them a list of
 chores. `pnpm new-bookmaker` already lifts the site's name, its brand colour and
 its icon out of the recording, so look at what it wrote before you go looking:
-the site published all three to their browser. If it found no icon — plenty of
-sites ship only an SVG — find the mark yourself, save it as `logo.png` in the
+the site published all three to their browser. If it found no icon - plenty of
+sites ship only an SVG - find the mark yourself, save it as `logo.png` in the
 folder, around 128px square with the background removed, and show them the
 result. Ask only after you have tried.
 
@@ -55,17 +55,17 @@ Ask for the recording like this, in these words, because every extra
 instruction is a chance to lose somebody:
 
 > Sign in to the bookmaker in your browser. Press **F12**, open the **Network**
-> tab, tick **Preserve log**. Now click slowly through your settled bet history —
-> page back several pages — then your open bets, your balance, and your deposits
+> tab, tick **Preserve log**. Now click slowly through your settled bet history -
+> page back several pages - then your open bets, your balance, and your deposits
 > and withdrawals. Right-click the list of requests, choose **Save all as HAR
 > with content**, and save it into the project's `har/` folder. Tell me when it
-> is saved — I do the rest.
+> is saved - I do the rest.
 
 `har/` is made by `pnpm install`, so it is already there; open it for them.
-Downloads works too — the sanitiser looks in both — but a recording in `har/` is
+Downloads works too - the sanitiser looks in both - but a recording in `har/` is
 also where the scaffold reads the site's name, colour and icon from.
 
-Adapt only the site-specific part — where *that* bookmaker keeps its bet
+Adapt only the site-specific part - where *that* bookmaker keeps its bet
 history, if you know. Then run the sanitiser yourself:
 
 ```bash
@@ -96,7 +96,7 @@ Three places this matters, and they are the three places people get stuck:
 - **After cloning**, so they can see where the project landed.
 - **`extension/dist`**, when they are about to drag it into `chrome://extensions`.
   Open the folder, then tell them what to click.
-- **Anything you want them to look at** — a fixture you want checked, a logo you
+- **Anything you want them to look at** - a fixture you want checked, a logo you
   found, the sanitised recording.
 
 Say what the folder is and what they do with it. Opening it silently is worse
@@ -107,7 +107,7 @@ than not opening it.
 0. **Get the project onto their machine**, if somebody handed you a URL rather
    than a checkout. `git clone https://github.com/Martinek16/BETtracker`, then
    `corepack enable && pnpm install` inside it. Clone it where they can find it
-   again — they will be loading a build out of it in step 7 and it is theirs to
+   again - they will be loading a build out of it in step 7 and it is theirs to
    keep, not a scratch folder.
 
    **Say at this point that they will end up with a second copy of the
@@ -124,7 +124,7 @@ than not opening it.
 2. **Read** `har/<site>.sanitized.har` and work out the six things in
    [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md#3-write-the-folder):
    hosts, authentication, fingerprint, endpoints, paging, bet shape.
-3. **Read** `extension/src/bookmakers/stake/` end to end — one endpoint, one
+3. **Read** `extension/src/bookmakers/stake/` end to end - one endpoint, one
    session. If the site's money history sits behind a second login, read
    `bet-at-home/` instead, which does that.
 4. **Scaffold** the folder and register it in one command:
@@ -136,13 +136,13 @@ than not opening it.
    It writes `extension/src/bookmakers/<id>/` as a copy of `stake/` renamed to
    its own id, writes a fresh `bookmaker.json`, and adds the three collector
    lines. Name, brand colour and `logo.png` come out of the recording in `har/`
-   — the front page the browser stored carries all three — and it says which of
+   - the front page the browser stored carries all three - and it says which of
    them it found. Then rewrite the folder against the recording: the endpoints,
    the paging, the bet shape, the host patterns and the `stake-` id prefix.
-5. **Run the checks** below until they pass. Never edit a test to make it pass —
+5. **Run the checks** below until they pass. Never edit a test to make it pass -
    the shared tests are protected paths and CI rejects a diff that touches one.
 6. **Hand it back to them to load.** Have them run `pnpm test && pnpm build`
-   themselves — it is the one moment they see the site pass on their own
+   themselves - it is the one moment they see the site pass on their own
    machine, and the build refuses outright if the folder was never registered.
    Then open `extension/dist` in their file manager and tell them:
    `chrome://extensions` → Developer mode → **Load unpacked** → pick the folder
@@ -153,7 +153,7 @@ than not opening it.
    it when a release ships.
 7. **Send them to the report.** In the extension: **Options → Accounts → Add a
    bookmaker**. A site added to a copy of the project is listed there with one
-   line per thing it has to have proved — bets read, every bet naming a sport,
+   line per thing it has to have proved - bets read, every bet naming a sport,
    a match and a selection, won/lost/void all seen, accumulators carrying their
    legs, open bets, balance, money in and out, bonuses, and a sync without an
    error. A line reading *untested* means their account has never had one of
@@ -175,7 +175,7 @@ fails if any of them disagree.
 | `adapter.ts` | `export const <camelCaseId>: BookmakerAdapter`, with `id: '<id>'` |
 | `samples.ts` | `export const samples: Samples`, built from the fixtures through your own adapter |
 | `adapter.test.ts` | Parses the fixtures and asserts the normalised output |
-| `__fixtures__/*.json` | The shape of the site's answers, not the contributor's history — see below |
+| `__fixtures__/*.json` | The shape of the site's answers, not the contributor's history - see below |
 | `logo.png` | The site's mark, ~128px square, transparent background. Yours to find |
 | `README.md` | This site's quirks, and how to refresh the fixtures |
 
@@ -198,21 +198,21 @@ export const CATALOG = [betAtHome, stake, mySite];
 
 Three lines, not four. `released.ts` lists the sites that have shipped to
 everyone, and a site you add has not. The app draws it apart from the released
-ones and says so — that is accurate, not a warning, and it is how its owner
+ones and says so - that is accurate, not a warning, and it is how its owner
 knows nobody but them has checked its figures. Adding your site there is also a
 protected path, so CI fails the pull request.
 
 The interfaces you are implementing are `BookmakerAdapter` in
 `extension/src/bookmakers/types.ts` and `CaptureRule` in
 `extension/src/bookmakers/capture-rule.ts`. Read them; they are commented.
-Reusable paging and dedup helpers are in `extension/src/sync/sync.ts` — use
+Reusable paging and dedup helpers are in `extension/src/sync/sync.ts` - use
 them rather than reimplementing them in the adapter.
 
 ## The fixtures describe the site, not the person
 
 The recording is the contributor's own betting history. What gets committed must
-be the site's **answer shape** — which keys it sends, in what types, in what
-formats, with which values a field can take — and none of what that particular
+be the site's **answer shape** - which keys it sends, in what types, in what
+formats, with which values a field can take - and none of what that particular
 account did.
 
 So when you lift a record out of the recording, rewrite its content:
@@ -225,7 +225,7 @@ So when you lift a record out of the recording, rewrite its content:
 - **Replace every id** with a short sequential one. Keep two records pointing at
   the same account pointing at the same stand-in, because that link is a thing
   the adapter reads.
-- **Keep the site's own vocabulary exactly** — its sport names, market names,
+- **Keep the site's own vocabulary exactly** - its sport names, market names,
   status strings, currency codes, error codes. That is the part an adapter is
   written against, and changing it breaks the fixture's whole purpose.
 - **Cut the volume.** Three or four records per endpoint, chosen to cover the
@@ -250,7 +250,7 @@ to refresh the fixtures. It does not say what the contributor bet on.
 `conformance.test.ts` holds all of these, for every site. They are the
 assumptions the totals, the graphs and the database already make.
 
-- `betId` unique across **every** bookmaker, not just this one — bets are keyed
+- `betId` unique across **every** bookmaker, not just this one - bets are keyed
   on it with no site in the key. Short integer ids need a prefix.
 - `stake > 0`, `odds >= 1` (an all-void slip prices at 1.0), `actualReturn >= 0`,
   and all of `stake`, `odds`, `potentialReturn`, `actualReturn` finite numbers.
@@ -305,17 +305,17 @@ pnpm build
 Then confirm with `git status` that nothing outside the folder and the three
 collectors changed.
 
-What the tests are for: `plugin.test.ts` — the folder is complete and
-registered. `manifest.test.ts` — every address the extension asks to be injected
-into is one a capture rule recognises. `conformance.test.ts` — your `samples.ts`
-obeys the rules every site obeys. `privacy.test.ts` — the folder talks to its
+What the tests are for: `plugin.test.ts` - the folder is complete and
+registered. `manifest.test.ts` - every address the extension asks to be injected
+into is one a capture rule recognises. `conformance.test.ts` - your `samples.ts`
+obeys the rules every site obeys. `privacy.test.ts` - the folder talks to its
 bookmaker and nothing else.
 
 ## What you cannot conclude
 
 Passing tests mean the parser agrees with a recording. They do not mean the
 dashboard shows anything. Only loading the extension and syncing a real account
-proves that, and only the contributor can do it — step 6 of
+proves that, and only the contributor can do it - step 6 of
 [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md) is the checklist.
 
 Say plainly which of the two you have. "Bets and balance parse from the

@@ -24,8 +24,8 @@ import { cn, formatDate, formatMoney } from '@/lib/utils';
 
 /**
  * `released` is the only end state that means the wagering requirement was met.
- * `completed` sounds like success but is not — it is the bonus money being
- * wagered away — so it must not read as a win.
+ * `completed` sounds like success but is not - it is the bonus money being
+ * wagered away - so it must not read as a win.
  */
 const STATUS_TONE: Record<string, string> = {
   active: 'bg-profit/10 text-profit',
@@ -100,7 +100,7 @@ const Fact = ({ label, value }: { label: string; value: string }): JSX.Element =
 /**
  * The four numbers that describe any grant, live or finished, so an active card
  * and an expanded history row read the same. Rollover is quoted against the
- * deposit, which is what the terms multiply — not against the bonus itself.
+ * deposit, which is what the terms multiply - not against the bonus itself.
  */
 const wageredLabel = (bonus: Bonus): string =>
   bonus.wageringRequired > 0
@@ -121,7 +121,10 @@ const BonusFacts = ({
   wagering?: boolean;
 }): JSX.Element => (
   <>
-    <Fact label="Deposited" value={deposit === undefined ? '—' : formatMoney(deposit, bonus.currency)} />
+    <Fact
+      label="Deposited"
+      value={deposit === undefined ? '—' : formatMoney(deposit, bonus.currency)}
+    />
     <Fact label="Bonus" value={formatMoney(bonus.grantedAmount, bonus.currency)} />
     <Fact
       label="Rollover"
@@ -249,13 +252,13 @@ export const BonusesPage = (): JSX.Element => {
               </TableHeader>
             }
           >
-              <TableBody>
-                {history.map((b) => {
-                  const untracked = hasUntrackedOutcome(b);
-                  const realized = realizedBonusValue(b);
-                  const deposit = depositFor.get(b.id);
-                  return (
-                    <Fragment key={b.id}>
+            <TableBody>
+              {history.map((b) => {
+                const untracked = hasUntrackedOutcome(b);
+                const realized = realizedBonusValue(b);
+                const deposit = depositFor.get(b.id);
+                return (
+                  <Fragment key={b.id}>
                     <TableRow
                       className={cn(
                         'cursor-pointer [&>td]:py-2',
@@ -315,10 +318,10 @@ export const BonusesPage = (): JSX.Element => {
                         </TableCell>
                       </TableRow>
                     )}
-                    </Fragment>
-                  );
-                })}
-              </TableBody>
+                  </Fragment>
+                );
+              })}
+            </TableBody>
           </Table>
         </DashboardCard>
       )}

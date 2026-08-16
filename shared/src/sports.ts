@@ -12,7 +12,7 @@ import type { Bookmaker } from './types';
  * means the American game by "Football"; a book that calls the world game
  * "Football" has no other use for the word. So the book's own vocabulary decides
  * it, and `AMERICAN_NAMING` records which books use the American sense. A book
- * missing from that set — or a name read without knowing the book — takes the
+ * missing from that set - or a name read without knowing the book - takes the
  * European sense, which is what an unlabelled "Football" means nearly everywhere.
  */
 

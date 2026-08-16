@@ -146,7 +146,7 @@ const SupportedFooter = (): JSX.Element => {
     <span
       key={account.id}
       title={
-        released ? account.name : `${account.name} — added to this copy, not part of a release`
+        released ? account.name : `${account.name} - added to this copy, not part of a release`
       }
       className={cn(
         'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs text-muted-foreground',

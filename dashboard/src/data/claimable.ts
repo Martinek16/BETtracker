@@ -3,7 +3,7 @@
  *
  * The perks snapshot says what was waiting when it was taken, and nothing
  * refreshes it until the site is opened again. So claiming on the site and then
- * not going back leaves the figure standing — the app goes on offering money
+ * not going back leaves the figure standing - the app goes on offering money
  * that is already in the account, which is worse than saying nothing.
  *
  * The claim itself is recorded, though: collected rakeback is stored as a

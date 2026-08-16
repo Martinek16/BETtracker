@@ -22,10 +22,13 @@ export const DashboardCardHeader = ({
   className,
   ...props
 }: HTMLAttributes<HTMLDivElement>): JSX.Element => (
-  <div className={cn('mb-4 flex flex-wrap items-start justify-between gap-3', className)} {...props} />
+  <div
+    className={cn('mb-4 flex flex-wrap items-start justify-between gap-3', className)}
+    {...props}
+  />
 );
 
-/** Primary card title — use on every card so the section is identifiable. */
+/** Primary card title - use on every card so the section is identifiable. */
 export const DashboardCardHeading = ({
   title,
   subtitle,
@@ -36,7 +39,7 @@ export const DashboardCardHeading = ({
   title: ReactNode;
   subtitle?: string;
   action?: ReactNode;
-  /** How much the card is built on, e.g. "147 picks" — keeps counts out of the prose. */
+  /** How much the card is built on, e.g. "147 picks" - keeps counts out of the prose. */
   sample?: ReactNode;
   className?: string;
 }): JSX.Element => (
@@ -48,9 +51,7 @@ export const DashboardCardHeading = ({
     {action || sample ? (
       <div className="shrink-0 text-right">
         {action}
-        {sample ? (
-          <p className="text-[10px] tabular-nums text-muted-foreground">{sample}</p>
-        ) : null}
+        {sample ? <p className="text-[10px] tabular-nums text-muted-foreground">{sample}</p> : null}
       </div>
     ) : null}
   </div>
@@ -67,6 +68,8 @@ export const DashboardCardMetric = ({
   className,
   ...props
 }: HTMLAttributes<HTMLParagraphElement>): JSX.Element => (
-  <p className={cn('text-2xl font-semibold tracking-tight text-foreground tabular-nums', className)} {...props} />
+  <p
+    className={cn('text-2xl font-semibold tracking-tight text-foreground tabular-nums', className)}
+    {...props}
+  />
 );
-

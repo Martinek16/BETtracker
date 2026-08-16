@@ -8,7 +8,7 @@ import { refreshOpenBets, type ActiveBetsSnapshot } from '@/data/source';
 const POLL_MS = 20_000;
 /** A match in play moves; its score is the one thing here that goes stale fast. */
 const LIVE_POLL_MS = 8_000;
-/** The worker was mid-sync and answered from the database — ask again shortly. */
+/** The worker was mid-sync and answered from the database - ask again shortly. */
 const BUSY_POLL_MS = 3_000;
 
 /**

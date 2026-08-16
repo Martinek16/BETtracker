@@ -8,8 +8,8 @@ arranged so that is the easy thing to do.
 **You may add a bookmaker. You may not change how they all work.**
 
 A bookmaker lives entirely in `extension/src/bookmakers/<id>/` and is registered
-with one line in each of three collector files. Everything else — the sync
-engine, the database, the dashboard, the shared types, the build — is closed,
+with one line in each of three collector files. Everything else - the sync
+engine, the database, the dashboard, the shared types, the build - is closed,
 and CI rejects a pull request that touches it.
 
 That is not gatekeeping for its own sake. The core is what every site runs on,
@@ -46,7 +46,7 @@ everyone's clone within minutes.
 
 `har/` is gitignored, `pnpm sanitize-har` cleans a recording before it goes
 anywhere, and CI rejects a `.har` or an added line shaped like a token. All
-three can be defeated. **Read the fixtures you are committing** — no tool knows
+three can be defeated. **Read the fixtures you are committing** - no tool knows
 that `"nickname": "YourNickname87"` is you.
 
 A sanitised recording is not a thing to commit as it stands either. What a
@@ -82,7 +82,7 @@ pnpm test
 pnpm build
 ```
 
-All three, all green. If a test fails, fix the folder, never the test — they are
+All three, all green. If a test fails, fix the folder, never the test - they are
 shared files and CI rejects a pull request that edits one.
 
 ## What gets merged
@@ -106,7 +106,7 @@ And what does not:
 
 ## Style
 
-Match what is already there. Comments explain **why**, never what — if the code
+Match what is already there. Comments explain **why**, never what - if the code
 needs a comment to say what it does, rename something instead. Commit messages
 are `feat:`, `fix:`, `refactor:`, `docs:` or `chore:`, and say why in the body.
 

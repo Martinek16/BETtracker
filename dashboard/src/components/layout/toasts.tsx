@@ -24,7 +24,7 @@ const VISIBLE_MS = 6000;
 
 /**
  * One message: its mark on a plate down the whole side, then what happened and
- * what it means, then the way out. Dismissing is local state — nothing outlives
+ * what it means, then the way out. Dismissing is local state - nothing outlives
  * the page, and each message decides for itself when it has been read.
  */
 export const Toast = ({
@@ -62,7 +62,7 @@ export const Toast = ({
 
 /**
  * The strip of empty page under the header, on the side the content does not
- * reach — one fixed width, so a long message and a short one line up. They share
+ * reach - one fixed width, so a long message and a short one line up. They share
  * one column because several can be true at once: a sync that brought in bets can
  * be the same visit that notices a bonus running out.
  */
@@ -101,7 +101,10 @@ const tally = (
     counts[bookmaker] = { ...row(bookmaker), bets: n };
   }
   for (const tx of transactions) {
-    counts[tx.bookmaker] = { ...row(tx.bookmaker), transactions: row(tx.bookmaker).transactions + 1 };
+    counts[tx.bookmaker] = {
+      ...row(tx.bookmaker),
+      transactions: row(tx.bookmaker).transactions + 1,
+    };
   }
   return counts;
 };
@@ -153,7 +156,7 @@ export const SyncToast = (): JSX.Element | null => {
           /* private mode: everything reads as new again next visit */
         }
         // Nothing was written down before, so every stored record would count as
-        // an arrival — an import or a first run is not news.
+        // an arrival - an import or a first run is not news.
         if (first || !settings.syncAlerts) return;
         const found = arrivals(now, seen);
         if (found.length === 0) return;
@@ -234,7 +237,8 @@ export const NewBookmakerToast = (): JSX.Element | null => {
 
 /** A grant still carrying a balance whose own end date is close. */
 const expiringSoon = (bonus: Bonus): boolean => {
-  if (bonus.status !== 'active' || bonus.expiresAt === null || bonus.currentAmount <= 0) return false;
+  if (bonus.status !== 'active' || bonus.expiresAt === null || bonus.currentAmount <= 0)
+    return false;
   const left = Date.parse(bonus.expiresAt) - Date.now();
   return left > 0 && left <= EXPIRY_WARN_DAYS * 86_400_000;
 };

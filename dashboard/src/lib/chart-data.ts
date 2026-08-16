@@ -5,7 +5,7 @@ import { EU_LOCALE } from '@/lib/utils';
 /**
  * Which date a bet belongs under for period filtering and P/L bucketing.
  *
- * Settled bets follow their settlement, because that is when the money moved —
+ * Settled bets follow their settlement, because that is when the money moved -
  * bucketing by placement hides a bet that was placed three weeks ago and paid out
  * yesterday. Pending bets have no result yet, so they sit at the point you
  * committed the stake.
@@ -26,7 +26,7 @@ export interface ChartBucket {
   bets: number;
 }
 
-/** Calendar keys in local timezone — avoids UTC slice mismatches with iterateMonths. */
+/** Calendar keys in local timezone - avoids UTC slice mismatches with iterateMonths. */
 const calendarDayKey = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
@@ -89,11 +89,7 @@ const addBucket = (map: Map<string, ChartBucket>, key: string, label: string, be
   map.set(key, bucket);
 };
 
-const ensureBucket = (
-  map: Map<string, ChartBucket>,
-  key: string,
-  label: string,
-): ChartBucket => {
+const ensureBucket = (map: Map<string, ChartBucket>, key: string, label: string): ChartBucket => {
   const existing = map.get(key);
   if (existing) return existing;
   const bucket = { key, label, wins: 0, losses: 0, profit: 0, bets: 0 };
@@ -132,7 +128,7 @@ export const periodAnchor = (until: number | null = null): Date => {
 
 /**
  * Start of the day `days` back from the anchor, so the boundary day is included
- * whole. Cutting at `now - days * 24h` drops that morning's bets — asking for a
+ * whole. Cutting at `now - days * 24h` drops that morning's bets - asking for a
  * month on Aug 4 would show nothing from Jul 4 before the current time of day.
  */
 export const rangeCutoff = (days: number, until: number | null = null): number => {
@@ -190,7 +186,7 @@ export const dailyBuckets = (
   const map = new Map<string, ChartBucket>();
   const dayKeys: string[] = [];
 
-  // `days` back through the last day inclusive — the boundary day is part of the range.
+  // `days` back through the last day inclusive - the boundary day is part of the range.
   for (let i = days; i >= 0; i -= 1) {
     const d = periodAnchor(until);
     d.setDate(d.getDate() - i);
@@ -334,7 +330,7 @@ export const timelineGranularity = (
   until: number | null = null,
 ): TimelineGranularity => {
   if (days === null) {
-    // Months stay readable well past a couple of years — a year per bar hides
+    // Months stay readable well past a couple of years - a year per bar hides
     // every run and drawdown inside it, which is the whole point of the chart.
     // Yearly is only for histories too long to fit a bar per month.
     return monthSpan(filterBetsByRange(bets, days, until)) > 60 ? 'year' : 'month';
@@ -365,7 +361,7 @@ const bucketsAt = (
   }
 };
 
-/** Main timeline chart — daily, weekly, monthly, or yearly depending on range. */
+/** Main timeline chart - daily, weekly, monthly, or yearly depending on range. */
 export const timelineBuckets = (
   bets: readonly Bet[],
   days: number | null,
@@ -379,7 +375,7 @@ export const timelineBuckets = (
 /**
  * The same buckets at a granularity decided elsewhere. Splitting a period per
  * account and letting each subset pick its own granularity gives key sets that
- * cannot be lined up — one account's month against another's year — so the
+ * cannot be lined up - one account's month against another's year - so the
  * choice is made once over the whole period and handed down.
  */
 export const timelineBucketsAt = (
@@ -424,7 +420,7 @@ const groupStarts = (
  *
  * Density follows the range rather than a fixed label budget: a week has room for
  * every day, and a multi-year history is unreadable when consecutive labels are
- * "sep 23" then "apr 24" — those want one marker per calendar year instead.
+ * "sep 23" then "apr 24" - those want one marker per calendar year instead.
  */
 export const axisTicks = (buckets: readonly ChartBucket[], days: number | null): AxisTick[] => {
   if (buckets.length === 0) return [];
@@ -449,7 +445,7 @@ export const axisTicks = (buckets: readonly ChartBucket[], days: number | null):
     );
   }
 
-  // All time — yearly buckets already label themselves.
+  // All time - yearly buckets already label themselves.
   if (buckets[0]!.key.length === 4) return everyNth(buckets, 1);
 
   // Monthly buckets: a marker per month once it fits, otherwise per year.

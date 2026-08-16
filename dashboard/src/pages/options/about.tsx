@@ -61,7 +61,7 @@ const QUESTIONS: readonly { question: string; answer: string }[] = [
   {
     question: 'How do I keep a copy?',
     answer:
-      'Settings, Your data, Save. It writes one file of everything stored here — a copy for you, which cannot be loaded back in.',
+      'Settings, Your data, Save. It writes one file of everything stored here - a copy for you, which cannot be loaded back in.',
   },
 ];
 
@@ -88,7 +88,10 @@ const Questions = (): JSX.Element => {
               <ChevronRight
                 aria-hidden
                 size={13}
-                className={cn('shrink-0 text-muted-foreground transition-transform', isOpen && 'rotate-90')}
+                className={cn(
+                  'shrink-0 text-muted-foreground transition-transform',
+                  isOpen && 'rotate-90',
+                )}
               />
               <span
                 className={cn(
@@ -131,7 +134,7 @@ export const AboutPage = (): JSX.Element => (
         <Section title="What this is">
           <Prose>
             A private record of your own betting: every bookmaker you play at added up in one place
-            — what you won and lost, how often you were right, and which sports your money comes
+            - what you won and lost, how often you were right, and which sports your money comes
             from.
           </Prose>
           <Prose>
@@ -139,7 +142,7 @@ export const AboutPage = (): JSX.Element => (
             a time. Whether you are up or down over a year has no answer on screen. This gives it.
           </Prose>
           <Prose>
-            It looks backwards, never forwards. No tips, no predictions — it reports what already
+            It looks backwards, never forwards. No tips, no predictions - it reports what already
             happened and leaves what to do about it to you.
           </Prose>
         </Section>
@@ -161,7 +164,7 @@ export const AboutPage = (): JSX.Element => (
 
         <Section title="Your data">
           <Prose>
-            Stored: your bets — date, sport, teams, pick, odds, stake and result — plus deposits and
+            Stored: your bets - date, sport, teams, pick, odds, stake and result - plus deposits and
             withdrawals, the bonuses your account was granted, and these settings.
           </Prose>
           <Prose>
@@ -169,7 +172,7 @@ export const AboutPage = (): JSX.Element => (
             it never sees a login.
           </Prose>
           <Prose>
-            All of it stays in this browser. No account, no server, nothing uploaded or sold — the
+            All of it stays in this browser. No account, no server, nothing uploaded or sold - the
             only address it calls itself is a public exchange-rate feed.
           </Prose>
           <Note icon={Lock}>
@@ -178,7 +181,7 @@ export const AboutPage = (): JSX.Element => (
           </Note>
         </Section>
 
-        {/* One door, so the whole card opens it — a row that opens a page, the
+        {/* One door, so the whole card opens it - a row that opens a page, the
             way the questions open an answer. */}
         <Link
           to="/options/about/privacy"
@@ -211,7 +214,7 @@ export const AboutPage = (): JSX.Element => (
             </div>
           ))}
           <Note icon={Globe}>
-            Their other addresses — country domains and numbered mirrors — work the same way.
+            Their other addresses - country domains and numbered mirrors - work the same way.
           </Note>
         </Section>
 

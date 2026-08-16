@@ -1,7 +1,7 @@
 const Z95 = 1.96;
 
 /**
- * P(Z >= z) for a standard normal. Zelen & Severo 26.2.17, error below 7.5e-8 —
+ * P(Z >= z) for a standard normal. Zelen & Severo 26.2.17, error below 7.5e-8 -
  * enough to quote a result as "about 1 in N runs of pure chance".
  */
 export const normalTail = (z: number): number => {
@@ -11,8 +11,7 @@ export const normalTail = (z: number): number => {
   const tail =
     density *
     t *
-    (0.31938153 +
-      t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+    (0.31938153 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
   return z >= 0 ? tail : 1 - tail;
 };
 
@@ -21,7 +20,7 @@ export interface WilsonInterval {
   low: number;
   /** Upper bound of the 95% interval, as a percentage. */
   high: number;
-  /** Interval centre — shrunk toward 50% on small samples, unlike the raw rate. */
+  /** Interval centre - shrunk toward 50% on small samples, unlike the raw rate. */
   centre: number;
 }
 
@@ -46,7 +45,7 @@ export const wilson = (successes: number, n: number, z: number = Z95): WilsonInt
 /**
  * Whether the rate the bookmaker priced still sits inside what this many results
  * could produce by chance. True means the row has not separated itself from the
- * price yet — not that it holds few bets. How many it takes depends on the odds:
+ * price yet - not that it holds few bets. How many it takes depends on the odds:
  * a group of even-money picks needs far more of them than a group of 1.05 shots
  * before a gap to the price means anything.
  */
@@ -63,7 +62,7 @@ export const SHRINK_K = 40;
 /**
  * Empirical-Bayes shrinkage of a segment's yield toward the overall yield. A
  * one-bet segment reports roughly the global yield instead of ±400%, which makes
- * segments comparable — use it to sort, and show the raw figure to the user.
+ * segments comparable - use it to sort, and show the raw figure to the user.
  */
 export const shrunkYield = (
   sample: number,
@@ -77,7 +76,7 @@ export const shrunkYield = (
 
 /**
  * Chance of each possible count of losing legs, given each leg's own implied
- * probability. Poisson-binomial by dynamic programming — legs have different
+ * probability. Poisson-binomial by dynamic programming - legs have different
  * prices, so a plain binomial would be the wrong null.
  * Index i holds P(exactly i legs lose).
  */

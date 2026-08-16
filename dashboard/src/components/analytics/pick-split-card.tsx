@@ -25,7 +25,7 @@ interface PickSplitCardProps {
 
 /**
  * "How did these picks do, split by X?" for any way of slicing single selections.
- * Every one of these questions is the same split — one card instead of one file
+ * Every one of these questions is the same split - one card instead of one file
  * per dimension.
  *
  * Bands with a natural order keep it. Names are ranked by how much was bet on
@@ -102,11 +102,13 @@ export const PickSplitCard = ({
           `Nothing here has ${String(MIN_ROWS_SAMPLE)}+ settled picks yet.`
         ) : (
           <>
-            {`${best.label}: won ${formatPercent(best.hitRate, 0)} where the price said ${formatPercent(best.meanImplied, 0)} — `}
+            {`${best.label}: won ${formatPercent(best.hitRate, 0)} where the price said ${formatPercent(best.meanImplied, 0)} - `}
             <NoteFigure tone={tone}>
               {`${best.edgePp >= 0 ? '+' : ''}${best.edgePp.toFixed(1)}pp`}
             </NoteFigure>
-            {best.edgePp >= 0 ? ' on the price, the best here.' : ' on the price, the least bad here.'}
+            {best.edgePp >= 0
+              ? ' on the price, the best here.'
+              : ' on the price, the least bad here.'}
           </>
         )}
       </CardNote>

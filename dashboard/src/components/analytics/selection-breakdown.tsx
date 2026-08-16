@@ -167,7 +167,7 @@ const IntervalTrack = ({ stats }: { stats: SelectionStats }): JSX.Element => (
   </div>
 );
 
-/** The lines a market family was built from — still aggregates, never single bets. */
+/** The lines a market family was built from - still aggregates, never single bets. */
 const MarketLines = ({
   lines,
   showImplied,
@@ -216,7 +216,12 @@ const MarketLines = ({
           </span>
           <HitCell stats={line} className="text-[11px]" />
           {showImplied ? (
-            <span className={cn(COL.implied, 'text-center text-[11px] tabular-nums text-muted-foreground')}>
+            <span
+              className={cn(
+                COL.implied,
+                'text-center text-[11px] tabular-nums text-muted-foreground',
+              )}
+            >
               {formatPercent(line.meanImplied, 0)}
             </span>
           ) : null}
@@ -282,7 +287,9 @@ const GroupCells = ({
       </span>
       <HitCell stats={stats} className="text-[11px] font-medium" />
       {showImplied ? (
-        <span className={cn(COL.implied, 'text-center text-[11px] tabular-nums text-muted-foreground')}>
+        <span
+          className={cn(COL.implied, 'text-center text-[11px] tabular-nums text-muted-foreground')}
+        >
           {formatPercent(stats.meanImplied, 0)}
         </span>
       ) : null}
@@ -342,9 +349,7 @@ const GroupRow = ({
   );
   const lines = useMemo(
     () =>
-      open && child !== undefined
-        ? groupSelectionsWithin(bets, dimension, stats.key, child)
-        : [],
+      open && child !== undefined ? groupSelectionsWithin(bets, dimension, stats.key, child) : [],
     [open, child, bets, dimension, stats.key],
   );
 
@@ -378,7 +383,11 @@ const GroupRow = ({
         className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/20"
       >
         <ChevronRight
-          className={cn(COL.lead, 'h-3.5 text-muted-foreground transition-transform', open && 'rotate-90')}
+          className={cn(
+            COL.lead,
+            'h-3.5 text-muted-foreground transition-transform',
+            open && 'rotate-90',
+          )}
         />
         {cells}
       </button>
@@ -470,17 +479,55 @@ export const SelectionBreakdown = ({
         <span className={COL.lead} />
         <span className={COL.rank} />
         <SortHeaderCell label="Group" sortKey="key" widthClass={COL.group} {...header('key')} />
-        <span className={cn(COL.interval, 'text-[10px] uppercase tracking-wide text-muted-foreground')}>
+        <span
+          className={cn(COL.interval, 'text-[10px] uppercase tracking-wide text-muted-foreground')}
+        >
           Your range · line = the price
         </span>
-        <SortHeaderCell label="Picks" sortKey="picks" numeric widthClass={COL.picks} {...header('picks')} />
-        <SortHeaderCell label="You win" sortKey="hitRate" numeric widthClass={COL.hit} {...header('hitRate')} />
+        <SortHeaderCell
+          label="Picks"
+          sortKey="picks"
+          numeric
+          widthClass={COL.picks}
+          {...header('picks')}
+        />
+        <SortHeaderCell
+          label="You win"
+          sortKey="hitRate"
+          numeric
+          widthClass={COL.hit}
+          {...header('hitRate')}
+        />
         {showImplied ? (
-          <SortHeaderCell label="Odds said" sortKey="meanImplied" numeric widthClass={COL.implied} {...header('meanImplied')} />
+          <SortHeaderCell
+            label="Odds said"
+            sortKey="meanImplied"
+            numeric
+            widthClass={COL.implied}
+            {...header('meanImplied')}
+          />
         ) : null}
-        <SortHeaderCell label="Difference" sortKey="edgePp" numeric widthClass={COL.edge} {...header('edgePp')} />
-        <SortHeaderCell label="Profit" sortKey="moneyPl" numeric widthClass={COL.money} {...header('moneyPl')} />
-        <SortHeaderCell label="Units" sortKey="flatUnitsPl" numeric widthClass={COL.units} {...header('flatUnitsPl')} />
+        <SortHeaderCell
+          label="Difference"
+          sortKey="edgePp"
+          numeric
+          widthClass={COL.edge}
+          {...header('edgePp')}
+        />
+        <SortHeaderCell
+          label="Profit"
+          sortKey="moneyPl"
+          numeric
+          widthClass={COL.money}
+          {...header('moneyPl')}
+        />
+        <SortHeaderCell
+          label="Units"
+          sortKey="flatUnitsPl"
+          numeric
+          widthClass={COL.units}
+          {...header('flatUnitsPl')}
+        />
       </div>
 
       {groups.length === 0 ? (

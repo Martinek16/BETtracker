@@ -11,10 +11,7 @@ import {
 import { clearLog, getLog, type Bookmaker, type LogEntry } from '@betanal/shared';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { ChartEmpty } from '@/components/charts/chart-empty';
-import {
-  DashboardCard,
-  DashboardCardHeading,
-} from '@/components/dashboard/dashboard-card';
+import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
 import { Button } from '@/components/ui/button';
 import { findAccount } from '@/data/accounts';
 import {
@@ -51,7 +48,7 @@ const PARTS: Record<string, { label: string; icon: LucideIcon }> = {
 /**
  * The lines are written for whoever has to debug the reader; this page is read
  * by whoever just wants to know whether their bets arrived. First match wins,
- * and anything unrecognised is shown as written — a line nobody translated is
+ * and anything unrecognised is shown as written - a line nobody translated is
  * still better than no line.
  */
 const PLAIN: [RegExp, string | ((match: RegExpExecArray) => string)][] = [
@@ -71,8 +68,8 @@ const PLAIN: [RegExp, string | ((match: RegExpExecArray) => string)][] = [
   [/^session captured/, 'Signed in'],
   [/^session went stale/, 'Signed out by the site, signing back in'],
   [/^no session on the page/, 'Not signed in yet'],
-  [/^balance not read: no session captured yet/, 'Balance not read — sign in on the site'],
-  [/^balance not read: account not identified/, 'Balance not read — account not recognised'],
+  [/^balance not read: no session captured yet/, 'Balance not read - sign in on the site'],
+  [/^balance not read: account not identified/, 'Balance not read - account not recognised'],
   [/^balance (read skipped|unreadable)/, 'Balance not read'],
   [/^identity unreadable/, 'Account not recognised'],
   [/^transaction import skipped/, 'Deposits & withdrawals not read'],
@@ -218,12 +215,7 @@ export const LogPage = (): JSX.Element => {
           subtitle="What the extension has been doing, newest first."
           action={
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={lines.length === 0}
-                onClick={onCopy}
-              >
+              <Button variant="outline" size="sm" disabled={lines.length === 0} onClick={onCopy}>
                 {copied ? 'Copied' : 'Copy'}
               </Button>
               <Button

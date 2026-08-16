@@ -6,7 +6,7 @@
  * once per stage ("UEFA Champions League Group A", "… Play-offs"). Read as
  * written, one competition spreads over a row per season per stage per book, and
  * no row holds enough bets to say anything. Dropping the season and the stage
- * merges them — and merges the two books with them, since what is left is the
+ * merges them - and merges the two books with them, since what is left is the
  * same string on both sides.
  */
 
@@ -49,7 +49,7 @@ const DANGLING = /[\s,]*[-–—:]?\s*\b(?:incl\.?|including|and|with|&)$/i;
  * The draw a tennis event was played in, which one book appends and the other
  * writes differently: "ATP Rome, Italy Men Singles" against "ATP Montreal, Main
  * Draw". The tournament is the same tournament either way. A draw word has to be
- * in the clause, so "NCAA, Women" — a competition of its own — is left whole.
+ * in the clause, so "NCAA, Women" - a competition of its own - is left whole.
  */
 const DRAW = /[\s,]*[-–—:,][^,]*\b(?:singles|doubles|main\s+draw|qualifying)\b[^,]*$/i;
 
@@ -64,7 +64,7 @@ const ORGANISER = /^uefa\s+/i;
 /**
  * Tennis is a circuit, not a league: every week is a new town, so read as written
  * one season is eighty rows of one bet. The tour and its tier are the thing that
- * was bet on — "ATP Challenger Bordeaux" and "ATP Challenger Tunis" are the same
+ * was bet on - "ATP Challenger Bordeaux" and "ATP Challenger Tunis" are the same
  * class of event, "ITF M15 Koper" and "ITF M15 Maringa" the same rung of it.
  */
 const CIRCUIT = /^(atp|wta|itf)(?:\s+(challenger|[mw]\d{2,3}))?\b/i;
@@ -97,7 +97,7 @@ export const canonicalLeague = (league: string | null): string | null => {
       .replace(DANGLING, '')
       .trim();
     // A league named only by its stage or its year ("Round of 16", "2026") keeps
-    // that name — stripping it would leave nothing to read.
+    // that name - stripping it would leave nothing to read.
     if (shorter === '' || shorter === name) return name;
     name = shorter;
   }

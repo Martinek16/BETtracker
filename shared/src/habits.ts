@@ -59,7 +59,7 @@ const labelFor = (dimension: SlipDimension, key: string): string => {
 };
 
 /**
- * A group holding nearly every bet is not a habit — "Pre-match betting −€180"
+ * A group holding nearly every bet is not a habit - "Pre-match betting −€180"
  * when 100% of the bets are pre-match is the period total wearing a label. Only
  * groups the bettor could actually bet less of are worth naming.
  */
@@ -115,22 +115,26 @@ const DRIVEN_SHARE = 0.5;
  * slip, and putting it on top would send the reader after a pattern that is not
  * there.
  */
-const ranked = (sign: 1 | -1) => (a: Candidate, b: Candidate): number =>
-  Number(a.driven) - Number(b.driven) || sign * (cost(a) - cost(b));
+const ranked =
+  (sign: 1 | -1) =>
+  (a: Candidate, b: Candidate): number =>
+    Number(a.driven) - Number(b.driven) || sign * (cost(a) - cost(b));
 
-const toCandidate = (dimension: SlipDimension) => (g: GroupStats): Candidate => ({
-  dimension,
-  label: labelFor(dimension, g.key),
-  profit: g.profit,
-  bets: g.bets,
-  winRate: g.winRate,
-  // The money that came back, not the average slip: a group of ten €5 slips and
-  // one €200 slip is read the way the account felt it.
-  unitsPerBet: g.roi / 100,
-  // Either measure alone misses a case: stake swing misses one huge slip beside
-  // small ones, money share misses one lucky small slip at long odds.
-  driven: g.topSwingShare > DRIVEN_SHARE || g.topMoneyShare > DRIVEN_SHARE,
-});
+const toCandidate =
+  (dimension: SlipDimension) =>
+  (g: GroupStats): Candidate => ({
+    dimension,
+    label: labelFor(dimension, g.key),
+    profit: g.profit,
+    bets: g.bets,
+    winRate: g.winRate,
+    // The money that came back, not the average slip: a group of ten €5 slips and
+    // one €200 slip is read the way the account felt it.
+    unitsPerBet: g.roi / 100,
+    // Either measure alone misses a case: stake swing misses one huge slip beside
+    // small ones, money share misses one lucky small slip at long odds.
+    driven: g.topSwingShare > DRIVEN_SHARE || g.topMoneyShare > DRIVEN_SHARE,
+  });
 
 /**
  * The habits costing and making the most money, across every dimension at once.
@@ -138,11 +142,7 @@ const toCandidate = (dimension: SlipDimension) => (g: GroupStats): Candidate => 
  * `minBets` guards against a two-bet sport topping the list on noise alone; it
  * is a readability floor, not a significance test.
  */
-export const habitLeaks = (
-  bets: readonly Bet[],
-  minBets = 5,
-  limit = 3,
-): HabitLeaks => {
+export const habitLeaks = (bets: readonly Bet[], minBets = 5, limit = 3): HabitLeaks => {
   const candidates = SCANNED.flatMap((dimension) =>
     groupBy(bets, dimension)
       .filter(
@@ -181,11 +181,7 @@ const legLabelFor = (dimension: LegDimension, key: string): string => {
  * had money of its own, so any € figure would be invented. Callers must label it
  * as units.
  */
-export const selectionLeaks = (
-  bets: readonly Bet[],
-  minPicks = 8,
-  limit = 3,
-): HabitLeaks => {
+export const selectionLeaks = (bets: readonly Bet[], minPicks = 8, limit = 3): HabitLeaks => {
   const candidates = SCANNED_LEGS.flatMap((dimension) => {
     const groups = groupSelectionsBy(bets, dimension);
     const decidedTotal = groups.reduce((sum, g) => sum + g.decided, 0);

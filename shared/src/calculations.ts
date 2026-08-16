@@ -60,7 +60,7 @@ export const averageOdds = (bets: readonly Bet[]): number => {
   return bets.reduce((sum, b) => sum + b.odds, 0) / bets.length;
 };
 
-/** Average odds weighted by stake — what your money actually rode at, as opposed
+/** Average odds weighted by stake - what your money actually rode at, as opposed
  * to `averageOdds` which describes the typical pick regardless of size. */
 export const stakeWeightedOdds = (bets: readonly Bet[]): number => {
   const decisive = decisiveBets(bets);
@@ -102,7 +102,7 @@ export interface EquityPoint {
   cumulative: number;
 }
 
-/** Cumulative profit over settled bets, ordered by when each one resolved — a
+/** Cumulative profit over settled bets, ordered by when each one resolved - a
  * balance curve has to follow cashflow, not the order the bets were placed in. */
 export const equityCurve = (bets: readonly Bet[]): EquityPoint[] => {
   const sorted = [...settledBets(bets)].sort((a, b) =>
@@ -154,7 +154,7 @@ export interface LuckInfo {
 }
 
 /** Compares hits against what the prices implied. Bookmaker odds already carry
- * margin, so beating them is the honest signal — a raw EV figure against those
+ * margin, so beating them is the honest signal - a raw EV figure against those
  * same odds is zero by construction and would tell you nothing. */
 export const luck = (bets: readonly Bet[]): LuckInfo => {
   const decisive = decisiveBets(bets);
@@ -168,7 +168,7 @@ export interface EdgeConfidence {
   yield: number;
   /** Spread of that figure under pure chance, as a percentage of stake. */
   stdError: number;
-  /** Yield in units of that spread — how far the run sits from break even. */
+  /** Yield in units of that spread - how far the run sits from break even. */
   tStat: number;
   ciLow: number;
   ciHigh: number;
@@ -179,7 +179,7 @@ export interface EdgeConfidence {
 
 /**
  * Is the ROI an edge or is it chance? Puts a 95% interval around the money that
- * came back per unit staked — the same figure `roi` reports, so a card that shows
+ * came back per unit staked - the same figure `roi` reports, so a card that shows
  * both does not contradict itself.
  *
  * The spread comes from the odds, not from how much the results happened to
@@ -194,15 +194,20 @@ export interface EdgeConfidence {
 export const edgeConfidence = (bets: readonly Bet[]): EdgeConfidence => {
   const backed = decisiveBets(bets).filter((b) => b.stake > 0);
   const sample = backed.length;
-  const empty = { yield: 0, stdError: 0, tStat: 0, ciLow: 0, ciHigh: 0, sample, significant: false };
+  const empty = {
+    yield: 0,
+    stdError: 0,
+    tStat: 0,
+    ciLow: 0,
+    ciHigh: 0,
+    sample,
+    significant: false,
+  };
   if (sample === 0) return empty;
 
   const staked = backed.reduce((sum, b) => sum + b.stake, 0);
   const ratio = backed.reduce((sum, b) => sum + profitOf(b), 0) / staked;
-  const chanceVariance = backed.reduce(
-    (sum, b) => sum + b.stake ** 2 * Math.max(b.odds - 1, 0),
-    0,
-  );
+  const chanceVariance = backed.reduce((sum, b) => sum + b.stake ** 2 * Math.max(b.odds - 1, 0), 0);
   // Only reachable when every slip was priced at 1.00 or below, which no book
   // quotes: there is no price to be right or wrong about, so nothing to conclude.
   if (chanceVariance === 0) return { ...empty, yield: ratio * 100 };
@@ -324,7 +329,7 @@ export interface Summary {
   totalBets: number;
   settledBets: number;
   totalStaked: number;
-  /** Stake that resolved — the ROI denominator. */
+  /** Stake that resolved - the ROI denominator. */
   resolvedStake: number;
   totalReturn: number;
   totalProfit: number;

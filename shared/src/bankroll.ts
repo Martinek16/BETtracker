@@ -13,7 +13,7 @@ export interface StakeShare {
 }
 
 /**
- * Stake sized against the bankroll behind it — the discipline metric. A flat
+ * Stake sized against the bankroll behind it - the discipline metric. A flat
  * stake looks constant in euros while quietly becoming a third of the account.
  *
  * Bets placed before any recorded deposit have no known balance, so they are

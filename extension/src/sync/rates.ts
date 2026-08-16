@@ -43,13 +43,14 @@ const getJson = async (url: string): Promise<unknown> => {
 
 /**
  * The feed answers 400 for a symbol it does not know, which would cost us the
- * fiat rates in the same request. Crypto is not quoted here — that rate comes
+ * fiat rates in the same request. Crypto is not quoted here - that rate comes
  * from the bookmaker that deals in it.
  */
 let quoted: Set<string> | null = null;
 
 const quotedCurrencies = async (): Promise<Set<string>> => {
-  if (quoted === null) quoted = new Set(Object.keys((await getJson(`${FEED}/currencies`)) as object));
+  if (quoted === null)
+    quoted = new Set(Object.keys((await getJson(`${FEED}/currencies`)) as object));
   return quoted;
 };
 
@@ -66,7 +67,7 @@ const fetchWindow = async (
 
 /**
  * Daily closes for a coin against EUR. The bookmakers that deal in crypto only
- * publish today's price, which cannot value a bet placed a year ago — that is
+ * publish today's price, which cannot value a bet placed a year ago - that is
  * the difference between betting performance and the coin's own price swing.
  *
  * ponytail: one request per coin covers ~2.7 years; page backwards with
@@ -174,7 +175,7 @@ export const syncRates = async (): Promise<number> => {
       }
     } catch {
       // Not a pair this feed trades. The records stay unconverted and excluded,
-      // which is the honest outcome — inventing a rate would not be.
+      // which is the honest outcome - inventing a rate would not be.
     }
   }
 

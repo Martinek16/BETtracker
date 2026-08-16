@@ -24,7 +24,7 @@ export const SegmentedToggle = <T extends string>({
   <div
     className={cn(
       // Fixed height so every toggle in a toolbar lines up with the date fields,
-      // whatever its labels are — an icon label is taller than a word label.
+      // whatever its labels are - an icon label is taller than a word label.
       'inline-flex h-[23px] items-stretch rounded-md border border-border bg-muted/30 p-0.5 text-[10px]',
       className,
     )}

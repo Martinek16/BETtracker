@@ -11,8 +11,8 @@ interface GeneralSelectionsProps {
 
 /**
  * One card per question a bettor asks of their own picks, each asked once. The
- * odds axis is the calibration card's alone — a favourite/underdog split is the
- * same question with two coarse rows — and the market card groups into families,
+ * odds axis is the calibration card's alone - a favourite/underdog split is the
+ * same question with two coarse rows - and the market card groups into families,
  * the way the breakdown table does, so the rows carry names and not book codes.
  */
 export const GeneralSelections = ({ bets, currency }: GeneralSelectionsProps): JSX.Element => (

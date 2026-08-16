@@ -82,7 +82,7 @@ export const VolleyballIcon: SportIcon = (props) => (
   </Svg>
 );
 
-/** The pointed ball, laces across it — rugby and the American game alike. */
+/** The pointed ball, laces across it - rugby and the American game alike. */
 export const RugbyIcon: SportIcon = (props) => (
   <Svg {...props}>
     <path d="M15 9l-6 6" />
@@ -152,7 +152,7 @@ export const DartsIcon: SportIcon = (props) => (
   </Svg>
 );
 
-/** The drilled ball — bowling, and the cue sports alongside it. */
+/** The drilled ball - bowling, and the cue sports alongside it. */
 export const BowlingIcon: SportIcon = (props) => (
   <Svg {...props}>
     <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />

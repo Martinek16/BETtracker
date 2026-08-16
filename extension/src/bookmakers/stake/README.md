@@ -9,7 +9,7 @@ in the request body instead of the URL. `observe()` names the operation it saw;
 `activity()` reports a mutation, which is how a placed bet or a settled one is
 noticed while the tab is open.
 
-The `x-access-token` header is optional — a signed-in browser session
+The `x-access-token` header is optional - a signed-in browser session
 authenticates by cookie alone. It is captured when present because API-token
 users send it instead.
 
@@ -41,4 +41,4 @@ pnpm sanitize-har har/stake.har
 That writes `har/stake.sanitized.har`. Copy the response bodies you need out of
 it and into `__fixtures__/`.
 
-Never commit the raw `.har` — it carries live session tokens.
+Never commit the raw `.har` - it carries live session tokens.

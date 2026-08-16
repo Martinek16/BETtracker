@@ -126,7 +126,7 @@ export type ToBackground =
   /**
    * A supported site was opened; the background decides whether to ask about it.
    * `origin` is the mirror the user actually reached the bookmaker on, which is
-   * the only way to know it — the numbered mirrors rotate.
+   * the only way to know it - the numbered mirrors rotate.
    */
   | { type: 'SITE_DETECTED'; bookmaker: Bookmaker; origin: string }
   | { type: 'SET_CONSENT'; bookmaker: Bookmaker; enabled: boolean }
@@ -156,7 +156,7 @@ export type ToBackground =
 /**
  * One supported bookmaker, as the popup needs to describe it: whether the user
  * has agreed to it, whether the site's session has been seen, and what has
- * actually been stored. Everything the popup says is derived from these — it
+ * actually been stored. Everything the popup says is derived from these - it
  * knows nothing about any particular bookmaker.
  */
 export interface AccountStatus {
@@ -191,7 +191,7 @@ export type FromBackground =
       pending: Bookmaker | null;
       /**
        * Whether a run is walking right now. A step can take minutes without a
-       * word — the deposits walk is hundreds of sequential requests — so this is
+       * word - the deposits walk is hundreds of sequential requests - so this is
        * how a watcher tells a slow run from one that died.
        */
       syncing: boolean;
@@ -203,16 +203,10 @@ export type FromBackground =
   | { type: 'SYNC_PROGRESS'; progress: SyncProgress };
 
 export const isPageBridgeMessage = (data: unknown): data is PageBridgeMessage =>
-  typeof data === 'object' &&
-  data !== null &&
-  (data as { tag?: unknown }).tag === PAGE_BRIDGE_TAG;
+  typeof data === 'object' && data !== null && (data as { tag?: unknown }).tag === PAGE_BRIDGE_TAG;
 
 export const isPageBankingMessage = (data: unknown): data is PageBankingMessage =>
-  typeof data === 'object' &&
-  data !== null &&
-  (data as { tag?: unknown }).tag === PAGE_BANKING_TAG;
+  typeof data === 'object' && data !== null && (data as { tag?: unknown }).tag === PAGE_BANKING_TAG;
 
 export const isPageDataMessage = (data: unknown): data is PageDataMessage =>
-  typeof data === 'object' &&
-  data !== null &&
-  (data as { tag?: unknown }).tag === PAGE_DATA_TAG;
+  typeof data === 'object' && data !== null && (data as { tag?: unknown }).tag === PAGE_DATA_TAG;

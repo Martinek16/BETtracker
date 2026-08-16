@@ -30,7 +30,7 @@ const apply = (theme: Theme): void => {
   const root = document.documentElement;
   root.classList.toggle('dark', resolve(theme) === 'dark');
   // Mirrored for public/theme-boot.js, which has to know the theme before the
-  // settings store — asynchronous — can be read.
+  // settings store - asynchronous - can be read.
   try {
     localStorage.setItem('betanal:theme', theme);
   } catch {

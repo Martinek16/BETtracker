@@ -64,7 +64,7 @@ export const buildProfitChartScale = (
 /**
  * Placement for y-tick `index` (ascending from yMin). Every label is centred on
  * its line, so the gaps between labels read as evenly as the gaps between the
- * lines — the plot needs a small vertical inset for the edge two to sit in.
+ * lines - the plot needs a small vertical inset for the edge two to sit in.
  */
 export const yTickLayout = (
   index: number,
@@ -80,7 +80,7 @@ export const yTickLayout = (
  * Evenly-spaced x-axis label indices, first and last always included.
  *
  * The gap has to be a whole number of buckets. Rounding fractional positions
- * keeps the ends but leaves ragged gaps in between — a week of days labels the
+ * keeps the ends but leaves ragged gaps in between - a week of days labels the
  * 28th, 29th, 30th, then jumps to the 1st, and the missing 31st reads as a hole
  * in the data rather than a sampled axis. So take the densest count (one over
  * the budget is still readable) whose stride divides the span exactly, and only
@@ -135,7 +135,7 @@ export interface PlotXY {
  * Monotone cubic (Fritsch–Carlson) smoothing for soft, rounded chart lines.
  *
  * Plain Catmull-Rom aims each tangent at the neighbours, so a flat run followed
- * by a jump sags *below* the flat value before climbing — the chart shows a loss
+ * by a jump sags *below* the flat value before climbing - the chart shows a loss
  * that never happened. Clamping the tangents keeps every segment monotone, so
  * the curve can only move in the direction the data actually moved.
  */
@@ -175,8 +175,8 @@ export const smoothLinePath = (pts: readonly PlotXY[]): string => {
     // Outside this circle the segment would overshoot; scale both tangents back.
     const h = Math.hypot(a, b);
     if (h > 3) {
-      tangents[i] = ((3 / h) * a) * slope;
-      tangents[i + 1] = ((3 / h) * b) * slope;
+      tangents[i] = (3 / h) * a * slope;
+      tangents[i + 1] = (3 / h) * b * slope;
     }
   }
 

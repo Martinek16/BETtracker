@@ -11,8 +11,8 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export const StatusBreakdownCard = ({ status, total }: StatusBreakdownCardProps): JSX.Element => {
   // Pending and void sit last because they are outcomes the bettor is waiting on
-  // or never had, not results. Empty ones drop out entirely — a row reading "0"
-  // is a row spent saying nothing — but won and lost stay whatever they read,
+  // or never had, not results. Empty ones drop out entirely - a row reading "0"
+  // is a row spent saying nothing - but won and lost stay whatever they read,
   // since a period with no wins is exactly the case worth seeing.
   const segments = [
     { key: 'won', label: 'Won', value: status.won, color: 'hsl(var(--profit))', always: true },
@@ -89,7 +89,13 @@ export const StatusBreakdownCard = ({ status, total }: StatusBreakdownCardProps)
               >
                 {total}
               </text>
-              <text x="50" y="60" textAnchor="middle" fontSize="7.5" className="fill-muted-foreground">
+              <text
+                x="50"
+                y="60"
+                textAnchor="middle"
+                fontSize="7.5"
+                className="fill-muted-foreground"
+              >
                 bets
               </text>
             </svg>
@@ -99,10 +105,7 @@ export const StatusBreakdownCard = ({ status, total }: StatusBreakdownCardProps)
         <ul className="shrink-0 space-y-1.5">
           {shown.map((s) => (
             <li key={s.key} className="flex items-center gap-2 text-xs">
-              <span
-                className="h-2 w-2 shrink-0 rounded-sm"
-                style={{ backgroundColor: s.color }}
-              />
+              <span className="h-2 w-2 shrink-0 rounded-sm" style={{ backgroundColor: s.color }} />
               <span className="min-w-0 flex-1 truncate text-muted-foreground">{s.label}</span>
               <span className="shrink-0 font-medium tabular-nums">{s.value}</span>
               <span className="w-10 shrink-0 text-right tabular-nums text-muted-foreground">

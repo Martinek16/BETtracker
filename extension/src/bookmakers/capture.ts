@@ -4,7 +4,7 @@
  * ── Adding a bookmaker: one import and one array entry below. ──
  *
  * This file is loaded by the MAIN-world inject script, which runs inside the
- * site's own JS context, so it may only ever reach a rule — never an adapter.
+ * site's own JS context, so it may only ever reach a rule - never an adapter.
  * That is why the rules live beside their adapter but in a file of their own.
  */
 

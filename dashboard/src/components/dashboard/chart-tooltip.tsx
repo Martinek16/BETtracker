@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-/** Half the tooltip width — callers clamp their `left` by this so it stays inside the plot. */
+/** Half the tooltip width - callers clamp their `left` by this so it stays inside the plot. */
 export const TOOLTIP_HALF_WIDTH = 78;
 
 interface ChartTooltipRow {

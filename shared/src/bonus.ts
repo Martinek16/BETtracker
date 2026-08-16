@@ -19,7 +19,7 @@ export const hasUntrackedOutcome = (bonus: Bonus): boolean =>
   bonus.type === 'freeBet' || bonus.type === 'freeRound';
 
 export interface BonusSummary {
-  /** Face value of every grant — what was promised, not what it was worth. */
+  /** Face value of every grant - what was promised, not what it was worth. */
   granted: number;
   /** Money that actually cleared its wagering requirement. */
   realized: number;
@@ -68,7 +68,7 @@ export const bonusesByTransaction = (
   const paired = new Map<string, Bonus>();
   const taken = new Set<string>();
 
-  // ponytail: O(deposits × bonuses) scan — a few hundred each, so it is free.
+  // ponytail: O(deposits × bonuses) scan - a few hundred each, so it is free.
   // Bucket by day if either side ever grows into the tens of thousands.
   for (const bonus of bonuses) {
     if (bonus.trigger !== 'deposit') continue;

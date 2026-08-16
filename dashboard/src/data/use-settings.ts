@@ -8,8 +8,8 @@ interface UseSettings {
 }
 
 /**
- * One copy of the settings for the whole app. Several places read them at once —
- * the header, the account pages, every section of the settings page — and a
+ * One copy of the settings for the whole app. Several places read them at once -
+ * the header, the account pages, every section of the settings page - and a
  * change made in any of them has to show up in all the others straight away.
  */
 let cached: AppSettings | null = null;

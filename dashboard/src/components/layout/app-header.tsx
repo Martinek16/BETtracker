@@ -9,7 +9,7 @@ interface Row {
   label: string;
   value: number;
   /**
-   * The currency the figure is written in, when it is not the display one — a
+   * The currency the figure is written in, when it is not the display one - a
    * coin row is read in the coin, which is the point of splitting it out. The
    * label already carries the code, so the figure itself is printed bare.
    */
@@ -35,7 +35,7 @@ interface AccountBalance {
 
 /**
  * One line of the breakdown. A row denominated in a coin reads in that coin,
- * with what it is worth in the display currency written smaller beside it — the
+ * with what it is worth in the display currency written smaller beside it - the
  * coin is what was bet, the worth is what makes it comparable, and neither
  * alone answers the question.
  */
@@ -122,7 +122,10 @@ const BalanceReadout = ({
   <div className="group relative flex items-center gap-2 text-right" tabIndex={0}>
     {label}
     <span
-      className={cn('text-sm font-semibold tabular-nums', amount === null && 'text-muted-foreground')}
+      className={cn(
+        'text-sm font-semibold tabular-nums',
+        amount === null && 'text-muted-foreground',
+      )}
     >
       {amount === null ? '—' : formatMoney(amount, currency)}
     </span>
@@ -147,7 +150,7 @@ const BalanceReadout = ({
 
 /**
  * What the bookmaker page says is in each account. The scraped figure already
- * includes bonus money, so withdrawable is the remainder — clamped in case a
+ * includes bonus money, so withdrawable is the remainder - clamped in case a
  * scrape and a bonus sync disagree for a moment. Without a bonus the breakdown
  * would only repeat the account's own figure back at it, so it stays away until
  * there is one to split off.
@@ -174,7 +177,8 @@ const liveBalances = (
         })),
       };
     const bonus = bonuses.reduce(
-      (sum, b) => (b.bookmaker === bookmaker && b.status === 'active' ? sum + b.currentAmount : sum),
+      (sum, b) =>
+        b.bookmaker === bookmaker && b.status === 'active' ? sum + b.currentAmount : sum,
       0,
     );
     const withdrawable = Math.max(amount - bonus, 0);
@@ -300,7 +304,7 @@ const BalanceControl = (): JSX.Element => {
 /**
  * Rewards the bookmaker is holding until they are collected. They are not in the
  * balance and no sync will move them, so the only thing that makes them money is
- * the player noticing — which is why they sit in the header rather than a page.
+ * the player noticing - which is why they sit in the header rather than a page.
  */
 const ClaimableChip = (): JSX.Element | null => {
   const { claimable, currency } = useDashboard();

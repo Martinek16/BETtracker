@@ -149,7 +149,9 @@ export const MoneyDetailCard = ({
       {
         label: 'Biggest stake',
         value:
-          overUsual === 0 ? money(biggest) : `${money(biggest)} · ${formatNumber(overUsual, 0)}× usual`,
+          overUsual === 0
+            ? money(biggest)
+            : `${money(biggest)} · ${formatNumber(overUsual, 0)}× usual`,
         hint: 'The largest single stake of the period, against the stake you usually place.',
       },
       { label: 'Odds your money rode', value: odds === 0 ? '—' : formatNumber(odds, 2) },
@@ -191,7 +193,9 @@ export const MoneyDetailCard = ({
             },
           ]
         : []),
-      ...(peakDay > 1 ? [{ label: 'Busiest day', value: `${formatNumber(peakDay, 0)} slips` }] : []),
+      ...(peakDay > 1
+        ? [{ label: 'Busiest day', value: `${formatNumber(peakDay, 0)} slips` }]
+        : []),
       ...(gap > 0 ? [{ label: 'Longest break', value: spellDuration(gap) }] : []),
       ...(cashedOut > 0
         ? [
@@ -201,7 +205,9 @@ export const MoneyDetailCard = ({
             },
           ]
         : []),
-      ...(voided > 0 ? [{ label: 'Void or refunded', value: `${formatNumber(voided, 0)} slips` }] : []),
+      ...(voided > 0
+        ? [{ label: 'Void or refunded', value: `${formatNumber(voided, 0)} slips` }]
+        : []),
       ...(bonus > 0
         ? [
             {
@@ -222,7 +228,11 @@ export const MoneyDetailCard = ({
       <div ref={bodyRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <dl className="min-h-0 flex-1 space-y-1.5 overflow-hidden">
           {rows.slice(0, Math.max(1, fits)).map((row) => (
-            <div key={row.label} className="flex items-baseline justify-between gap-3" title={row.hint}>
+            <div
+              key={row.label}
+              className="flex items-baseline justify-between gap-3"
+              title={row.hint}
+            >
               <dt className="text-[11px] text-muted-foreground">{row.label}</dt>
               <dd
                 className={cn(

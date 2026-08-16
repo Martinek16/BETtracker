@@ -1,5 +1,5 @@
 /**
- * Demo mode — the wiring, with nothing behind it.
+ * Demo mode - the wiring, with nothing behind it.
  *
  * Turned on by `demo=1` in the query or the hash. Every page reads its records
  * through `source.ts`, and each read there falls back to one of the functions
@@ -7,7 +7,7 @@
  * behind it is to fill one of these in; nothing else has to be touched.
  *
  * They all answer empty on purpose. What used to live here was a generated year
- * of bets built for one round of promotional screenshots — a fixture that size
+ * of bets built for one round of promotional screenshots - a fixture that size
  * has to be kept in step with every schema change, and it was worth that only
  * for as long as the screenshots were being taken.
  */

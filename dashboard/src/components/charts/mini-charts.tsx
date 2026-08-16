@@ -24,7 +24,7 @@ const tickAmount = (value: number): string => {
   return value >= 10 ? String(Math.round(value)) : String(Number(value.toFixed(2)));
 };
 
-/** 1, 2, 5, 10, 20 … — the round numbers an axis is read in. */
+/** 1, 2, 5, 10, 20 … - the round numbers an axis is read in. */
 const NICE = [1, 2, 5];
 
 /** Round steps spanning the stakes, so the axis climbs by tens, not by odd cents. */
@@ -99,48 +99,44 @@ export const StakeSparkline = ({
     // an opaque sibling would otherwise paint over it.
     <div className="relative z-10 mt-2 h-28 shrink-0 overflow-visible border-t border-border pt-1">
       <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 6, right: 0, bottom: -4, left: -6 }}>
-            {/* Named, so the axis and the tooltip count slips from one rather
+        <LineChart data={data} margin={{ top: 6, right: 0, bottom: -4, left: -6 }}>
+          {/* Named, so the axis and the tooltip count slips from one rather
                 than from the zero-based index recharts falls back to. */}
-            <XAxis dataKey="index" ticks={xTicks} {...AXIS} />
-            <YAxis
-              {...AXIS}
-              // Narrow on purpose: the ticks carry no currency symbol, and a
-              // four-figure one is left to lean out over the card's own padding
-              // rather than push the whole plot to the right.
-              width={26}
-              scale="log"
-              domain={[floor, 'dataMax']}
-              allowDataOverflow
-              ticks={yTicks}
-              tickFormatter={tickAmount}
-            />
-            <ReferenceLine
-              y={median}
-              stroke="hsl(var(--muted-foreground))"
-              strokeDasharray="3 3"
-            />
-            <Tooltip
-              cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeDasharray: '3 3' }}
-              content={
-                <ChartTooltip<{ index: number; stake: number }>
-                  heading={(row) => `Slip #${String(row.index)}`}
-                  lines={(row) => [
-                    `Staked ${formatMoney(row.stake, currency)}`,
-                    `Usual stake ${formatMoney(median, currency)}`,
-                  ]}
-                />
-              }
-            />
-            <Line
-              type="monotone"
-              dataKey="stake"
-              stroke="hsl(var(--foreground))"
-              strokeWidth={1.5}
-              dot={false}
-              isAnimationActive={false}
-            />
-          </LineChart>
+          <XAxis dataKey="index" ticks={xTicks} {...AXIS} />
+          <YAxis
+            {...AXIS}
+            // Narrow on purpose: the ticks carry no currency symbol, and a
+            // four-figure one is left to lean out over the card's own padding
+            // rather than push the whole plot to the right.
+            width={26}
+            scale="log"
+            domain={[floor, 'dataMax']}
+            allowDataOverflow
+            ticks={yTicks}
+            tickFormatter={tickAmount}
+          />
+          <ReferenceLine y={median} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+          <Tooltip
+            cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeDasharray: '3 3' }}
+            content={
+              <ChartTooltip<{ index: number; stake: number }>
+                heading={(row) => `Slip #${String(row.index)}`}
+                lines={(row) => [
+                  `Staked ${formatMoney(row.stake, currency)}`,
+                  `Usual stake ${formatMoney(median, currency)}`,
+                ]}
+              />
+            }
+          />
+          <Line
+            type="monotone"
+            dataKey="stake"
+            stroke="hsl(var(--foreground))"
+            strokeWidth={1.5}
+            dot={false}
+            isAnimationActive={false}
+          />
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );

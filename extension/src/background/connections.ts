@@ -4,7 +4,7 @@
  * A browser can be signed in to two accounts at the same site at the same time,
  * because a cookie jar belongs to an origin: stake.com and stake.bet are one
  * bookmaker and two logins. Holding a single session per bookmaker meant the
- * second one overwrote the first, and — worse — a run could pair one login's
+ * second one overwrote the first, and - worse - a run could pair one login's
  * session with the other login's identity and write its bets against the wrong
  * account. Keyed by the origin the session was captured on, neither can touch
  * the other.
@@ -19,7 +19,7 @@ import type { BankingCredentials, Credentials } from '../bookmakers/types';
 export interface Connection {
   key: string;
   bookmaker: Bookmaker;
-  /** The page origin this session was captured on — the mirror the user is on. */
+  /** The page origin this session was captured on - the mirror the user is on. */
   origin: string;
   creds: Credentials;
   /** The second session some sites need for deposits and withdrawals. */
@@ -35,8 +35,8 @@ let all: Record<string, Connection> = {};
 
 /**
  * Banking sessions seen before the sportsbook one they belong to. The site loads
- * its account backend first — on every page, and on the cashier page it is the
- * only backend called at all — so this is the normal order, not an edge case.
+ * its account backend first - on every page, and on the cashier page it is the
+ * only backend called at all - so this is the normal order, not an edge case.
  */
 let earlyBanking: Record<string, BankingCredentials> = {};
 
@@ -62,7 +62,7 @@ export const connectionAt = (bookmaker: Bookmaker, origin: string): Connection |
   all[keyOf(bookmaker, origin)] ?? null;
 
 /**
- * The session to speak for a bookmaker when no origin narrows it down — the
+ * The session to speak for a bookmaker when no origin narrows it down - the
  * alarm and the dashboard's own polling ask about a site, not about a tab. The
  * identified one wins: an unresolved session can write nothing anyway.
  */
@@ -100,7 +100,7 @@ export const putBanking = (
   const key = keyOf(bookmaker, origin);
   const connection = all[key];
   // Nothing to attach it to yet: the banking backend answered before the
-  // sportsbook did. Held rather than dropped — the page sends each session once,
+  // sportsbook did. Held rather than dropped - the page sends each session once,
   // so a discarded one is not offered again until the tab is reloaded.
   if (connection === undefined) {
     earlyBanking = { ...earlyBanking, [key]: banking };
@@ -132,8 +132,7 @@ export const dropConnection = (key: string): void => {
   // The banking backend has its own session with its own lifetime, and the page
   // offers it only once. Dropped with the sportsbook token it would be gone
   // until the next reload, taking the balance and the deposits with it.
-  if (connection.banking !== null)
-    earlyBanking = { ...earlyBanking, [key]: connection.banking };
+  if (connection.banking !== null) earlyBanking = { ...earlyBanking, [key]: connection.banking };
   persist();
 };
 
@@ -144,7 +143,7 @@ export const dropBanking = (key: string): void => {
   persist();
 };
 
-/** Everything held for one site, dropped — see the background's `forgetSite`. */
+/** Everything held for one site, dropped - see the background's `forgetSite`. */
 export const dropBookmaker = (bookmaker: Bookmaker): void => {
   all = Object.fromEntries(Object.entries(all).filter(([, c]) => c.bookmaker !== bookmaker));
   earlyBanking = Object.fromEntries(

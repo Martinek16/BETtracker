@@ -1,7 +1,7 @@
 /**
  * Currency conversion for accounts held in different currencies.
  *
- * Stored records are never rewritten — a bet placed in BTC stays a BTC bet.
+ * Stored records are never rewritten - a bet placed in BTC stays a BTC bet.
  * Conversion happens once, on the way into the dashboard, so every calculation
  * downstream keeps working on plain numbers that are already comparable.
  *
@@ -121,10 +121,7 @@ export interface Converted<T> {
   skipped: T[];
 }
 
-const partition = <T>(
-  rows: readonly T[],
-  convert: (row: T) => T | null,
-): Converted<T> => {
+const partition = <T>(rows: readonly T[], convert: (row: T) => T | null): Converted<T> => {
   const converted: T[] = [];
   const skipped: T[] = [];
   for (const row of rows) {

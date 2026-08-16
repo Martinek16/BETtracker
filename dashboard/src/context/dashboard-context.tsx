@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   accountKey,
   convertAmount,
@@ -60,9 +68,9 @@ interface DashboardContextValue {
    * have to hold what nothing on screen is asking for.
    */
   bets: Bet[];
-  /** Deposits and withdrawals, all time — money in and out of the account. */
+  /** Deposits and withdrawals, all time - money in and out of the account. */
   transactions: Transaction[];
-  /** Bonus grants, already converted. Never mixed into transactions — see `Bonus`. */
+  /** Bonus grants, already converted. Never mixed into transactions - see `Bonus`. */
   bonuses: Bonus[];
   /**
    * The same two, untouched by the account toggle. The header states what is in
@@ -177,7 +185,7 @@ interface Loaded {
   betCount: number;
   /** Oldest stored day, likewise counted rather than derived from `bets`. */
   earliest: string | null;
-  /** Bookmakers holding bets, from the index — `bets` only covers the window. */
+  /** Bookmakers holding bets, from the index - `bets` only covers the window. */
   betBookmakers: Bookmaker[];
 }
 
@@ -213,11 +221,10 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
   const [rangeWasStored] = useState(() => hasStored('range'));
   const [customFrom, setFrom] = usePersistedState<string | null>('customFrom', null);
   const [customTo, setTo] = usePersistedState<string | null>('customTo', null);
-  const [analysisUnit, setAnalysisUnit] = usePersistedState<AnalysisUnit>(
-    'analysisUnit',
+  const [analysisUnit, setAnalysisUnit] = usePersistedState<AnalysisUnit>('analysisUnit', 'slips', [
     'slips',
-    ['slips', 'selections'],
-  );
+    'selections',
+  ]);
   const [analyticsView, setAnalyticsView] = usePersistedState<AnalyticsView>(
     'analyticsView',
     'general',
@@ -263,7 +270,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
 
   // A balance counts as much as a bet: an account that has been read but never
   // played is still connected, and leaving it out hid it from the header entirely
-  // — which is exactly what an empty account looks like.
+  // - which is exactly what an empty account looks like.
   const activeBookmakers = useMemo(() => {
     const seen = new Set<Bookmaker>(data.betBookmakers);
     for (const row of [...data.transactions, ...data.bonuses, ...data.balances])
@@ -302,139 +309,147 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
       loadBetSummary(),
       getKnownAccounts(),
       loadPerks(),
-    ]).then(([
-      loadedBets,
-      loadedTxs,
-      loadedBonuses,
-      loadedBalances,
-      settings,
-      rates,
-      summary,
-      known,
-      loadedPerks,
-    ]) => {
-      if (!active) return;
-      setNumberFormat(settings.numberFormat, settings.symbolPosition);
-      // Both filters run once, here: switching an account off is what makes it
-      // vanish from every view, and converting once is what lets every
-      // calculation downstream keep working on plain comparable numbers.
-      const shown = <T extends AccountRef>(rows: readonly T[]): T[] =>
-        rows.filter((row) => !settings.hiddenAccounts.includes(accountKey(row)));
-      const visibleBets = shown(loadedBets);
-      const target = settings.currency;
-      const converted = {
-        bets: convertBets(visibleBets, rates, target),
-        transactions: convertTransactions(shown(loadedTxs), rates, target),
-        bonuses: convertBonuses(shown(loadedBonuses), rates, target),
-      };
-      // A balance is read off the page, where the currency symbol can be missing;
-      // the account's own movements are denominated in it and say which it is.
-      const accountCurrency = (bm: Bookmaker): string =>
-        loadedTxs.find((t) => t.bookmaker === bm)?.currency ??
-        loadedBets.find((b) => b.bookmaker === bm)?.currency ??
-        target;
-      const balances = shown(loadedBalances).flatMap((b) => {
-        const day = dayOf(b.capturedAt);
-        const amount = convertAmount(
-          b.amount,
-          b.currency ?? accountCurrency(b.bookmaker),
-          day,
-          rates,
-          target,
-        );
-        if (amount === null) {
-          // Dropping it here empties the live list, and the header then falls
-          // back to the tracked figure without ever saying why.
-          log(
-            'warn',
-            b.bookmaker,
-            `balance left out: no ${b.currency ?? '?'}→${target} rate near ${day}`,
+    ]).then(
+      ([
+        loadedBets,
+        loadedTxs,
+        loadedBonuses,
+        loadedBalances,
+        settings,
+        rates,
+        summary,
+        known,
+        loadedPerks,
+      ]) => {
+        if (!active) return;
+        setNumberFormat(settings.numberFormat, settings.symbolPosition);
+        // Both filters run once, here: switching an account off is what makes it
+        // vanish from every view, and converting once is what lets every
+        // calculation downstream keep working on plain comparable numbers.
+        const shown = <T extends AccountRef>(rows: readonly T[]): T[] =>
+          rows.filter((row) => !settings.hiddenAccounts.includes(accountKey(row)));
+        const visibleBets = shown(loadedBets);
+        const target = settings.currency;
+        const converted = {
+          bets: convertBets(visibleBets, rates, target),
+          transactions: convertTransactions(shown(loadedTxs), rates, target),
+          bonuses: convertBonuses(shown(loadedBonuses), rates, target),
+        };
+        // A balance is read off the page, where the currency symbol can be missing;
+        // the account's own movements are denominated in it and say which it is.
+        const accountCurrency = (bm: Bookmaker): string =>
+          loadedTxs.find((t) => t.bookmaker === bm)?.currency ??
+          loadedBets.find((b) => b.bookmaker === bm)?.currency ??
+          target;
+        const balances = shown(loadedBalances).flatMap((b) => {
+          const day = dayOf(b.capturedAt);
+          const amount = convertAmount(
+            b.amount,
+            b.currency ?? accountCurrency(b.bookmaker),
+            day,
+            rates,
+            target,
           );
-          return [];
-        }
-        // A coin nobody has a rate for is left out of the list rather than
-        // priced at nothing; the account's own total already counted it.
-        const holdings = (b.holdings ?? []).flatMap((h) => {
-          const worth = convertAmount(h.amount, h.currency, day, rates, target);
-          return worth === null ? [] : [{ ...h, worth }];
-        });
-        const vault =
-          b.vault === undefined
-            ? null
-            : convertAmount(b.vault, b.currency ?? accountCurrency(b.bookmaker), day, rates, target);
-        const inTarget = (value: number): number | null =>
-          convertAmount(value, b.currency ?? accountCurrency(b.bookmaker), day, rates, target);
-        const sports = b.wagered === undefined ? null : inTarget(b.wagered.sports);
-        const casino = b.wagered === undefined ? null : inTarget(b.wagered.casino);
-        return [
-          {
-            bookmaker: b.bookmaker,
-            key: accountKey(b),
-            amount,
-            holdings,
-            ...(vault === null ? {} : { vault }),
-            ...(sports === null || casino === null ? {} : { wagered: { sports, casino } }),
-          },
-        ];
-      });
-      // Rakeback sits in coins the display currency may have no rate for, so the
-      // bookmaker's own USD pricing is the fallback before giving up on a figure.
-      const claimable = shown(loadedPerks).flatMap((p): ClaimableReward[] => {
-        const balances = p.rakeback?.balances ?? [];
-        if (!settings.showClaimable) return [];
-        if (p.rakeback?.enabled !== true || balances.length === 0) return [];
-        // Claimed on the site since this reading was taken, so what it says is
-        // waiting is already in the balance.
-        if (collectedSince(loadedBonuses, p, p.readAt)) return [];
-        const day = dayOf(p.readAt);
-        let worth = 0;
-        for (const b of balances) {
-          const priced =
-            convertAmount(b.amount, b.currency, day, rates, target) ??
-            (b.worth === null ? null : convertAmount(b.worth, 'USD', day, rates, target));
-          if (priced === null) {
-            worth = Number.NaN;
-            break;
+          if (amount === null) {
+            // Dropping it here empties the live list, and the header then falls
+            // back to the tracked figure without ever saying why.
+            log(
+              'warn',
+              b.bookmaker,
+              `balance left out: no ${b.currency ?? '?'}→${target} rate near ${day}`,
+            );
+            return [];
           }
-          worth += priced;
-        }
-        return [
-          {
-            bookmaker: p.bookmaker,
-            key: accountKey(p),
-            kind: 'rakeback',
-            worth: Number.isNaN(worth) ? null : worth,
-            parts: balances.map((b) => ({ currency: b.currency, amount: b.amount })),
-          },
-        ];
-      });
-      setData({
-        bets: converted.bets.converted,
-        transactions: converted.transactions.converted,
-        bonuses: converted.bonuses.converted,
-        balances,
-        claimable,
-        currency: target,
-        oddsFormat: settings.oddsFormat,
-        balanceSource: settings.balanceSource,
-        balanceLayout: settings.balanceLayout,
-        includeBonus: settings.includeBonus,
-        monoIcons: settings.monoIcons,
-        unconvertible:
-          converted.bets.skipped.length +
-          converted.transactions.skipped.length +
-          converted.bonuses.skipped.length,
-        betCount: summary.count,
-        earliest: summary.earliest,
-        // Counted per bookmaker, hidden per account: a site whose every known
-        // login is switched off has been switched off, and listing it would put
-        // a toggle on screen that nothing behind it can fill.
-        betBookmakers: summary.bookmakers.filter((b) =>
-          shown(known).some((a) => a.bookmaker === b),
-        ),
-      });
-      setLoading(false);
-    });
+          // A coin nobody has a rate for is left out of the list rather than
+          // priced at nothing; the account's own total already counted it.
+          const holdings = (b.holdings ?? []).flatMap((h) => {
+            const worth = convertAmount(h.amount, h.currency, day, rates, target);
+            return worth === null ? [] : [{ ...h, worth }];
+          });
+          const vault =
+            b.vault === undefined
+              ? null
+              : convertAmount(
+                  b.vault,
+                  b.currency ?? accountCurrency(b.bookmaker),
+                  day,
+                  rates,
+                  target,
+                );
+          const inTarget = (value: number): number | null =>
+            convertAmount(value, b.currency ?? accountCurrency(b.bookmaker), day, rates, target);
+          const sports = b.wagered === undefined ? null : inTarget(b.wagered.sports);
+          const casino = b.wagered === undefined ? null : inTarget(b.wagered.casino);
+          return [
+            {
+              bookmaker: b.bookmaker,
+              key: accountKey(b),
+              amount,
+              holdings,
+              ...(vault === null ? {} : { vault }),
+              ...(sports === null || casino === null ? {} : { wagered: { sports, casino } }),
+            },
+          ];
+        });
+        // Rakeback sits in coins the display currency may have no rate for, so the
+        // bookmaker's own USD pricing is the fallback before giving up on a figure.
+        const claimable = shown(loadedPerks).flatMap((p): ClaimableReward[] => {
+          const balances = p.rakeback?.balances ?? [];
+          if (!settings.showClaimable) return [];
+          if (p.rakeback?.enabled !== true || balances.length === 0) return [];
+          // Claimed on the site since this reading was taken, so what it says is
+          // waiting is already in the balance.
+          if (collectedSince(loadedBonuses, p, p.readAt)) return [];
+          const day = dayOf(p.readAt);
+          let worth = 0;
+          for (const b of balances) {
+            const priced =
+              convertAmount(b.amount, b.currency, day, rates, target) ??
+              (b.worth === null ? null : convertAmount(b.worth, 'USD', day, rates, target));
+            if (priced === null) {
+              worth = Number.NaN;
+              break;
+            }
+            worth += priced;
+          }
+          return [
+            {
+              bookmaker: p.bookmaker,
+              key: accountKey(p),
+              kind: 'rakeback',
+              worth: Number.isNaN(worth) ? null : worth,
+              parts: balances.map((b) => ({ currency: b.currency, amount: b.amount })),
+            },
+          ];
+        });
+        setData({
+          bets: converted.bets.converted,
+          transactions: converted.transactions.converted,
+          bonuses: converted.bonuses.converted,
+          balances,
+          claimable,
+          currency: target,
+          oddsFormat: settings.oddsFormat,
+          balanceSource: settings.balanceSource,
+          balanceLayout: settings.balanceLayout,
+          includeBonus: settings.includeBonus,
+          monoIcons: settings.monoIcons,
+          unconvertible:
+            converted.bets.skipped.length +
+            converted.transactions.skipped.length +
+            converted.bonuses.skipped.length,
+          betCount: summary.count,
+          earliest: summary.earliest,
+          // Counted per bookmaker, hidden per account: a site whose every known
+          // login is switched off has been switched off, and listing it would put
+          // a toggle on screen that nothing behind it can fill.
+          betBookmakers: summary.bookmakers.filter((b) =>
+            shown(known).some((a) => a.bookmaker === b),
+          ),
+        });
+        setLoading(false);
+      },
+    );
     return () => {
       active = false;
     };

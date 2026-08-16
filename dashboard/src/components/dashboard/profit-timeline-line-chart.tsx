@@ -66,11 +66,7 @@ export const ProfitTimelineLineChart = ({
   const split = series !== undefined && series.length >= 2;
 
   const scale = useMemo(
-    () =>
-      buildProfitChartScale(
-        split ? series!.flatMap((s) => s.values) : running,
-        currency,
-      ),
+    () => buildProfitChartScale(split ? series!.flatMap((s) => s.values) : running, currency),
     [split, series, running, currency],
   );
 
@@ -121,7 +117,7 @@ export const ProfitTimelineLineChart = ({
   const showZeroLine = scale.yMin < 0 && scale.yMax > 0;
   // Hard colour stop at the zero line so the line/fill is green above 0, red below.
   const zeroOffset = Math.max(0, Math.min(100, scale.zeroPct));
-  // The marker sits on the curve, so it takes the curve's own colour there —
+  // The marker sits on the curve, so it takes the curve's own colour there -
   // which is the running total's sign, not the period's profit.
   const runningTone = (index: number): string =>
     (running[index] ?? 0) >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))';
@@ -141,7 +137,10 @@ export const ProfitTimelineLineChart = ({
       {split ? (
         <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-1">
           {seriesPoints.map((s) => (
-            <span key={s.label} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <span
+              key={s.label}
+              className="flex items-center gap-1.5 text-[10px] text-muted-foreground"
+            >
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} />
               {s.label}
             </span>
@@ -178,140 +177,140 @@ export const ProfitTimelineLineChart = ({
           }
           onMouseLeave={() => setHoveredIndex(null)}
         >
-            {scale.yTicks.map((tick, i) => {
-              const { pct, lineClassName } = yTickLayout(i, scale.yTicks.length);
-              return (
-                <div
-                  key={`grid-${tick}`}
-                  className={cn(
-                    'pointer-events-none absolute inset-x-0 border-t',
-                    tick === 0 && showZeroLine ? 'border-border/60' : 'border-border/15',
-                    lineClassName,
-                  )}
-                  style={{ top: `${pct}%` }}
-                />
-              );
-            })}
+          {scale.yTicks.map((tick, i) => {
+            const { pct, lineClassName } = yTickLayout(i, scale.yTicks.length);
+            return (
+              <div
+                key={`grid-${tick}`}
+                className={cn(
+                  'pointer-events-none absolute inset-x-0 border-t',
+                  tick === 0 && showZeroLine ? 'border-border/60' : 'border-border/15',
+                  lineClassName,
+                )}
+                style={{ top: `${pct}%` }}
+              />
+            );
+          })}
 
-            <svg
-              className="pointer-events-none absolute inset-0 h-full w-full"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-            >
-              {/* userSpaceOnUse, not the default objectBoundingBox: the latter
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            {/* userSpaceOnUse, not the default objectBoundingBox: the latter
                   measures offsets against the path's own bounding box, so the
                   colour stop lands wherever the line happens to peak instead of
-                  on zero — painting part of a losing stretch green. */}
-              <defs>
-                <linearGradient
-                  id={FILL_GRADIENT_ID}
-                  gradientUnits="userSpaceOnUse"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="100"
-                >
-                  <stop offset="0%" stopColor="hsl(var(--profit))" stopOpacity={0.22} />
-                  <stop offset={`${zeroOffset}%`} stopColor="hsl(var(--profit))" stopOpacity={0} />
-                  <stop offset={`${zeroOffset}%`} stopColor="hsl(var(--loss))" stopOpacity={0} />
-                  <stop offset="100%" stopColor="hsl(var(--loss))" stopOpacity={0.22} />
-                </linearGradient>
-                <linearGradient
-                  id={STROKE_GRADIENT_ID}
-                  gradientUnits="userSpaceOnUse"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="100"
-                >
-                  <stop offset="0%" stopColor="hsl(var(--profit))" />
-                  <stop offset={`${zeroOffset}%`} stopColor="hsl(var(--profit))" />
-                  <stop offset={`${zeroOffset}%`} stopColor="hsl(var(--loss))" />
-                  <stop offset="100%" stopColor="hsl(var(--loss))" />
-                </linearGradient>
-              </defs>
+                  on zero - painting part of a losing stretch green. */}
+            <defs>
+              <linearGradient
+                id={FILL_GRADIENT_ID}
+                gradientUnits="userSpaceOnUse"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="100"
+              >
+                <stop offset="0%" stopColor="hsl(var(--profit))" stopOpacity={0.22} />
+                <stop offset={`${zeroOffset}%`} stopColor="hsl(var(--profit))" stopOpacity={0} />
+                <stop offset={`${zeroOffset}%`} stopColor="hsl(var(--loss))" stopOpacity={0} />
+                <stop offset="100%" stopColor="hsl(var(--loss))" stopOpacity={0.22} />
+              </linearGradient>
+              <linearGradient
+                id={STROKE_GRADIENT_ID}
+                gradientUnits="userSpaceOnUse"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="100"
+              >
+                <stop offset="0%" stopColor="hsl(var(--profit))" />
+                <stop offset={`${zeroOffset}%`} stopColor="hsl(var(--profit))" />
+                <stop offset={`${zeroOffset}%`} stopColor="hsl(var(--loss))" />
+                <stop offset="100%" stopColor="hsl(var(--loss))" />
+              </linearGradient>
+            </defs>
 
-              {split ? (
-                // No area fill per account: two translucent bands over each other
-                // read as a third colour that means nothing.
-                seriesPoints.map((s) => (
-                  <path
-                    key={s.label}
-                    d={smoothLinePath(s.points)}
-                    fill="none"
-                    stroke={s.color}
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    vectorEffect="non-scaling-stroke"
-                  />
-                ))
-              ) : (
-                <>
-                  <path d={areaPath} fill={`url(#${FILL_GRADIENT_ID})`} stroke="none" />
-                  <path
-                    d={linePath}
-                    fill="none"
-                    stroke={`url(#${STROKE_GRADIENT_ID})`}
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    vectorEffect="non-scaling-stroke"
-                  />
-                </>
-              )}
-
-              {crosshairX !== null ? (
-                <line
-                  x1={crosshairX}
-                  y1={0}
-                  x2={crosshairX}
-                  y2={100}
-                  stroke="hsl(var(--foreground))"
-                  strokeWidth="1"
+            {split ? (
+              // No area fill per account: two translucent bands over each other
+              // read as a third colour that means nothing.
+              seriesPoints.map((s) => (
+                <path
+                  key={s.label}
+                  d={smoothLinePath(s.points)}
+                  fill="none"
+                  stroke={s.color}
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   vectorEffect="non-scaling-stroke"
-                  opacity={0.2}
                 />
-              ) : null}
-            </svg>
+              ))
+            ) : (
+              <>
+                <path d={areaPath} fill={`url(#${FILL_GRADIENT_ID})`} stroke="none" />
+                <path
+                  d={linePath}
+                  fill="none"
+                  stroke={`url(#${STROKE_GRADIENT_ID})`}
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+              </>
+            )}
 
-            {!split && hoveredIndex === null && endPoint ? (
-              <span
-                className="pointer-events-none absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style={{
-                  left: `${endPoint.x}%`,
-                  top: `${endPoint.y}%`,
-                  backgroundColor: runningTone(running.length - 1),
-                }}
+            {crosshairX !== null ? (
+              <line
+                x1={crosshairX}
+                y1={0}
+                x2={crosshairX}
+                y2={100}
+                stroke="hsl(var(--foreground))"
+                strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
+                opacity={0.2}
               />
             ) : null}
+          </svg>
 
-            {/* Solid, in the colour of the curve it sits on: a ringed marker on a
+          {!split && hoveredIndex === null && endPoint ? (
+            <span
+              className="pointer-events-none absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              style={{
+                left: `${endPoint.x}%`,
+                top: `${endPoint.y}%`,
+                backgroundColor: runningTone(running.length - 1),
+              }}
+            />
+          ) : null}
+
+          {/* Solid, in the colour of the curve it sits on: a ringed marker on a
                 white plate reads as its own mark rather than a point on the line. */}
-            {!split && hoveredIndex !== null && activePoint ? (
-              <span
-                className="pointer-events-none absolute z-[5] h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style={{
-                  left: `${activePoint.x}%`,
-                  top: `${activePoint.y}%`,
-                  backgroundColor: runningTone(hoveredIndex),
-                }}
-              />
-            ) : null}
+          {!split && hoveredIndex !== null && activePoint ? (
+            <span
+              className="pointer-events-none absolute z-[5] h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              style={{
+                left: `${activePoint.x}%`,
+                top: `${activePoint.y}%`,
+                backgroundColor: runningTone(hoveredIndex),
+              }}
+            />
+          ) : null}
 
-            {split && hoveredIndex !== null
-              ? seriesPoints.map((s) => {
-                  const p = s.points[hoveredIndex];
-                  if (p === undefined) return null;
-                  return (
-                    <span
-                      key={s.label}
-                      className="pointer-events-none absolute z-[5] h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                      style={{ left: `${p.x}%`, top: `${p.y}%`, backgroundColor: s.color }}
-                    />
-                  );
-                })
-              : null}
+          {split && hoveredIndex !== null
+            ? seriesPoints.map((s) => {
+                const p = s.points[hoveredIndex];
+                if (p === undefined) return null;
+                return (
+                  <span
+                    key={s.label}
+                    className="pointer-events-none absolute z-[5] h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                    style={{ left: `${p.x}%`, top: `${p.y}%`, backgroundColor: s.color }}
+                  />
+                );
+              })
+            : null}
 
           {/* Same component and same rows as the bar view: switching the toggle
               should change the drawing, not what the chart is willing to tell you. */}
@@ -335,7 +334,10 @@ export const ProfitTimelineLineChart = ({
                   ? seriesPoints.map((s) => ({
                       label: s.label,
                       value: formatMoney(s.values[hoveredIndex] ?? 0, currency),
-                      tone: (s.values[hoveredIndex] ?? 0) >= 0 ? ('profit' as const) : ('loss' as const),
+                      tone:
+                        (s.values[hoveredIndex] ?? 0) >= 0
+                          ? ('profit' as const)
+                          : ('loss' as const),
                       icon: (
                         <AccountIcon
                           bookmaker={s.bookmaker}
@@ -349,8 +351,16 @@ export const ProfitTimelineLineChart = ({
                         value: formatMoney(active.profit, currency),
                         tone: active.profit >= 0 ? ('profit' as const) : ('loss' as const),
                       },
-                      { label: 'Won', value: formatMoney(active.wins, currency), tone: 'profit' as const },
-                      { label: 'Lost', value: formatMoney(active.losses, currency), tone: 'loss' as const },
+                      {
+                        label: 'Won',
+                        value: formatMoney(active.wins, currency),
+                        tone: 'profit' as const,
+                      },
+                      {
+                        label: 'Lost',
+                        value: formatMoney(active.losses, currency),
+                        tone: 'loss' as const,
+                      },
                       { label: 'Bets', value: String(active.bets), tone: 'neutral' as const },
                     ]
               }

@@ -3,11 +3,11 @@
  * the site's own JS context. It observes the page's own authenticated calls and
  * forwards the auth headers to the content script.
  *
- * Everything site-specific comes from `bookmakers/capture` — that file has no
+ * Everything site-specific comes from `bookmakers/capture` - that file has no
  * runtime imports on purpose, because anything pulled in here would resolve
  * against the *page's* globals (its IndexedDB, its fetch) rather than ours.
  *
- * It never makes its own requests — it only reads headers the page already sends.
+ * It never makes its own requests - it only reads headers the page already sends.
  */
 
 import { CAPTURE_RULES, bookmakerForHost } from '../bookmakers/capture';
@@ -19,7 +19,7 @@ const DATA_TAG = 'bettracker-data';
 
 /**
  * The one rule that owns this page. Taken from the hostname when it is one we
- * ship, and otherwise left open until a request identifies the site — a mirror
+ * ship, and otherwise left open until a request identifies the site - a mirror
  * we have never seen has an address that says nothing but makes the very same
  * calls, and that is what we read it from.
  */
@@ -50,7 +50,7 @@ const emitData = (kind: string, payload: unknown): void => {
 /**
  * Says something, in the app rather than in the bookmaker's console. This script
  * is the one part of the extension running inside the site's page, so anything
- * it printed would be printed to the site — read by whoever is looking at it,
+ * it printed would be printed to the site - read by whoever is looking at it,
  * and by the site's own scripts. It is relayed to the app's log instead.
  */
 const report = (level: 'info' | 'warn', scope: string, message: string): void => {
@@ -58,7 +58,7 @@ const report = (level: 'info' | 'warn', scope: string, message: string): void =>
 };
 
 /**
- * Rules read the host off the URL, so a relative one has to be resolved first —
+ * Rules read the host off the URL, so a relative one has to be resolved first -
  * a site calling its own API writes `/_api/graphql`, not the full address.
  */
 const absolute = (url: string): string => new URL(url, window.location.href).href;
@@ -73,7 +73,7 @@ const seenOperations = new Set<string>();
  * happening and carry no session we can read, which is why an account reads as
  * signed out while the site plainly shows it signed in. Said once per operation,
  * never with the answer, so no balance or address is ever recorded. Naming every
- * call instead would bury the rest of the log — a Stake page makes dozens.
+ * call instead would bury the rest of the log - a Stake page makes dozens.
  */
 const observe = (url: string, body: unknown): void => {
   if (rule?.observe === undefined || typeof body !== 'string' || lastSerialized !== '') return;
@@ -84,8 +84,8 @@ const observe = (url: string, body: unknown): void => {
 };
 
 /**
- * The user just did something to their account. Sent as the bare fact — no URL,
- * no body, no answer — so the background can re-read that login straight away
+ * The user just did something to their account. Sent as the bare fact - no URL,
+ * no body, no answer - so the background can re-read that login straight away
  * instead of waiting for the next alarm. It debounces this; the page can fire
  * several in a row while a slip is confirmed.
  */
@@ -148,7 +148,7 @@ window.fetch = function patchedFetch(
   }
   // Always on `window`, never on the call site's `this`. This bundle is strict,
   // so a page calling bare `fetch(url)` hands us `undefined`, and `fetch` invoked
-  // on anything but the window throws "Illegal invocation" — which would take the
+  // on anything but the window throws "Illegal invocation" - which would take the
   // site's own request down with it.
   const promise = originalFetch.apply(window, [input, init] as Parameters<typeof originalFetch>);
   if (capturedUrl !== '' && isRelayUrl(capturedUrl)) {
@@ -200,7 +200,10 @@ OriginalXHR.prototype.setRequestHeader = function setRequestHeader(
 };
 
 const originalSend = OriginalXHR.prototype.send;
-OriginalXHR.prototype.send = function send(this: TrackedXHR, body?: Document | XMLHttpRequestBodyInit | null): void {
+OriginalXHR.prototype.send = function send(
+  this: TrackedXHR,
+  body?: Document | XMLHttpRequestBodyInit | null,
+): void {
   try {
     const url = this[urlKey];
     const store = this[headersKey] ?? {};

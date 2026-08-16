@@ -27,7 +27,7 @@ interface BandQuestionProps {
 
 /**
  * "Which X pays me?" for any way of slicing whole slips. Every one of these
- * questions is the same split — one card instead of one file per dimension.
+ * questions is the same split - one card instead of one file per dimension.
  */
 export const BandQuestion = ({
   bets,
@@ -59,8 +59,7 @@ export const BandQuestion = ({
   }, [bets, currency, dimension, order]);
 
   const solid = rows.filter((r) => r.sample >= MIN_ROWS_SAMPLE);
-  const best =
-    order === undefined ? solid[0] : [...solid].sort((a, b) => b.value - a.value)[0];
+  const best = order === undefined ? solid[0] : [...solid].sort((a, b) => b.value - a.value)[0];
   // Nothing has enough slips yet: still name the front runner, but say it is thin.
   const leader = best ?? [...rows].sort((a, b) => b.value - a.value)[0];
 

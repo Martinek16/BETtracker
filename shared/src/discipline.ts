@@ -28,8 +28,8 @@ const sideOf = (bets: readonly Bet[]): TiltSide => {
 
 /**
  * Does a loss make you bet bigger? Each bet is bucketed by the outcome of the
- * last result the user had actually seen when they placed it — the most recent
- * *other* bet that had already settled — not by position in the list, which
+ * last result the user had actually seen when they placed it - the most recent
+ * *other* bet that had already settled - not by position in the list, which
  * would credit them with results they could not yet know.
  */
 export const tiltCheck = (bets: readonly Bet[]): TiltCheck => {

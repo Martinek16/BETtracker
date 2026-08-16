@@ -234,7 +234,7 @@ describe('stake balance', () => {
   });
 
   it('reports a single-coin wallet unpriced rather than not at all', () => {
-    // Nothing to add up, so no price list is needed to state it — and the app's
+    // Nothing to add up, so no price list is needed to state it - and the app's
     // own rate table prices it afterwards. A refused price list used to blank
     // such a wallet, which in turn told the money walk nothing had moved.
     const one = [{ available: { amount: 12.5, currency: 'ltc' }, vault: { amount: 0 } }];

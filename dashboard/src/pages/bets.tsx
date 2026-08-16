@@ -4,14 +4,8 @@ import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { profitOf, type Bet } from '@betanal/shared';
 import { BetTableRow } from '@/components/dashboard/bet-table-row';
 import { betSearchText, SLIP_KIND_LABEL, singleEventLabel, slipKind } from '@/lib/bet-display';
-import {
-  DashboardCard,
-  DashboardCardHeading,
-} from '@/components/dashboard/dashboard-card';
-import {
-  SegmentedToggle,
-  type SegmentedOption,
-} from '@/components/dashboard/segmented-toggle';
+import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
+import { SegmentedToggle, type SegmentedOption } from '@/components/dashboard/segmented-toggle';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -106,7 +100,7 @@ const SortHead = ({ column, sort, onSort }: SortHeadProps): JSX.Element => {
 export const BetsPage = (): JSX.Element => {
   const { bets, periodBets, loading, periodLabel, activeBookmakers } = useDashboard();
   // The same open slips and figures the panel shows, from the one poll they
-  // share — so a bet the book has since moved on reads alike in both places.
+  // share - so a bet the book has since moved on reads alike in both places.
   const { bets: liveBets, scores, refreshedAt } = useLiveBets();
   // Naming the account only means something when there is more than one.
   const showAccount = activeBookmakers.length >= 2;
@@ -223,8 +217,8 @@ export const BetsPage = (): JSX.Element => {
             {needle !== '' || status !== 'all'
               ? 'No bets match this search or filter.'
               : bets.length > 0
-              ? `No bets in ${periodLabel}. Try a wider time range (e.g. All) — filtering uses bet placement date, not match date.`
-              : 'No bets yet. Visit bet-at-home while logged in, open bet history, then force full resync from the extension popup.'}
+                ? `No bets in ${periodLabel}. Try a wider time range (e.g. All) - filtering uses bet placement date, not match date.`
+                : 'No bets yet. Visit bet-at-home while logged in, open bet history, then force full resync from the extension popup.'}
           </p>
         ) : (
           <Table

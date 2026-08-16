@@ -16,7 +16,7 @@ import type { ScrapedBalance } from '../messaging';
 const AMOUNT_SELECTOR = '.FormattedAmount';
 
 // Money-looking leaf text: at most a symbol either side of a grouped figure with
-// two decimals. Deliberately strict — this stands in for a class name, so a false
+// two decimals. Deliberately strict - this stands in for a class name, so a false
 // match here becomes a wrong balance.
 const MONEY_TEXT = /^\D{0,3}\d{1,3}(?:[.,\s]\d{3})*[.,]\d{2}\D{0,4}$/;
 
@@ -25,7 +25,8 @@ export const looksLikeMoney = (text: string): boolean => MONEY_TEXT.test(text.tr
 // Markup hints scored when walking up from a candidate amount.
 const STRONG_HINT = /balance|wallet|saldo|funds|cashier|guthaben|stanje/i;
 const WEAK_HINT = /account|user|profile|header|navbar|nav-|topbar|deposit/i;
-const NEGATIVE_HINT = /betslip|bet-slip|slip|stake|coupon|ticket|odds|market|payout|winnings|quota|input/i;
+const NEGATIVE_HINT =
+  /betslip|bet-slip|slip|stake|coupon|ticket|odds|market|payout|winnings|quota|input/i;
 
 const CURRENCY_TOKENS: ReadonlyArray<readonly [RegExp, string]> = [
   [/€|\beur\b/i, 'EUR'],
@@ -93,7 +94,7 @@ const contextScore = (el: Element): number => {
  * Header fallback: bet-at-home obfuscates class names, so the wallet figure may
  * carry no keyword signal. The balance sits in the top toolbar, so when nothing
  * scores positively we take the topmost (then right-most) visible amount near the
- * top edge — the usual position for the account balance.
+ * top edge - the usual position for the account balance.
  */
 const headerFallback = (candidates: readonly Element[]): Element | null => {
   let best: Element | null = null;
@@ -113,7 +114,7 @@ const headerFallback = (candidates: readonly Element[]): Element | null => {
 
 /**
  * The site's own class is the only thing tying us to its markup, and it is
- * generated — a redesign renames it and the balance silently disappears for good.
+ * generated - a redesign renames it and the balance silently disappears for good.
  * When it matches nothing, any short money-looking leaf is a candidate instead and
  * the scoring below picks between them exactly as before.
  */
@@ -141,7 +142,7 @@ export const scrapeBalance = (): ScrapedBalance | null => {
     }
   }
 
-  // No keyword signal — fall back to the header-region amount by position.
+  // No keyword signal - fall back to the header-region amount by position.
   if (best === null || bestScore <= 0) best = headerFallback(candidates);
   if (best === null) return null;
 

@@ -1,8 +1,8 @@
 /**
  * A bookmaker is a folder, and this is what makes it one.
  *
- * Half of adding a site is remembering the three collectors — the capture rules,
- * the adapter registry and the catalogue — and each omission fails somewhere
+ * Half of adding a site is remembering the three collectors - the capture rules,
+ * the adapter registry and the catalogue - and each omission fails somewhere
  * else entirely: an unregistered rule means the page is read and nothing
  * happens, a missing catalogue entry means a bookmaker with no name and no
  * colour on screen. Checked here so a contributor finds out from a test rather

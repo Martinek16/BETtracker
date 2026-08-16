@@ -51,7 +51,7 @@ const sportOf = (sel: Selection): string | null =>
   canonicalSport(sel.leg.sport ?? sel.bet.sport, sel.bet.bookmaker);
 
 /** The group a selection falls in, or null when the dimension does not apply to
- * it — a pick that names no team has no place in the team view. */
+ * it - a pick that names no team has no place in the team view. */
 export const legKeyOf = (sel: Selection, dimension: LegDimension): string | null => {
   const { bet, leg } = sel;
   switch (dimension) {
@@ -92,7 +92,7 @@ export const legKeyOf = (sel: Selection, dimension: LegDimension): string | null
 
 /**
  * Selection-level performance. A leg of a combo never had a stake of its own, so
- * `moneyPl` splits its slip's result evenly over the legs that carried it — real
+ * `moneyPl` splits its slip's result evenly over the legs that carried it - real
  * money, attributed, never invented. `flatUnitsPl` stays the like-for-like
  * measure: an explicit "what if these were 1u singles" counterfactual.
  */
@@ -104,7 +104,7 @@ export interface SelectionStats {
   label: string;
   /** Every selection in the group, settled or not. */
   picks: number;
-  /** Selections that won or lost — the denominator for hit rate. */
+  /** Selections that won or lost - the denominator for hit rate. */
   decided: number;
   won: number;
   hitRate: number;
@@ -140,7 +140,7 @@ const isDecidedLeg = (leg: BetLeg): boolean => leg.status === 'won' || leg.statu
 
 /**
  * What one leg would have returned as a flat 1u single. Priced at the selection's
- * own odds, which is the slip's price where the book files no price per leg —
+ * own odds, which is the slip's price where the book files no price per leg -
  * `flatUnitProfit` would read that leg as a 1.00 shot and pay a winner nothing.
  */
 const swingOf = (sel: Selection): number => {
@@ -205,7 +205,7 @@ const SCOPE = '\u0000';
 /**
  * One competition, two house spellings: "La Liga" against "LaLiga", "Prva liga"
  * against "Prvaliga". A space is not a competition, so it is dropped for the
- * purpose of telling two groups apart — and only for that.
+ * purpose of telling two groups apart - and only for that.
  */
 const spelling = (name: string): string => name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 

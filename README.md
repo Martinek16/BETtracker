@@ -115,7 +115,7 @@ It reads the same pages your browser already loaded, with your own session, slow
 Missing yours? Add it yourself, in a few minutes. An AI tool writes the code. You
 just follow the steps.
 
-**What you need:** an account at that bookmaker, and an AI coding tool —
+**What you need:** an account at that bookmaker, and an AI coding tool -
 Claude Code, Cursor or similar.
 
 **Where to start:** paste this into the tool, with your bookmaker's address
@@ -124,7 +124,7 @@ instead of the example.
 ```
 Add the bookmaker https://www.yourbookmaker.com to BETtracker.
 
-The project is https://github.com/Martinek16/BETtracker — clone it,
+The project is https://github.com/Martinek16/BETtracker - clone it,
 read AGENTS.md, and follow it.
 ```
 
@@ -135,7 +135,7 @@ It sets everything up and tells you what to do next. The whole of it:
 2. **The tool** strips your tokens and your name out of that file, writes the
    folder, runs the tests and builds.
 3. **You** load the extension and check the figures. The extension itself lists
-   what the new site has proved and what is still untested — Options →
+   what the new site has proved and what is still untested - Options →
    Accounts → Add a bookmaker.
 
 Two of the three are yours: signing in, and saying whether the numbers are
@@ -151,7 +151,7 @@ It all goes into one folder. Nothing else in the project changes.
   Fix the folder you use.
 - **No account at the site you want?**
   [Ask for it](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml)
-  — somebody who plays there may pick it up.
+  - somebody who plays there may pick it up.
 - **A number looks wrong?** Open an
   [issue](https://github.com/Martinek16/BETtracker/issues/new?template=bug.yml).
   Wrong numbers are the only real failure here.

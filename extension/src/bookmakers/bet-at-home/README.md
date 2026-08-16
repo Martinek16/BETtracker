@@ -13,7 +13,7 @@ host:
 | Banking       | `*.nwacdn.com`                  | `x-sessionid` + the player id read out of the URL    |
 
 `capture.ts` therefore fills two independent slots. An account that captured the
-sportsbook session but never opened the banking page still syncs bets — it just
+sportsbook session but never opened the banking page still syncs bets - it just
 reports no transactions.
 
 ## Mirrors
@@ -37,4 +37,4 @@ pnpm sanitize-har har/bet-at-home.har
 That writes `har/bet-at-home.sanitized.har`. Copy the response bodies you need
 out of it and into `__fixtures__/`.
 
-Never commit the raw `.har` — it carries live session tokens.
+Never commit the raw `.har` - it carries live session tokens.

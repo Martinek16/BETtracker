@@ -53,7 +53,7 @@ export const ChartTooltip = <T,>({
 
 interface ChartFrameProps {
   title: string;
-  /** What the plot says and how to read it, under it — where every card ends. */
+  /** What the plot says and how to read it, under it - where every card ends. */
   note?: string;
   children: ReactNode;
 }

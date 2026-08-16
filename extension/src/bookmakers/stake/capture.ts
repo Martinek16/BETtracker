@@ -1,6 +1,6 @@
 /**
  * One GraphQL endpoint for everything, authenticated by a single header. There
- * is no per-operation URL to match on, so the open-bets relay does not apply —
+ * is no per-operation URL to match on, so the open-bets relay does not apply -
  * the background asks for them itself.
  */
 
@@ -28,7 +28,7 @@ export const rule: CaptureRule = {
     if (!url.includes(GRAPHQL)) return null;
     const apiBase = baseOf(url);
     if (apiBase === null) return null;
-    // The site authenticates with its session cookie alone — only Stake's own API
+    // The site authenticates with its session cookie alone - only Stake's own API
     // clients send x-access-token. Demanding the header meant we waited forever
     // for something this page never sends, and the account read as signed out
     // while the user was signed in. The cookie rides along with our own requests
@@ -43,7 +43,7 @@ export const rule: CaptureRule = {
   // Stake shows the balance in a component we cannot scrape and answers only its
   // own GraphQL endpoint, so a bet placed on the site was invisible to us until
   // the ten-minute alarm came round. The page announces it itself: every such
-  // action is a GraphQL *mutation*, and queries — the browsing — are not.
+  // action is a GraphQL *mutation*, and queries - the browsing - are not.
   activity(url, body) {
     if (!url.includes(GRAPHQL)) return false;
     try {

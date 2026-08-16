@@ -24,7 +24,7 @@ const REPO = 'https://github.com/Martinek16/BETtracker';
 
 /**
  * Whether adding a bookmaker is something this copy can actually do. A site only
- * exists in a build that contains it, so it takes the project and a rebuild —
+ * exists in a build that contains it, so it takes the project and a rebuild -
  * which the store copy cannot be given. The store writes `update_url` into the
  * manifest it serves; a build loaded from a folder has none, and the dashboard
  * run on its own dev server has no extension at all.
@@ -138,7 +138,7 @@ const Step = ({
 
 /** What the reader types or clicks, set apart from the prose around it. */
 const Key = ({ children }: { children: ReactNode }): JSX.Element => (
-  <span className="inline-flex items-center whitespace-nowrap rounded border border-border/80 bg-muted/50 px-1.5 py-0.5 text-xs font-medium text-foreground">
+  <span className="inline-flex items-center whitespace-nowrap rounded-[3px] border border-border/70 bg-muted/40 px-1 py-px font-medium leading-none text-foreground">
     {children}
   </span>
 );
@@ -218,7 +218,7 @@ const CheckRow = ({ check }: { check: Check }): JSX.Element => {
 /**
  * One site's report, and only for a site added to this copy. A released site has
  * been checked by whoever released it, so its report is a page of ticks nobody
- * came here to read — it belongs to the account it describes, not to the page
+ * came here to read - it belongs to the account it describes, not to the page
  * about adding a new one.
  */
 const SiteReport = ({
@@ -235,7 +235,7 @@ const SiteReport = ({
     <Section title={name}>
       <div className="flex items-center gap-2 border-b border-border/60 py-2.5 text-xs">
         <AccountIcon bookmaker={id} className="h-4 w-4" />
-        <span className="text-primary">Added to this copy — nobody else has checked it</span>
+        <span className="text-primary">Added to this copy - nobody else has checked it</span>
         <span className="ml-auto tabular-nums text-muted-foreground">
           {passed} proved · {failed} wrong · {open} untested
         </span>
@@ -292,7 +292,7 @@ export const AddBookmakerPage = (): JSX.Element => {
    * What the page can see for itself, rather than take the reader's word for.
    *
    * A site is in `CATALOG` only if a folder was written, registered, built and
-   * loaded — which is every step up to the browser in one fact. Whether its
+   * loaded - which is every step up to the browser in one fact. Whether its
    * figures then arrived is the report's own answer. Ticks a reader sets by
    * hand only ever cover the steps before that, and they never disagree with
    * this: what the build contains is not a matter of opinion.
@@ -340,7 +340,7 @@ export const AddBookmakerPage = (): JSX.Element => {
         <div className="flex flex-col gap-2.5">
           <Step n={1} title="Get the project" {...step(1)}>
             <p className="text-xs">
-              Paste all three into a terminal — they run one after another, and the last one waits a
+              Paste all three into a terminal - they run one after another, and the last one waits a
               minute. It also makes the <Key>har/</Key> folder, which is where the next step saves
               to.
             </p>
@@ -355,7 +355,7 @@ export const AddBookmakerPage = (): JSX.Element => {
               >
                 Download it as a zip
               </a>{' '}
-              — unzip it, open that folder in a terminal, and run the last line only. Either way it
+              - unzip it, open that folder in a terminal, and run the last line only. Either way it
               needs{' '}
               <a
                 href="https://nodejs.org"
@@ -383,23 +383,23 @@ export const AddBookmakerPage = (): JSX.Element => {
                   Every site names them differently; look for:
                   <ul className="mt-1 list-disc space-y-0.5 pl-4 text-muted-foreground">
                     <li>
-                      <span className="text-foreground/90">Bet history</span> — settled bets, and
+                      <span className="text-foreground/90">Bet history</span> - settled bets, and
                       page back until the oldest one you have
                     </li>
                     <li>
-                      <span className="text-foreground/90">Open bets</span> — unsettled, pending, in
+                      <span className="text-foreground/90">Open bets</span> - unsettled, pending, in
                       play
                     </li>
                     <li>
-                      <span className="text-foreground/90">Balance</span> — the wallet or account
+                      <span className="text-foreground/90">Balance</span> - the wallet or account
                       page, each currency you hold
                     </li>
                     <li>
-                      <span className="text-foreground/90">Money in and out</span> — deposits,
+                      <span className="text-foreground/90">Money in and out</span> - deposits,
                       withdrawals, transactions, payments
                     </li>
                     <li>
-                      <span className="text-foreground/90">Bonuses</span> — free bets, promotions,
+                      <span className="text-foreground/90">Bonuses</span> - free bets, promotions,
                       rakeback, whatever is waiting to be claimed
                     </li>
                   </ul>
@@ -437,13 +437,13 @@ export const AddBookmakerPage = (): JSX.Element => {
             <p className="text-xs">
               In the project folder, one line then the other. The tests read the new site&apos;s own
               recording back through it; the build refuses outright if the folder was not
-              registered, and copies everything into <Key>extension/dist</Key> — the folder the
+              registered, and copies everything into <Key>extension/dist</Key> - the folder the
               browser loads.
             </p>
             <Code text={CHECK} />
             <p className="mt-2 text-xs">
               Red? Give the tool the output as it stands. It is written for it. Only build once the
-              tests are green — a build off a broken site loads a broken site.
+              tests are green - a build off a broken site loads a broken site.
             </p>
           </Step>
 
@@ -461,7 +461,7 @@ export const AddBookmakerPage = (): JSX.Element => {
               ]}
             />
             <p className="mt-2 text-xs">
-              Switch the store copy off first — two copies read one account into two histories.
+              Switch the store copy off first - two copies read one account into two histories.
             </p>
           </Step>
 
@@ -481,7 +481,7 @@ export const AddBookmakerPage = (): JSX.Element => {
             <p className="mt-2 text-xs">
               <span className="text-muted-foreground">Untested</span> means your account has never
               had one of those, not that it failed. Send the wrong and untested lines back to the
-              tool — that is the whole bug report it needs. Then compare the totals with the
+              tool - that is the whole bug report it needs. Then compare the totals with the
               bookmaker&apos;s own history page: this page can say a figure arrived, never that it
               is right.
             </p>
@@ -500,7 +500,7 @@ export const AddBookmakerPage = (): JSX.Element => {
           <span>
             {reports.map((report) => report.meta.name).join(', ')}{' '}
             {reports.length === 1 ? 'is' : 'are'} in this build, so the steps up to loading{' '}
-            {reports.length === 1 ? 'it' : 'them'} are ticked for you — a folder reaches the browser
+            {reports.length === 1 ? 'it' : 'them'} are ticked for you - a folder reaches the browser
             only by passing all of them.
           </span>
           <button
@@ -530,13 +530,13 @@ export const AddBookmakerPage = (): JSX.Element => {
           <div className="py-3 text-sm text-muted-foreground">
             <p>
               The report above is read off what was stored, so it can only say that a figure arrived
-              — never that it is the right one. Those are yours, with the bookmaker&apos;s own
+              - never that it is the right one. Those are yours, with the bookmaker&apos;s own
               history page open beside this one:
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>The bet count matches the site&apos;s own, not one page of it</li>
               <li>Profit and turnover match, to the cent</li>
-              <li>The oldest bet you have is here — paging reached the end</li>
+              <li>The oldest bet you have is here - paging reached the end</li>
               <li>Stake, odds and return match the site&apos;s figures on a bet you remember</li>
               <li>A second sync changes nothing: no duplicates, the same counts</li>
             </ul>

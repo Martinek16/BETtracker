@@ -52,7 +52,7 @@ export const ProductTour = (): JSX.Element | null => {
   const restore = useRef<{ view: typeof analyticsView; unit: typeof analysisUnit } | null>(null);
 
   const running = index !== null;
-  const step = index === null ? null : TOUR_STEPS[index] ?? null;
+  const step = index === null ? null : (TOUR_STEPS[index] ?? null);
 
   useEffect(() => {
     if (settings === null || settings.tourSeen || loading || betCount === 0 || running || asking) {
@@ -80,18 +80,15 @@ export const ProductTour = (): JSX.Element | null => {
     setIndex(0);
   }, [analyticsView, analysisUnit]);
 
-  const move = useCallback(
-    (delta: number) => {
-      setIndex((current) => {
-        if (current === null) return null;
-        const next = current + delta;
-        return next < 0 || next >= TOUR_STEPS.length ? current : next;
-      });
-      setBox(null);
-      setPlacement(null);
-    },
-    [],
-  );
+  const move = useCallback((delta: number) => {
+    setIndex((current) => {
+      if (current === null) return null;
+      const next = current + delta;
+      return next < 0 || next >= TOUR_STEPS.length ? current : next;
+    });
+    setBox(null);
+    setPlacement(null);
+  }, []);
 
   // The step asks for a route and, on analytics, for a view; both have to be in
   // place before its element exists to be measured.
@@ -124,7 +121,7 @@ export const ProductTour = (): JSX.Element | null => {
 
     const look = (): void => {
       const element = findAnchor(step);
-      // A zero-width anchor is a wrapper whose content rendered nothing — the
+      // A zero-width anchor is a wrapper whose content rendered nothing - the
       // account filter with a single account, for one.
       if (element !== null && element.getBoundingClientRect().width > 0) {
         element.scrollIntoView({ block: 'center', inline: 'nearest' });
@@ -136,7 +133,7 @@ export const ProductTour = (): JSX.Element | null => {
       // a visible dead pause between two stops on the same screen.
       const empty = element !== null && location.pathname === step.route;
       if (performance.now() > started + (empty ? EMPTY_MS : WAIT_MS)) {
-        // Nothing to point at — one account has no filter, a bet list without a
+        // Nothing to point at - one account has no filter, a bet list without a
         // combo has no row to fold open. Skip rather than stall.
         if (index === TOUR_STEPS.length - 1) close();
         else move(1);
@@ -190,8 +187,8 @@ export const ProductTour = (): JSX.Element | null => {
         <div className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-border bg-background p-5 shadow-2xl">
           <p className="text-base font-semibold text-foreground">Want a quick tour?</p>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Your bets are in. In about two minutes we walk through each page and what it tells
-            you. You can leave at any point, and start it again later from Settings.
+            Your bets are in. In about two minutes we walk through each page and what it tells you.
+            You can leave at any point, and start it again later from Settings.
           </p>
           <div className="mt-1 flex items-center justify-end gap-2">
             <button
@@ -224,7 +221,7 @@ export const ProductTour = (): JSX.Element | null => {
 
   return (
     // A stop inside the open-slips drawer is a stop on top of a modal, which
-    // turns off pointer events everywhere outside itself — including here.
+    // turns off pointer events everywhere outside itself - including here.
     <div
       className="pointer-events-auto fixed inset-0 z-[100]"
       role="dialog"

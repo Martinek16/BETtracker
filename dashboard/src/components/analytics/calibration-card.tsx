@@ -1,5 +1,10 @@
 import { useMemo } from 'react';
-import { compareGroupKeys, groupSelectionsBy, type Bet, type SelectionStats } from '@betanal/shared';
+import {
+  compareGroupKeys,
+  groupSelectionsBy,
+  type Bet,
+  type SelectionStats,
+} from '@betanal/shared';
 import { CardHeadline, CardNote, NoteFigure } from '@/components/analytics/card-note';
 import { IntervalBar } from '@/components/analytics/interval-bar';
 import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
@@ -11,7 +16,7 @@ interface CalibrationCardProps {
 
 const MIN_SAMPLE = 10;
 
-/** Only a band that clears the price proves anything — same rule as the verdict card. */
+/** Only a band that clears the price proves anything - same rule as the verdict card. */
 const verdictOf = (g: SelectionStats): 'over' | 'under' | null => {
   if (g.decided < MIN_SAMPLE) return null;
   if (g.wilsonLow > g.meanImplied) return 'over';
@@ -43,7 +48,7 @@ export const CalibrationCard = ({ bets }: CalibrationCardProps): JSX.Element => 
         action={
           <CardHeadline tone={over.length > 0 ? 'profit' : under.length > 0 ? 'loss' : 'neutral'}>
             {/* The question asks which band you beat, so a band you lost to is
-                never the answer to it — that belongs in the note below. */}
+                never the answer to it - that belongs in the note below. */}
             {over[0]?.key ?? (under.length > 0 ? 'None' : 'Too soon')}
           </CardHeadline>
         }

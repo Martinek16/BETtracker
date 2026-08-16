@@ -90,7 +90,7 @@ describe('singleLossShare', () => {
   });
 
   it('is high by construction on a four-leg builder with good legs', () => {
-    // 30% loss per leg: most losing slips lose exactly one — the baseline the
+    // 30% loss per leg: most losing slips lose exactly one - the baseline the
     // observed "one leg killed it" share has to beat.
     expect(singleLossShare([0.3, 0.3, 0.3, 0.3])).toBeGreaterThan(50);
   });

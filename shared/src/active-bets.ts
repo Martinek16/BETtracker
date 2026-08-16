@@ -7,14 +7,14 @@
 
 import type { Bet, BetLeg, LiveScore } from './types';
 
-/** Kickoff as epoch ms, or NaN when unknown — every comparison against NaN is false. */
+/** Kickoff as epoch ms, or NaN when unknown - every comparison against NaN is false. */
 const startedAt = (leg: BetLeg): number =>
   leg.eventDate === null ? Number.NaN : Date.parse(leg.eventDate);
 
 /**
  * How long after kickoff a leg still counts as in play when the book has not
- * said otherwise. Without a bound, a match that finished hours ago — or one that
- * was called off and never kicked off at all — stayed in the Live tab for as
+ * said otherwise. Without a bound, a match that finished hours ago - or one that
+ * was called off and never kicked off at all - stayed in the Live tab for as
  * long as the book left the slip unsettled, which is what made a won bet sit
  * there all evening.
  *
@@ -26,7 +26,7 @@ const LIVE_WINDOW_MS = 4 * 60 * 60_000;
 
 /**
  * Words a book uses for a match that is not being played: one that is over, and
- * one that never got going. Both matter, and for the same reason — a fixture put
+ * one that never got going. Both matter, and for the same reason - a fixture put
  * back an hour keeps the kickoff it was placed at, so the window below reads it
  * as running and the slip pulsed as live all evening.
  */
@@ -84,7 +84,7 @@ export const isLiveBet = (
 ): boolean => bet.legs.some((leg) => isLiveLeg(leg, now, scores));
 
 /**
- * Which running count belongs next to a leg — corners for a corner bet, cards
+ * Which running count belongs next to a leg - corners for a corner bet, cards
  * for a card bet, the plain score for everything else.
  *
  * Matched on the market name because that is the only market description the
@@ -110,7 +110,7 @@ const nextEventAt = (bet: Bet): number => {
 
 /**
  * Open bets, in play first. Within each block the next event to start comes
- * first — for live bets that is the match closest to finishing.
+ * first - for live bets that is the match closest to finishing.
  */
 export const activeBets = (bets: readonly Bet[], now: number = Date.now()): Bet[] =>
   bets

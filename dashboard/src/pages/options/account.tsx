@@ -141,7 +141,7 @@ const AccountName = ({
 };
 
 /**
- * The login as the bookmaker names it — long enough to wrap, and worth copying
+ * The login as the bookmaker names it - long enough to wrap, and worth copying
  * when a support form asks for it. Kept to one line, and copied on a click with
  * nothing to dismiss afterwards.
  */

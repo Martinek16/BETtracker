@@ -25,7 +25,7 @@ export const CardNote = ({ children, tone = 'neutral' }: CardNoteProps): JSX.Ele
 );
 
 /** The one-word answer to the card's title question, top right. Long answers are
- *  names, and a name that wraps pushes the card's body down — it truncates. */
+ *  names, and a name that wraps pushes the card's body down - it truncates. */
 export const CardHeadline = ({
   children,
   tone = 'neutral',

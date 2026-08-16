@@ -111,7 +111,7 @@ const Setting = ({
 );
 
 /**
- * A heading switch over the rows it covers. It holds no setting of its own — it
+ * A heading switch over the rows it covers. It holds no setting of its own - it
  * only ever reflects its children, so silencing a whole subject is one tap
  * instead of hunting down every message it can send.
  */
@@ -375,7 +375,7 @@ const NotificationsSection = ({ notify }: { notify: Notify }): JSX.Element => {
 /**
  * What an action just did, in the corner the app already speaks from, so a
  * confirmation and a sync message never arrive in two different places. Only
- * the changes worth noticing say anything — a theme or a date format shows its
+ * the changes worth noticing say anything - a theme or a date format shows its
  * own result on screen, and announcing it as well is noise.
  */
 const ActionNote = ({ text, onDone }: { text: string; onDone: () => void }): JSX.Element => {
@@ -486,7 +486,7 @@ const SaveBackup = ({ onSaved }: { onSaved: (note: string) => void }): JSX.Eleme
         <DialogHeader>
           <DialogTitle>Save a backup</DialogTitle>
           <DialogDescription>
-            Pick what goes into the file. It is a copy for you to keep — nothing can be loaded back
+            Pick what goes into the file. It is a copy for you to keep - nothing can be loaded back
             in, so every figure in the app stays exactly what the bookmaker said it was.
           </DialogDescription>
         </DialogHeader>
@@ -571,7 +571,7 @@ const DeleteEverything = ({ onDeleted }: { onDeleted: (note: string) => void }):
           <DialogTitle>Delete everything?</DialogTitle>
           <DialogDescription>
             Every bet, payment and setting in this browser goes. Save a backup first if you might
-            want any of it back — this cannot be undone.
+            want any of it back - this cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -629,12 +629,7 @@ const DataSection = ({ notify }: { notify: Notify }): JSX.Element => {
       </Setting>
       <Setting
         label="Delete everything"
-        hint={storedSummary(
-          betCount,
-          transactions.length,
-          activeBookmakers.length,
-          earliestRecord,
-        )}
+        hint={storedSummary(betCount, transactions.length, activeBookmakers.length, earliestRecord)}
       >
         <DeleteEverything onDeleted={notify} />
       </Setting>
@@ -643,7 +638,7 @@ const DataSection = ({ notify }: { notify: Notify }): JSX.Element => {
 };
 
 /**
- * Two columns so the whole page is one screenful — settings are read by
+ * Two columns so the whole page is one screenful - settings are read by
  * scanning for the one you came to change, and scrolling hides half of them.
  * Paired by height rather than by theme, so neither column runs long.
  */

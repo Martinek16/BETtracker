@@ -1,6 +1,6 @@
 /**
  * Public reference points a personal betting record is worth comparing against.
- * Own numbers alone cannot say whether a result is good — these say what the rest
+ * Own numbers alone cannot say whether a result is good - these say what the rest
  * of the market achieves.
  */
 

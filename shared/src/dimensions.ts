@@ -73,20 +73,7 @@ const STAKE_BANDS: ReadonlyArray<{ label: string; max: number }> = [
 const FOLD_NAMES = ['Single', 'Double', 'Treble', '4-fold', '5-fold'];
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MONTHS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export const oddsBracket = (odds: number): string =>
   ODDS_BRACKETS.find((b) => odds >= b.min && odds < b.max)?.label ?? '5.00+';
@@ -98,7 +85,7 @@ export const stakeBand = (stake: number): string =>
   STAKE_BANDS.find((b) => stake <= b.max)?.label ?? '10000+';
 
 /**
- * What the slip is, in bookmaker words. A system bet keeps its own name — its
+ * What the slip is, in bookmaker words. A system bet keeps its own name - its
  * legs are not one chain, so calling it a 6-fold would misread the bet.
  */
 export const slipType = (bet: Bet): string => {
@@ -115,7 +102,11 @@ export const selectionType = (odds: number): 'Favorite' | 'Underdog' =>
 
 /** How long before kickoff the bet went on. Live bets are their own bucket since
  * "time to event" is meaningless once the match is running. */
-export const timeToEventBucket = (placedAt: string, eventDate: string | null, isLive: boolean): string => {
+export const timeToEventBucket = (
+  placedAt: string,
+  eventDate: string | null,
+  isLive: boolean,
+): string => {
   if (isLive) return 'In-play';
   if (eventDate === null) return 'Unknown';
   const hours = (new Date(eventDate).getTime() - new Date(placedAt).getTime()) / 3_600_000;
@@ -164,11 +155,11 @@ export type DimensionKey = SlipDimension | LegDimension;
 
 /**
  * The shared value across every leg, or 'Mixed'. A four-leg builder spanning
- * football and tennis is neither a football bet nor a tennis bet — calling it
+ * football and tennis is neither a football bet nor a tennis bet - calling it
  * 'Mixed' keeps groups a true partition, so group profits sum to period profit.
  *
  * Legs the bookmaker left blank are skipped rather than treated as a value of
- * their own — one unlabelled leg would otherwise turn a pure football builder
+ * their own - one unlabelled leg would otherwise turn a pure football builder
  * into 'Mixed'. Same rule the adapter already applies to `bet.sport`.
  */
 const pureOrMixed = (
@@ -193,7 +184,7 @@ export const weekdayOf = (placedAt: string): string =>
 export const hourOf = (placedAt: string): string =>
   String(new Date(placedAt).getHours()).padStart(2, '0');
 
-/** A P/L bucket, so it follows settlement — unlike weekdayOf/hourOf, which
+/** A P/L bucket, so it follows settlement - unlike weekdayOf/hourOf, which
  * describe betting behaviour and stay on placement time. */
 export const monthOf = (bet: Bet): string => {
   const d = new Date(resolutionDate(bet));
@@ -203,7 +194,7 @@ export const monthOf = (bet: Bet): string => {
 /**
  * The order a dimension's groups are read in when nothing else is asked for:
  * singles before doubles, cheap odds before long ones, Monday before Sunday.
- * Dimensions whose keys are names rather than steps are absent — there is no
+ * Dimensions whose keys are names rather than steps are absent - there is no
  * meaningful order for a league.
  */
 const KEY_ORDER: Partial<Record<DimensionKey, readonly string[]>> = {

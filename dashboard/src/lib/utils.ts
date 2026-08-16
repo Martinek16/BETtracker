@@ -54,7 +54,7 @@ const decimals = (value: number, digits: number, least = digits): string =>
 /**
  * The sign leads, always: a minus tucked between the symbol and the digits
  * reads as part of the number. A lettered mark (USDT, CHF) keeps its space on
- * both sides — only a true symbol sits flush against the figure.
+ * both sides - only a true symbol sits flush against the figure.
  */
 const withSymbol = (digits: string, negative: boolean, currency: string): string => {
   const symbol = symbolOf(currency);
@@ -68,7 +68,7 @@ const isoCurrencies = new Set(Intl.supportedValuesOf('currency'));
 
 /**
  * How many places a figure is written to. A currency on the ISO list has an
- * answer of its own — two for the euro, none for the yen — and Intl knows it.
+ * answer of its own - two for the euro, none for the yen - and Intl knows it.
  * A coin has none, and writing two would round 0.003 BTC away to nothing, so
  * the places follow the size of the figure instead: the smaller the holding,
  * the further down it has to be read to say anything at all.
@@ -156,4 +156,8 @@ export const formatDateTime = (iso: string): string =>
   new Date(iso).toLocaleString(EU_LOCALE, dateTimeOptions);
 
 export const formatTime = (iso: string): string =>
-  new Date(iso).toLocaleTimeString(EU_LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false });
+  new Date(iso).toLocaleTimeString(EU_LOCALE, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });

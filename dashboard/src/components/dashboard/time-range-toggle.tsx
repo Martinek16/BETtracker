@@ -8,8 +8,8 @@ import { formatDate } from '@/lib/utils';
 export type { TimeRange };
 
 /**
- * What the toolbar can be showing. A hand-picked window is not a setting — it
- * belongs to the session, not to "which period do pages open on" — so it widens
+ * What the toolbar can be showing. A hand-picked window is not a setting - it
+ * belongs to the session, not to "which period do pages open on" - so it widens
  * the toggle without widening the persisted `TimeRange`.
  */
 export type RangeChoice = TimeRange | 'custom';
@@ -29,7 +29,7 @@ const TOGGLE_OPTIONS: readonly SegmentedOption<RangeChoice>[] = [
   { value: 'custom', label: 'Custom', title: 'Pick your own start and end date' },
 ];
 
-/** `yyyy-mm-dd` in local time — `toISOString` would shift the day either side of UTC. */
+/** `yyyy-mm-dd` in local time - `toISOString` would shift the day either side of UTC. */
 export const isoDay = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
@@ -44,7 +44,7 @@ const today = (): Date => dayStart(isoDay(new Date()));
 
 /**
  * Days between today and the same date `months` back. A flat 30/90/180 makes
- * "1 month" stop short — on Aug 4 it reaches Jul 5 and hides Jul 4 entirely.
+ * "1 month" stop short - on Aug 4 it reaches Jul 5 and hides Jul 4 entirely.
  */
 const daysBackForMonths = (months: number): number => {
   const now = today();
@@ -130,7 +130,7 @@ interface TimeRangeToggleProps {
   customFrom: string | null;
   customTo: string | null;
   onCustom: (from: string | null, to: string | null) => void;
-  /** Oldest stored record — there is nothing before it to look at. */
+  /** Oldest stored record - there is nothing before it to look at. */
   earliest: string | null;
   className?: string;
 }
@@ -157,7 +157,7 @@ const euDay = (day: string): string => {
 /**
  * One end of the window, written the way every date on screen is written. A
  * native date field was not usable here: it prints the browser's locale rather
- * than this one, and it reported every half-typed value — including years no
+ * than this one, and it reported every half-typed value - including years no
  * Date can hold, which took the page down with it. Only a whole, real date is
  * handed on; anything else is put back the moment the field is left.
  */

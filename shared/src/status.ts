@@ -26,18 +26,18 @@ export const connectionOf = (
   now: number = Date.now(),
 ): Connection => {
   if (meta?.lastSyncAt == null) return { tone: 'idle', label: 'Not connected' };
-  if (meta.lastStatus === 'error') return { tone: 'failed', label: 'Not working — check the log' };
+  if (meta.lastStatus === 'error') return { tone: 'failed', label: 'Not working - check the log' };
   if (meta.lastStatus === 'syncing') return { tone: 'busy', label: 'Connecting…' };
   // Read before, but the site stopped identifying us. Nothing is broken and the
-  // history is intact — it just stops growing until the site is opened again,
+  // history is intact - it just stops growing until the site is opened again,
   // which is a different answer from both "working" and "failed".
   if (meta.lastStatus === 'logged_out') {
-    return { tone: 'stuck', label: 'Stopped part-way — check the log' };
+    return { tone: 'stuck', label: 'Stopped part-way - check the log' };
   }
   const age = now - Date.parse(meta.lastSyncAt);
   if (age > STALE_MS) {
     const weeks = Math.round(age / WEEK_MS);
-    return { tone: 'idle', label: `Out of date — last read ${weeks} weeks ago` };
+    return { tone: 'idle', label: `Out of date - last read ${weeks} weeks ago` };
   }
   return { tone: 'ok', label: 'Connected' };
 };

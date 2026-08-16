@@ -5,12 +5,12 @@ import type { LiveScore } from '@betanal/shared';
  * Live scores for in-play events, over the bookmaker's WAMP feed.
  *
  * The open-bets REST payload carries no score, so this is the only source. The
- * feed is anonymous — the handshake carries no session token — and the socket
+ * feed is anonymous - the handshake carries no session token - and the socket
  * is opened from the dashboard page rather than the service worker, which has
  * no lifetime of its own to speak of.
  *
  * Only what the feed actually gives us is exposed: the match score, and the
- * clock — which the book keeps on a topic of its own, one per match.
+ * clock - which the book keeps on a topic of its own, one per match.
  */
 
 const WS_URL = 'wss://sportsapiem.bah26.com/v2';
@@ -54,7 +54,7 @@ interface InfoRecord {
  * `window.__betanalFeed`.
  *
  * Probing the broker shows `eventPartScores` is the only topic it serves per
- * event — no statistics or clock topic — so whether corners, cards or a tennis
+ * event - no statistics or clock topic - so whether corners, cards or a tennis
  * set score are reachable at all can only be settled by reading what a real
  * in-play match actually pushes.
  */
@@ -120,7 +120,7 @@ export const useLiveScores = (
       };
     };
 
-    /** Dumps carry whole records, updates only the changed keys — both merge by record id. */
+    /** Dumps carry whole records, updates only the changed keys - both merge by record id. */
     const apply = (eventId: string | undefined, records: unknown): void => {
       if (eventId === undefined || !Array.isArray(records)) return;
       if (DEBUG) {

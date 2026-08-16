@@ -12,7 +12,7 @@ import { usePersistedState } from '@/lib/persisted-state';
 import { cn } from '@/lib/utils';
 
 /**
- * Slips are whole tickets, so only what the ticket itself is can group them —
+ * Slips are whole tickets, so only what the ticket itself is can group them -
  * sport and league belong to legs and collapse to "Mixed" on every builder.
  */
 const SLIP_TABS: { key: SlipDimension; label: string }[] = [

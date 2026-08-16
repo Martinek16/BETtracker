@@ -18,7 +18,10 @@ describe('habitLeaks', () => {
 
   it('ignores groups below the minimum bet count', () => {
     // Three losing tennis bets: a real loss, but far too few to name as a habit.
-    const leaks = habitLeaks(times(3, () => lost({ sport: 'Tennis' })), 5);
+    const leaks = habitLeaks(
+      times(3, () => lost({ sport: 'Tennis' })),
+      5,
+    );
     expect(leaks.worst).toEqual([]);
   });
 
@@ -51,7 +54,7 @@ describe('habitLeaks', () => {
 
   it('ranks by what came back per 1 staked, so stake size cannot decide the list', () => {
     // Darts loses €200 of €800 staked, tennis €40 of €40. Darts took five times
-    // the money out, tennis gave nothing back at all — the rate leads the list.
+    // the money out, tennis gave nothing back at all - the rate leads the list.
     const bets = [
       ...times(8, () => lost({ sport: 'Tennis', stake: 5, legs: [makeLeg({ sport: 'Tennis' })] })),
       ...times(7, () => lost({ sport: 'Darts', stake: 100, legs: [makeLeg({ sport: 'Darts' })] })),
@@ -83,14 +86,26 @@ describe('habitLeaks', () => {
   });
 
   it('puts a group carried by one slip behind a steady one', () => {
-    // Golf drops 5 units over 6 bets, tennis drops 6 over 6 — but golf's whole
+    // Golf drops 5 units over 6 bets, tennis drops 6 over 6 - but golf's whole
     // figure is one slip, so it is a result to explain, not a habit to change.
     const bets = [
       ...times(6, () => lost({ sport: 'Tennis', legs: [makeLeg({ sport: 'Tennis' })] })),
       ...times(5, () =>
-        makeBet({ sport: 'Golf', status: 'won', stake: 10, actualReturn: 10, legs: [makeLeg({ sport: 'Golf' })] }),
+        makeBet({
+          sport: 'Golf',
+          status: 'won',
+          stake: 10,
+          actualReturn: 10,
+          legs: [makeLeg({ sport: 'Golf' })],
+        }),
       ),
-      makeBet({ sport: 'Golf', status: 'lost', stake: 50, actualReturn: 0, legs: [makeLeg({ sport: 'Golf' })] }),
+      makeBet({
+        sport: 'Golf',
+        status: 'lost',
+        stake: 50,
+        actualReturn: 0,
+        legs: [makeLeg({ sport: 'Golf' })],
+      }),
       ...times(6, () => won({ sport: 'Football', legs: [makeLeg({ sport: 'Football' })] })),
     ];
     const sports = habitLeaks(bets).worst.filter((h) => ['Tennis', 'Golf'].includes(h.label));
@@ -191,7 +206,10 @@ describe('selectionLeaks', () => {
     const bets = times(10, () =>
       lost({
         betType: 'accumulator',
-        legs: [makeLeg({ sport: 'Tennis', status: 'lost' }), makeLeg({ sport: 'Darts', status: 'won' })],
+        legs: [
+          makeLeg({ sport: 'Tennis', status: 'lost' }),
+          makeLeg({ sport: 'Darts', status: 'won' }),
+        ],
       }),
     );
     const { worst, best } = selectionLeaks(bets);

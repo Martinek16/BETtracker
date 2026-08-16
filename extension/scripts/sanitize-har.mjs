@@ -127,7 +127,7 @@ const scrubHeaders = (headers = []) =>
     .filter((header) => !/^cookie$|^set-cookie$/i.test(header.name))
     .map((header) => ({
       name: header.name,
-      // The name is the part an adapter is written against — which header
+      // The name is the part an adapter is written against - which header
       // carries the session is exactly what a contributor needs to see.
       value: SECRET_NAME.test(header.name)
         ? redact(REDACTED)
@@ -238,8 +238,8 @@ export const findLeaks = (text) =>
 const HAR_DIR = join(fileURLToPath(new URL('../../', import.meta.url)), 'har');
 
 /**
- * Make the folder the recording goes into, on install. Git cannot carry it —
- * the folder is ignored precisely because of what people drop in it — so a
+ * Make the folder the recording goes into, on install. Git cannot carry it -
+ * the folder is ignored precisely because of what people drop in it - so a
  * fresh checkout tells the contributor to save the file somewhere that is not
  * there. The note is for whoever opens the folder later and wonders.
  */
@@ -250,7 +250,7 @@ export const makeHarDir = () => {
     'Save your browser recording (.har) here, then run: pnpm sanitize-har\n\n' +
       'A raw recording holds your live session. This folder is ignored by git and\n' +
       'CI rejects a pull request carrying one, but nothing stops you sending it by\n' +
-      'hand — so share only the .sanitized.har that the command writes beside it.\n',
+      'hand - so share only the .sanitized.har that the command writes beside it.\n',
   );
 };
 

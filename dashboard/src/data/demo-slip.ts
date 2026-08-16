@@ -6,7 +6,7 @@ import type { Bet, BetLeg, LiveScore } from '@betanal/shared';
  *
  * Enabled by `demo=live` in the query or the hash. Each slip is here for one
  * shape no other slip has: singles, bet builders, cross-fixture combos, settled
- * and void legs, market-specific counts, names long enough to wrap — and, on the
+ * and void legs, market-specific counts, names long enough to wrap - and, on the
  * scores, every state a bookmaker's clock is read in, from a running minute to a
  * set, a quarter, an interval and a match already over.
  */
@@ -59,7 +59,7 @@ const slip = (over: Partial<Bet>): Bet => ({
 
 /**
  * A single: the slip header carries the fixture, the leg only the pick. The
- * slip is built first so the leg inherits the resolved sport and league — an
+ * slip is built first so the leg inherits the resolved sport and league - an
  * `undefined` passed straight through would erase them, and with the sport
  * gone the leg is no longer football, so it loses its clock.
  */
@@ -129,7 +129,7 @@ export const DEMO_BETS: Bet[] = [
     },
   ),
 
-  // Every leg on one fixture — the card should read "Bet Builder".
+  // Every leg on one fixture - the card should read "Bet Builder".
   slip({
     betId: 'demo-builder',
     league: 'Premier League',
@@ -167,9 +167,9 @@ export const DEMO_BETS: Bet[] = [
     ],
   }),
 
-  // Legs across fixtures, mixed outcomes — the card should read "Combo".
+  // Legs across fixtures, mixed outcomes - the card should read "Combo".
   // A void leg drops out of the price, so what it pays now is below what it
-  // was placed at — the only slip where the two returns differ.
+  // was placed at - the only slip where the two returns differ.
   slip({
     betId: 'demo-combo-mixed',
     betType: 'accumulator',
@@ -212,7 +212,7 @@ export const DEMO_BETS: Bet[] = [
   }),
 
   // Every state a slip can hold at once: one fixture played out, one running,
-  // one called off and one still to come — across four sports.
+  // one called off and one still to come - across four sports.
   slip({
     betId: 'demo-combo-states',
     betType: 'accumulator',
@@ -280,7 +280,13 @@ export const DEMO_BETS: Bet[] = [
       potentialReturn: 29.25,
       cashOutValue: 12.4,
     },
-    { eventId: 'demo-5', marketType: 'Match Winner', selection: 'Alcaraz', odds: 1.95, eventDate: minutesFromNow(-84) },
+    {
+      eventId: 'demo-5',
+      marketType: 'Match Winner',
+      selection: 'Alcaraz',
+      odds: 1.95,
+      eventDate: minutesFromNow(-84),
+    },
   ),
 
   single(
@@ -394,7 +400,13 @@ export const DEMO_BETS: Bet[] = [
       stake: 25,
       potentialReturn: 40,
     },
-    { eventId: 'demo-4', selection: 'Bayern', odds: 1.6, eventDate: minutesFromNow(180), isLive: false },
+    {
+      eventId: 'demo-4',
+      selection: 'Bayern',
+      odds: 1.6,
+      eventDate: minutesFromNow(180),
+      isLive: false,
+    },
   ),
 
   slip({
@@ -451,8 +463,8 @@ export const DEMO_BETS: Bet[] = [
 ];
 
 /**
- * The clock is written the way a book writes it — a minute for football, the
- * part being played for everything else — and only ever on the match score, so
+ * The clock is written the way a book writes it - a minute for football, the
+ * part being played for everything else - and only ever on the match score, so
  * a fixture reads the same here as it would off a live feed.
  *
  * Only a fixture that has kicked off is in here, and its kickoff is set far
@@ -470,7 +482,7 @@ export const DEMO_SCORES: Record<string, LiveScore[]> = {
   'demo-3': [{ home: '2', away: '3', period: '2nd period' }],
   'demo-5': [{ home: '1', away: '1', kind: 'Sets', period: '3rd set' }],
   'demo-6': [{ home: '148/3', away: '176/6', kind: 'Innings', period: '2nd innings' }],
-  // One fixture, three different counts — the builder reads a different number
+  // One fixture, three different counts - the builder reads a different number
   // on every pick line.
   'demo-7': [
     { home: '2', away: '1', clock: "58'", period: '2nd half' },
@@ -482,7 +494,7 @@ export const DEMO_SCORES: Record<string, LiveScore[]> = {
   // Over, and still open while the book settles it: the time drops off the row
   // and only the score is left.
   'demo-12': [{ home: '2', away: '1', period: 'Ended' }],
-  // Stoppage time — the reason the minute is read off the book and never counted.
+  // Stoppage time - the reason the minute is read off the book and never counted.
   'demo-13': [{ home: '1', away: '1', clock: "90+4'", period: '2nd half' }],
   // The mixed combo: a game already over next to one still being played. The
   // called-off fixture carries no score at all, and the one yet to start none.

@@ -14,7 +14,7 @@ import type { SyncProgress } from '../messaging';
  *
  * The fields are deliberately opaque: only the adapter that captured them knows
  * what they mean. That is what lets the content script, the messaging layer and
- * the background worker stay ignorant of any particular bookmaker — a new site
+ * the background worker stay ignorant of any particular bookmaker - a new site
  * needs a capture rule and an adapter, and nothing else in the extension moves.
  */
 export interface Credentials {
@@ -61,7 +61,7 @@ export interface SyncResult {
 }
 
 export interface FetchPageOptions {
-  /** ISO timestamp cursor — fetch bets placed strictly before this. */
+  /** ISO timestamp cursor - fetch bets placed strictly before this. */
   placedBefore: string;
   limit: number;
 }
@@ -116,7 +116,7 @@ export interface BookmakerAdapter {
    *
    * `depth` is how far the deposit/withdrawal walk goes: `full` for the whole
    * history, `recent` for the window that can still change, `bonuses` for
-   * neither. Bonuses and offers are read at every depth — they are two requests
+   * neither. Bonuses and offers are read at every depth - they are two requests
    * and they change while the balance stands still.
    */
   syncMoney?(

@@ -74,11 +74,8 @@ export const BasicsCard = ({ bets, unit, currency }: BasicsCardProps): JSX.Eleme
       const settled = picks.filter((s) => s.leg.status === 'won' || s.leg.status === 'lost');
       const hitRate = decided === 0 ? 0 : (won / decided) * 100;
       const implied =
-        decided === 0
-          ? 0
-          : (settled.reduce((sum, s) => sum + 1 / s.odds, 0) / decided) * 100;
-      const meanOdds =
-        decided === 0 ? 0 : settled.reduce((sum, s) => sum + s.odds, 0) / decided;
+        decided === 0 ? 0 : (settled.reduce((sum, s) => sum + 1 / s.odds, 0) / decided) * 100;
+      const meanOdds = decided === 0 ? 0 : settled.reduce((sum, s) => sum + s.odds, 0) / decided;
       // A leg of a combo never had its own money, so the only P/L here is the
       // explicit "what if every pick had been a 1-unit single" counterfactual.
       const unitsPl = settled.reduce((sum, s) => sum + flatUnitProfit(s.leg), 0);

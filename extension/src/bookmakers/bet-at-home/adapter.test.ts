@@ -77,7 +77,7 @@ describe('bet-at-home adapter', () => {
 });
 
 describe('banking transactions', () => {
-  // transId is a JS number past 2^53 and already lossy in the raw payload —
+  // transId is a JS number past 2^53 and already lossy in the raw payload -
   // transIdStr is the only safe id, and getting this wrong silently merges rows.
   const raw = {
     pagination: { next: 'https://x/next', previous: null },

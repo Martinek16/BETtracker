@@ -31,26 +31,10 @@ import type {
   Bookmaker,
   Transaction,
 } from '@betanal/shared';
-import {
-  getBackfillState,
-  log,
-  putBonus,
-  putTransaction,
-  setBackfillState,
-} from '@betanal/shared';
-import {
-  authedJson,
-  nowCursor,
-  runCursorSync,
-  SessionExpiredError,
-} from '../../sync/sync';
+import { getBackfillState, log, putBonus, putTransaction, setBackfillState } from '@betanal/shared';
+import { authedJson, nowCursor, runCursorSync, SessionExpiredError } from '../../sync/sync';
 import { field } from '../types';
-import type {
-  BankingCredentials,
-  BookmakerAdapter,
-  Credentials,
-  SettledPage,
-} from '../types';
+import type { BankingCredentials, BookmakerAdapter, Credentials, SettledPage } from '../types';
 
 /** Stamped on every record this file produces, so the account is never in doubt. */
 const BOOKMAKER: Bookmaker = 'bet-at-home';
@@ -69,7 +53,7 @@ export const CONFIG = {
 };
 
 /**
- * Deposits/withdrawals — a completely separate backend from the sportsbook.
+ * Deposits/withdrawals - a completely separate backend from the sportsbook.
  * Host `betathomecom.nwacdn.com`, auth is a single `x-sessionid` header, and the
  * player id is part of the path (both captured from the page's own calls).
  */
@@ -82,7 +66,8 @@ export const BANKING = {
     { type: 0, kind: 'deposit' as const },
     { type: 1, kind: 'withdrawal' as const },
   ],
-  states: 'Success,Processing,Pending,ProcessingDebit,ProcessingCredit,PendingNotification,PendingApproval',
+  states:
+    'Success,Processing,Pending,ProcessingDebit,ProcessingCredit,PendingNotification,PendingApproval',
   pageLimit: 100,
 };
 
@@ -113,7 +98,7 @@ interface RawBet {
   totalBetAmount?: number | string | null;
   /**
    * The slice of the stake that came out of the pocket. The complement is bonus
-   * money whatever form it took — a bonus wallet, a free bet, a credit — which
+   * money whatever form it took - a bonus wallet, a free bet, a credit - which
    * the fields below only ever describe one kind of.
    */
   realStake?: number | string | null;
@@ -148,7 +133,7 @@ const toNumber = (value: unknown, fallback = 0): number => {
 const toStringOrNull = (value: unknown): string | null =>
   typeof value === 'string' && value.length > 0 ? value : null;
 
-/** For fields that are absent rather than zero on a settled bet — never returns 0 for null. */
+/** For fields that are absent rather than zero on a settled bet - never returns 0 for null. */
 const toNumberOrUndefined = (value: unknown): number | undefined => {
   if (value === null || value === undefined) return undefined;
   const n = toNumber(value, Number.NaN);
@@ -203,7 +188,10 @@ const mapLegStatus = (raw: string | undefined): BetStatus => {
   }
 };
 
-const mapBetType = (type: string | undefined, systemBetType: string | null | undefined): BetType => {
+const mapBetType = (
+  type: string | undefined,
+  systemBetType: string | null | undefined,
+): BetType => {
   if (systemBetType) return 'system';
   if ((type ?? '').toUpperCase() === 'MULTIPLE') return 'accumulator';
   return 'single';
@@ -217,9 +205,10 @@ const normalizeLeg = (raw: RawSelection): BetLeg => {
     event: toStringOrNull(raw.eventName),
     marketType: toStringOrNull(raw.marketName) ?? toStringOrNull(raw.bettingTypeName),
     selection: toStringOrNull(raw.betName) ?? toStringOrNull(raw.shortBetName),
-    odds: raw.priceValue == null && raw.betBuilderOdds == null
-      ? null
-      : toNumber(raw.priceValue ?? raw.betBuilderOdds, 0) || null,
+    odds:
+      raw.priceValue == null && raw.betBuilderOdds == null
+        ? null
+        : toNumber(raw.priceValue ?? raw.betBuilderOdds, 0) || null,
     status: mapLegStatus(raw.status),
     eventDate: toStringOrNull(raw.eventDate)
       ? normalizeTimestamp(toStringOrNull(raw.eventDate)!)
@@ -440,9 +429,9 @@ export const parseBalance = (json: unknown, account: AccountRef): BalanceInfo | 
     totalCashAmount?: Record<string, number> | null;
   };
   const items = Array.isArray(root.items) ? root.items : [];
-  const real = items.find(
-    (i) => (i as { type?: unknown }).type === 'Real',
-  ) as { amount?: unknown; currency?: unknown } | undefined;
+  const real = items.find((i) => (i as { type?: unknown }).type === 'Real') as
+    | { amount?: unknown; currency?: unknown }
+    | undefined;
 
   const cash = firstAmount(root.totalCashAmount);
   if (real === undefined && cash === null) return null;
@@ -459,8 +448,8 @@ export const parseBalance = (json: unknown, account: AccountRef): BalanceInfo | 
 // ── Bonuses ──────────────────────────────────────────────────────────────────
 
 /**
- * The bonus wallet sits on the same account API as banking — same host, same
- * `x-sessionid` — so the credentials captured for deposits already unlock it.
+ * The bonus wallet sits on the same account API as banking - same host, same
+ * `x-sessionid` - so the credentials captured for deposits already unlock it.
  * No date windowing here: the endpoint pages through all history at once.
  */
 export const BONUS = {
@@ -588,7 +577,7 @@ const BANKING_EPOCH = Date.UTC(2005, 0, 1);
 const BANKING_MAX_PAGES = 200;
 /**
  * Months per request. The site's own account page asks for a nine-month window
- * and pages through it with `pagination.next`, so a wide window is honoured —
+ * and pages through it with `pagination.next`, so a wide window is honoured -
  * walking a month at a time instead turned a first import into hundreds of
  * sequential requests, which the worker or the session outlived.
  */
@@ -600,7 +589,7 @@ const BANKING_EMPTY_MONTHS_STOP = 12;
  * Import deposits and withdrawals from bet-at-home's account API.
  *
  * Ids are namespaced (`bah-<transIdStr>`) and written with `putTransaction`, so
- * re-running this upserts rather than duplicating — overlapping windows and
+ * re-running this upserts rather than duplicating - overlapping windows and
  * repeat runs are both free, which is why no cursor state is kept.
  */
 export const syncTransactions = async (
@@ -610,7 +599,7 @@ export const syncTransactions = async (
   maxMonths = 3,
   /**
    * Keep walking past empty months until this date. The account was funded before
-   * its first bet, so the oldest bet we hold proves how far back money has to go —
+   * its first bet, so the oldest bet we hold proves how far back money has to go -
    * without it a year-long quiet stretch ends the walk mid-history.
    */
   floorMs = 0,
@@ -650,7 +639,7 @@ export const syncTransactions = async (
     let end = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
     for (;;) {
       if (end <= BANKING_EPOCH) break;
-      // A floor of 0 is no floor at all — there is no oldest bet to protect, so a
+      // A floor of 0 is no floor at all - there is no oldest bet to protect, so a
       // run of empty months means the account simply has no older money history.
       // Reading it as "walk back to 1970" is what made a first import grind
       // through every one of the 240 months twice.
@@ -683,7 +672,7 @@ const BONUS_MAX_PAGES = 50;
  * Import granted bonuses from the same account API the banking history uses.
  *
  * Ids are namespaced (`bah-<walletId>`), so re-running upserts. Bonuses are not
- * transactions — a grant moves no money — so they land in their own store and
+ * transactions - a grant moves no money - so they land in their own store and
  * are linked to the deposit that triggered them at read time.
  */
 export const syncBonuses = async (
@@ -691,7 +680,7 @@ export const syncBonuses = async (
   account: AccountRef,
   /**
    * Walk the whole wallet. Off on routine syncs, which stop at the first page
-   * that held nothing new — the list is newest-first and every grant keys on the
+   * that held nothing new - the list is newest-first and every grant keys on the
    * bookmaker's own wallet id, so the pages behind it are already stored. Page
    * one is still re-read every time, so a grant that changed state still lands.
    */

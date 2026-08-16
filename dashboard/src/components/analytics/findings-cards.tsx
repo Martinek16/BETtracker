@@ -23,24 +23,26 @@ const SLOTS = 4;
  * and one bet in €5 slips are read against each other. The money the segment
  * cost travels beside it, saying how much of the period the rate moved.
  */
-const toRow = (currency: string) => (habit: Habit): RankedRow => ({
-  label: habit.label,
-  value: habit.unitsPerBet,
-  // The same rate over the whole segment, in flat stakes: −4.8u reads as "this
-  // cost you nearly five average slips", whatever the slips were worth.
-  note: `${(habit.unitsPerBet * habit.bets).toFixed(1)}u`,
-  extra: compactMoney(habit.profit, currency),
-  sample: habit.bets,
-  unreliable: habit.driven,
-  title: `${habit.label}: ${compactMoney(habit.profit, currency)} over ${String(habit.bets)} slips${
-    habit.driven ? ' — mostly one big slip, not a habit' : ''
-  }`,
-});
+const toRow =
+  (currency: string) =>
+  (habit: Habit): RankedRow => ({
+    label: habit.label,
+    value: habit.unitsPerBet,
+    // The same rate over the whole segment, in flat stakes: −4.8u reads as "this
+    // cost you nearly five average slips", whatever the slips were worth.
+    note: `${(habit.unitsPerBet * habit.bets).toFixed(1)}u`,
+    extra: compactMoney(habit.profit, currency),
+    sample: habit.bets,
+    unreliable: habit.driven,
+    title: `${habit.label}: ${compactMoney(habit.profit, currency)} over ${String(habit.bets)} slips${
+      habit.driven ? ' - mostly one big slip, not a habit' : ''
+    }`,
+  });
 
 /**
  * What the selected period cost and what it was worth keeping. Two readings of
  * the same bets: the segments name what to stop backing, the findings name what
- * to stop doing — a habit like topping up after a loss lives in no segment.
+ * to stop doing - a habit like topping up after a loss lives in no segment.
  *
  * Read from the selected period alone: a habit named from the whole record while
  * a week is on screen answers a question the reader did not ask.
@@ -60,7 +62,9 @@ export const LeaksCard = ({ bets, currency }: LeaksCardProps): JSX.Element => {
     () => findings(bets, transactions, (amount) => compactMoney(amount, currency)),
     [bets, transactions, currency],
   );
-  const ordered = [...notes].sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'problem' ? -1 : 1));
+  const ordered = [...notes].sort((a, b) =>
+    a.kind === b.kind ? 0 : a.kind === 'problem' ? -1 : 1,
+  );
 
   const worst = leaks.worst.map(toRow(currency));
 

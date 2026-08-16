@@ -65,7 +65,7 @@ const buildSectors = (
   const signed = (amount: number): string | undefined =>
     amount === 0 ? undefined : amount > 0 ? 'text-profit' : 'text-loss';
 
-  // The vault is the account's money too — the site just keeps it out of betting
+  // The vault is the account's money too - the site just keeps it out of betting
   // reach, and its own header leaves it out. Counting only what is bettable would
   // read money put aside as money that went missing.
   const held = balance === null ? null : balance + (vault ?? 0);
@@ -116,8 +116,7 @@ const buildSectors = (
   });
   // Its own line rather than folded into the balance: the site keeps the two
   // apart, and a single figure would hide how much is out of betting reach.
-  if (vault !== null)
-    wallet.push({ id: 'sum.vault', label: 'In the vault', value: money(vault) });
+  if (vault !== null) wallet.push({ id: 'sum.vault', label: 'In the vault', value: money(vault) });
 
   const betStats: StatDef[] = [
     { id: 'bets.count', label: 'Bets placed', value: String(bets.length) },
@@ -190,7 +189,7 @@ const buildSectors = (
 };
 
 /**
- * The figures themselves, not a settings screen — every other page is built
+ * The figures themselves, not a settings screen - every other page is built
  * from these, so there is nothing here to switch off.
  */
 export const AccountStats = ({
@@ -213,29 +212,33 @@ export const AccountStats = ({
   currency: string;
 }): JSX.Element => (
   <DashboardCard className="flex min-h-0 flex-col overflow-y-auto">
-    {buildSectors(account, bets, transactions, bonuses, balance, vault, wagered, currency).map((sector) => (
-      <div key={sector.id} className="border-t border-border/60 pb-2 first:border-0">
-        <p className="pt-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {sector.label}
-        </p>
-        <div className="flex flex-col pl-3 pt-1">
-          {sector.stats.map((stat) => (
-            <div
-              key={stat.id}
-              className={cn(
-                'flex items-baseline gap-3 py-1.5 text-sm',
-                stat.apart === true && 'mt-1 border-t border-border/60 pt-2',
-                stat.total === true && 'mt-1 border-t border-border/60 pt-2 font-semibold',
-              )}
-            >
-              <span className="min-w-0 text-foreground">{stat.label}</span>
-              <span className={cn('ml-auto shrink-0 tabular-nums', stat.tone ?? 'text-foreground')}>
-                {stat.value}
-              </span>
-            </div>
-          ))}
+    {buildSectors(account, bets, transactions, bonuses, balance, vault, wagered, currency).map(
+      (sector) => (
+        <div key={sector.id} className="border-t border-border/60 pb-2 first:border-0">
+          <p className="pt-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {sector.label}
+          </p>
+          <div className="flex flex-col pl-3 pt-1">
+            {sector.stats.map((stat) => (
+              <div
+                key={stat.id}
+                className={cn(
+                  'flex items-baseline gap-3 py-1.5 text-sm',
+                  stat.apart === true && 'mt-1 border-t border-border/60 pt-2',
+                  stat.total === true && 'mt-1 border-t border-border/60 pt-2 font-semibold',
+                )}
+              >
+                <span className="min-w-0 text-foreground">{stat.label}</span>
+                <span
+                  className={cn('ml-auto shrink-0 tabular-nums', stat.tone ?? 'text-foreground')}
+                >
+                  {stat.value}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    ))}
+      ),
+    )}
   </DashboardCard>
 );

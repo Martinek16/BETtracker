@@ -2,7 +2,7 @@
  * stake.com adapter.
  *
  * ── HOW SCRAPING WORKS ──────────────────────────────────────────────────────
- * Everything — bets, deposits, withdrawals, balances — goes through a single
+ * Everything - bets, deposits, withdrawals, balances - goes through a single
  * `POST /_api/graphql`, authenticated by one `x-access-token` header and no
  * cookies. The MAIN-world inject script captures that header off the page's own
  * calls; we never guess where it is stored.
@@ -57,8 +57,8 @@ const GRAPHQL_PATH = '/_api/graphql';
 const PAGE_LIMIT = 50;
 /**
  * Deposits and withdrawals, ten at a time because that is the only size Stake
- * serves them in. Asking for fifty — which the bet list on the same endpoint is
- * happy to give — was answered with "you are not allowed to do that", the same
+ * serves them in. Asking for fifty - which the bet list on the same endpoint is
+ * happy to give - was answered with "you are not allowed to do that", the same
  * sentence it uses for a dead session, so the wallet read as an expired login
  * for months while bets kept importing on the very same token.
  */
@@ -80,7 +80,7 @@ const SHALLOW_PAGES = 5;
  * "You are not allowed to do that" is deliberately absent: Stake says it to a
  * signed-out visitor and to a signed-in one asking for something in a shape it
  * will not serve, and reading it as an expiry threw away a live token on every
- * run — the account signed itself back in over and over, and the refusal came
+ * run - the account signed itself back in over and over, and the refusal came
  * again, because nothing about the session was wrong.
  */
 const SESSION_REFUSED =
@@ -93,7 +93,7 @@ const SESSION_REFUSED =
  *
  * "This action is not available" is included deliberately: it is what Stake says
  * when it will not serve an operation right now, whatever the reason behind it.
- * Backing off is the right answer to every one of those reasons — retrying at
+ * Backing off is the right answer to every one of those reasons - retrying at
  * poll speed is the wrong answer to all of them.
  */
 const THROTTLED =
@@ -101,8 +101,8 @@ const THROTTLED =
 
 /**
  * A refusal that will read the same way tomorrow: the site does not serve this
- * operation to this region at all. Not an error to act on — nothing about the
- * session or the query is wrong — so it is noted once and then left alone.
+ * operation to this region at all. Not an error to act on - nothing about the
+ * session or the query is wrong - so it is noted once and then left alone.
  */
 const PERMANENTLY_REFUSED =
   /unavailable in your country or region|not available in your (country|region)/i;
@@ -156,8 +156,8 @@ const gql = async (
     );
 
   // From the site's own tab whenever one is open, which is how the site asks in
-  // the first place. Stake authenticates two ways at once — the captured token
-  // and the session cookie — and a request from the service worker carries only
+  // the first place. Stake authenticates two ways at once - the captured token
+  // and the session cookie - and a request from the service worker carries only
   // the token: the browser treats the worker as a stranger to stake.com and
   // leaves the cookie off. The bet list is content with the token alone, the
   // wallet is not, which is why bets kept importing while every deposit read
@@ -180,7 +180,7 @@ const gql = async (
       json = await ask(false);
     } catch (tokenErr) {
       // A cookie-authenticated endpoint refusing a request that carries no cookie
-      // says nothing about the session — the wallet answers the page and 401s the
+      // says nothing about the session - the wallet answers the page and 401s the
       // worker while the very same login keeps importing bets. Read as an expiry
       // it threw away a live session, paused the money walk for an hour, and left
       // deposits importing only when a tab happened to be open. It is the same
@@ -201,15 +201,15 @@ const gql = async (
   if (Array.isArray(root.errors) && root.errors.length > 0) {
     // Deduplicated: GraphQL reports one error per field it could not resolve, so
     // a throttled page of fifty bets came back as the same sentence fifty times
-    // over — a log line thousands of characters long saying one thing.
+    // over - a log line thousands of characters long saying one thing.
     const message = [...new Set(root.errors.map((e) => e?.message ?? ''))].join('; ');
     if (SESSION_REFUSED.test(message)) throw new SessionExpiredError(401, message);
     // Named, because one refused field in one query reads exactly like every
     // query failing once the message reaches the console.
     const named = `Stake ${operationName ?? 'GraphQL'}: ${message}`;
     // A list the region is not served is not a fault to report on every run. It
-    // is still asked for each time — a region is a property of where the user is,
-    // not of the account — but it is only ever said once.
+    // is still asked for each time - a region is a property of where the user is,
+    // not of the account - but it is only ever said once.
     if (PERMANENTLY_REFUSED.test(message)) {
       const key = operationName ?? named;
       if (!saidRefused.has(key)) {
@@ -309,7 +309,7 @@ const swishOutcomeFields = (fixtureExtra = ''): string => `
 
 /**
  * A leg of a multi placed through the SportsbookX provider. It carries neither
- * odds nor a selection of its own — both live in its price history — and its
+ * odds nor a selection of its own - both live in its price history - and its
  * fixture is a union, because the same product also takes racing and player
  * props. Only the two that name a match are asked for; a racing leg has no
  * fixture we could read and arrives without one.
@@ -378,7 +378,7 @@ const BET_LIST = `query SportSportList($limit: Int!, $offset: Int!) {
 }`;
 
 /**
- * The open slips. `sportBetList` answers about settled bets only — the schema
+ * The open slips. `sportBetList` answers about settled bets only - the schema
  * carries separate `active*` lists, one per bet product, and those are what the
  * site's own "Active" tab reads. Asking the settled list for an unsettled bet
  * returns nothing, which is why the panel had no Stake slips in it.
@@ -425,7 +425,7 @@ const ACTIVE_LISTS = [
 /**
  * Both of these are the site's own query, field for field, rather than the
  * smallest one that would answer. The wallet endpoints refuse a request that
- * does not look like the page's — asking for a subset of the same fields was
+ * does not look like the page's - asking for a subset of the same fields was
  * answered with a flat 401 while the bet list, asked our way, kept answering.
  */
 const DEPOSIT_LIST = `query DepositList($offset: Int = 0, $limit: Int = 10) {
@@ -478,7 +478,7 @@ const WITHDRAWAL_LIST = `query WithdrawalList($showFees: Boolean = false, $name:
 
 /**
  * Which login is signed in. Stake authenticates by cookie, so two accounts send
- * byte-identical credentials — asking the site who it thinks we are is the only
+ * byte-identical credentials - asking the site who it thinks we are is the only
  * way to tell them apart, and it has to happen before anything is written.
  */
 const USER_ID = `query UserId { user { id } }`;
@@ -523,7 +523,7 @@ interface RawFixture {
   eventStatus?: {
     homeScore?: number | null;
     awayScore?: number | null;
-    /** The period being played, named — "1st half", "Halftime", "Ended". */
+    /** The period being played, named - "1st half", "Halftime", "Ended". */
     matchStatus?: string | null;
     /** Null on every fixture that is not running, and on books that send none. */
     clock?: { matchTime?: string | number | null } | null;
@@ -535,7 +535,7 @@ interface RawFixture {
 interface RawSwishOutcome {
   odds?: number | null;
   cancel?: boolean | null;
-  /** Which side of the line was taken — "over", "under", "push". */
+  /** Which side of the line was taken - "over", "under", "push". */
   lineType?: string | null;
   outcome?: { name?: string | null; line?: number | null } | null;
   market?: {
@@ -618,7 +618,7 @@ const multiplierOf = (raw: RawBet): number =>
   toNumber(raw.potentialMultiplier ?? raw.xPotentialMultiplier ?? raw.swishPotentialMultiplier, 0);
 
 /**
- * Stake reports what happened to the bet, not whether it won — for that, the
+ * Stake reports what happened to the bet, not whether it won - for that, the
  * payout is the only honest signal. A settled bet that paid nothing lost; one
  * that paid anything won, whatever the multiplier says.
  */
@@ -654,7 +654,7 @@ const outcomesOf = (raw: RawBet): RawOutcome[] => {
 
 /**
  * A prop is a stat on one competitor against a line, so the selection has to be
- * put together from the three of them — "L. Doncic over 27.5" — rather than read
+ * put together from the three of them - "L. Doncic over 27.5" - rather than read
  * off a field. Nothing on the leg reports a result: `cancel` is all it says.
  */
 const fromSwishOutcome = (raw: RawSwishOutcome): RawOutcome => {
@@ -696,8 +696,8 @@ const fromXOutcome = (raw: RawXOutcome): RawOutcome => {
 };
 
 /**
- * What the slip is, read off the legs it carries. A product that served none —
- * racing, or a leg the query asks nothing about — is typed by what its name
+ * What the slip is, read off the legs it carries. A product that served none -
+ * racing, or a leg the query asks nothing about - is typed by what its name
  * means instead: an X-multi is a multi, anything else is one slip.
  */
 const mapBetType = (raw: RawBet): BetType => {
@@ -732,7 +732,7 @@ const normalizeLeg = (raw: RawOutcome): BetLeg => {
  * The in-play counts of one leg's fixture, if it carries any.
  *
  * Only what the payload states outright: the match score, and corners where the
- * statistic block has them. Cards are left out — they arrive split across
+ * statistic block has them. Cards are left out - they arrive split across
  * yellow, red and yellow-red, and adding those up would put a number on screen
  * the bookmaker never gave.
  */
@@ -889,7 +889,7 @@ const normalizeMovement = (
  * The lists are newest-first and every row carries the bookmaker's own id, so a
  * page in which nothing was new is a page whose whole tail we already hold. A
  * shallow run stops there instead of walking the full history again on every
- * sync — which is what wrote the same forty transactions to the log all evening.
+ * sync - which is what wrote the same forty transactions to the log all evening.
  * The first page is always read and upserted, so a changed recent row still
  * lands.
  */
@@ -927,7 +927,7 @@ const importMovements = async (
 
 /**
  * Rakeback is paid back out of the house edge on every bet and sits waiting to
- * be claimed, so the balance it reports is worth nothing as history — it is a
+ * be claimed, so the balance it reports is worth nothing as history - it is a
  * different number every day and would read as a new bonus each time it is
  * looked at. The claims themselves are a paged ledger with the bookmaker's own
  * row id on every entry, exactly like deposits and withdrawals, and that is what
@@ -980,7 +980,7 @@ const BONUS_CLAIM_LEDGER = `query BettrackerBonusClaims($limit: Int!, $offset: I
 /**
  * Deposit bonuses in every end state, with the rollover that decides whether one
  * became real money. `activeRollovers` is the only place the turnover progress
- * is published, and it names no bonus, so it is matched on currency — the
+ * is published, and it names no bonus, so it is matched on currency - the
  * account cannot have two deposit bonuses running in one coin at once.
  */
 const DEPOSIT_BONUS_LEDGER = `query BettrackerDepositBonuses($limit: Int!, $offset: Int!) {
@@ -1095,8 +1095,8 @@ interface RawDepositBonusRow {
 }
 
 /**
- * Claimed rakeback is real money the moment it lands — there is no wagering
- * behind it and no way to lose it — so it is written as already released rather
+ * Claimed rakeback is real money the moment it lands - there is no wagering
+ * behind it and no way to lose it - so it is written as already released rather
  * than as a grant waiting to convert.
  */
 export const rakebackBonus = (raw: RawRakebackTransaction, accountId: AccountId): Bonus | null => {
@@ -1215,7 +1215,7 @@ export const depositBonusGrant = (
   const rollover = rollovers.find((r) => normalizeCurrency(r.currency) === currency) ?? null;
   const required = rollover === null ? 0 : toNumber(rollover.expectedAmount, 0);
   // `progress` is the share already turned over, so the turnover itself has to
-  // be counted back out of it — the payload never states it outright.
+  // be counted back out of it - the payload never states it outright.
   const done =
     rollover === null ? 0 : required * Math.min(1, Math.max(0, toNumber(rollover.progress, 0)));
   const status = DEPOSIT_BONUS_STATUS[toStringOrNull(raw.status) ?? ''] ?? 'closed';
@@ -1356,8 +1356,8 @@ const importLedger = async (
 
 /**
  * Everything the bookmaker gave this account, and what it is standing on right
- * now. Each ledger is walked on its own so one refused list — a permission the
- * account does not have, a field the site retires — costs only itself.
+ * now. Each ledger is walked on its own so one refused list - a permission the
+ * account does not have, a field the site retires - costs only itself.
  */
 const importRewards = async (
   creds: Credentials,
@@ -1448,7 +1448,7 @@ interface RawBalance {
 /**
  * How long a price list and a turnover figure stay good. Both are re-read on
  * every balance reading, and the balance is re-read on every poll of the open
- * bets panel — every eight seconds while a match is in play. Coin prices move
+ * bets panel - every eight seconds while a match is in play. Coin prices move
  * by fractions of a percent in that time and turnover by nothing at all, so
  * asking each time bought no accuracy and spent two thirds of the request
  * budget Stake throttles on.
@@ -1489,7 +1489,7 @@ export const fetchBaseRates = async (creds: Credentials): Promise<Map<string, nu
   }
   // Prices an hour old value a wallet to within a fraction of a percent; no
   // prices value it not at all. One refused price list used to blank the balance
-  // outright — and a blank balance then told the money walk nothing had moved,
+  // outright - and a blank balance then told the money walk nothing had moved,
   // which is how a refused list also stopped the deposits importing.
   return held?.rates ?? rates;
 };
@@ -1521,7 +1521,7 @@ const readWagered = async (
  * so it matches what the site shows. The vault is left out: it is out of betting
  * reach and the site's own header leaves it out too.
  *
- * The coins that figure is made of are kept beside it — a combined worth says
+ * The coins that figure is made of are kept beside it - a combined worth says
  * how much is there and never what it is held in, which here is half the answer.
  * Only the coins actually held; the empty ones are the rest of the list and
  * would bury the two or three that matter.
@@ -1547,7 +1547,7 @@ export const parseBalance = (
 
   // No price list at all: nothing can be added up, and inventing a rate would be
   // worse than saying nothing. A wallet holding one coin has nothing to add up
-  // though — it is reported as it stands and the app's own rate table prices it,
+  // though - it is reported as it stands and the app's own rate table prices it,
   // which is the difference between a balance and a blank one.
   if (rates.size === 0) {
     const only = held.length === 1 ? held[0] : undefined;
@@ -1567,7 +1567,7 @@ export const parseBalance = (
   const priced: { currency: string; amount: number; worth: number }[] = [];
   // Every coin the account can hold is in the price list, so an unpriced one
   // would blank the whole balance over dust. Counted when priced, skipped when
-  // not — the balance stays a number instead of disappearing.
+  // not - the balance stays a number instead of disappearing.
   for (const { currency, amount } of held) {
     const rate = rates.get(currency);
     if (rate === undefined) continue;
@@ -1593,7 +1593,7 @@ export const parseBalance = (
 /**
  * Turnover per product, in USD. `scope` is Stake's own word: `house` is the
  * casino, `sport` the sportsbook. An unseen scope is left out rather than
- * guessed at — a third product counted as either would misstate both.
+ * guessed at - a third product counted as either would misstate both.
  */
 export const parseWagered = (list: unknown): BalanceInfo['wagered'] | undefined => {
   if (!Array.isArray(list)) return undefined;

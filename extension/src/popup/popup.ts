@@ -11,7 +11,7 @@ import type {
 /**
  * The same document serves the toolbar popup and the panel drawn inside the
  * site's page. In the page it is a frame with no window around it, so it has to
- * say how tall it wants to be — and it is told which site it was opened over,
+ * say how tall it wants to be - and it is told which site it was opened over,
  * rather than working it out from the active tab.
  */
 const panel = window.parent !== window ? new URLSearchParams(location.search) : null;
@@ -47,7 +47,7 @@ const formatDateTime = (iso: string): string =>
 
 /**
  * `busy` is what the popup says about itself while the background works, and
- * `settled` is the answer for a click that finishes on its own — without it the
+ * `settled` is the answer for a click that finishes on its own - without it the
  * wait ends only when the sync run reports how it went.
  */
 type Action = {
@@ -62,7 +62,7 @@ interface View {
   state: string;
   primary: Action;
   secondary: Action;
-  /** Nothing but the mark, the name and this one line — see the signed-out case. */
+  /** Nothing but the mark, the name and this one line - see the signed-out case. */
   quiet?: true;
 }
 
@@ -90,7 +90,7 @@ const viewFor = (account: AccountStatus, pending: Bookmaker | null): View => {
   const { bookmaker, bets, connection, name } = account;
 
   // Nobody is signed in at this site, so there is nothing to say about an account
-  // yet — not whether to add it, not how much of it is stored, and not how its
+  // yet - not whether to add it, not how much of it is stored, and not how its
   // reading is going. The mark, the name and the one thing that has to happen
   // first. Asked before the consent question on purpose: that question is raised
   // by a session arriving, and putting it on a login form is asking about
@@ -130,12 +130,16 @@ const viewFor = (account: AccountStatus, pending: Bookmaker | null): View => {
   if (account.consent === false) {
     // Addable only while someone is signed in: saying yes with no session behind
     // it connects nothing, and the run it kicks off ends on "nothing new to
-    // read" — which reads as the site having no bets rather than as no login.
+    // read" - which reads as the site having no bets rather than as no login.
     return {
       tone: 'idle',
       state: account.signedIn ? 'Not tracked.' : `Not tracked. Sign in to ${name} to add it.`,
       primary: account.signedIn
-        ? { label: 'Add', busy: 'Connecting to your account…', run: () => setConsent(bookmaker, true) }
+        ? {
+            label: 'Add',
+            busy: 'Connecting to your account…',
+            run: () => setConsent(bookmaker, true),
+          }
         : null,
       secondary: null,
       quiet: account.signedIn ? undefined : true,
@@ -168,7 +172,7 @@ type Counted = NonNullable<SyncProgress['kind']>;
 interface Busy {
   bookmaker: Bookmaker;
   label: string;
-  /** Rows written so far, per kind — the running tally under the spinner. */
+  /** Rows written so far, per kind - the running tally under the spinner. */
   counts: Map<Counted, number>;
   /** Set once there is an answer; until then the popup is still waiting. */
   outcome: { ok: boolean; text: string } | null;
@@ -572,7 +576,7 @@ chrome.runtime.onMessage.addListener((message: FromBackground) => {
   if (message.type === 'STATUS_CHANGED') void refresh();
   if (message.type !== 'SYNC_PROGRESS') return;
   const progress = message.progress;
-  // A run nobody clicked for — the background starts one on its own as soon as a
+  // A run nobody clicked for - the background starts one on its own as soon as a
   // site signs in. Its steps belong on this card too: without this the popup sat
   // showing the stored totals while new rows were landing behind it.
   if (busy === null && here !== null && progress.ok === undefined) {

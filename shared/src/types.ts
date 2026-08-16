@@ -2,13 +2,13 @@
  * Normalized, bookmaker-agnostic data model.
  *
  * Every bookmaker adapter is responsible for mapping its raw API payload onto
- * these types. Every record carries the account it came from — a bookmaker and
- * the site's own id for one login — so two logins at the same bookmaker stay
+ * these types. Every record carries the account it came from - a bookmaker and
+ * the site's own id for one login - so two logins at the same bookmaker stay
  * two accounts rather than one merged pile.
  */
 
 /**
- * One bookmaker's id, matching the folder it is implemented in — see
+ * One bookmaker's id, matching the folder it is implemented in - see
  * `extension/src/bookmakers/<id>/bookmaker.json`.
  *
  * Deliberately an open string rather than a union of the sites that happen to
@@ -33,7 +33,7 @@ export type AccountId = string;
  */
 export const UNCLAIMED: AccountId = 'unclaimed';
 
-/** One login at one bookmaker — the unit every record and cursor is scoped by. */
+/** One login at one bookmaker - the unit every record and cursor is scoped by. */
 export interface AccountRef {
   bookmaker: Bookmaker;
   accountId: AccountId;
@@ -92,7 +92,7 @@ export interface LiveScore {
   home: string;
   /** Empty when a sport counts one side at a time, as cricket does. */
   away: string;
-  /** Set when the pair is not the match score — "Corners", "Sets", "Overs". */
+  /** Set when the pair is not the match score - "Corners", "Sets", "Overs". */
   kind?: string;
   /**
    * The running clock, in the book's own words. Never derived from the kickoff:
@@ -101,7 +101,7 @@ export interface LiveScore {
    */
   clock?: string;
   /**
-   * The part being played — "1st half", "3rd set", "Ended". What a sport without
+   * The part being played - "1st half", "3rd set", "Ended". What a sport without
    * a running clock has instead of a minute, and what tells us a match is over.
    */
   period?: string;
@@ -144,7 +144,7 @@ export interface Bet extends ConvertedFrom {
   stake: number;
   /**
    * The part of `stake` that came out of the bonus wallet rather than the
-   * pocket — a free bet, a bonus credit, a promotion. It never passed through a
+   * pocket - a free bet, a bonus credit, a promotion. It never passed through a
    * deposit, so a wallet that counts it as real money spent goes short by
    * exactly this much on every bonus slip. Absent on records imported before
    * the bookmaker's split was read, which count as fully real.
@@ -190,7 +190,7 @@ export interface Transaction extends ConvertedFrom {
 /**
  * Bonuses granted by the bookmaker. Deliberately NOT a `Transaction`: bonus
  * money is neither paid in nor taken out, and whatever part of it became real is
- * already inside the account balance — recording it as a movement would count it
+ * already inside the account balance - recording it as a movement would count it
  * twice and corrupt the all-time result.
  *
  * The unions below are the bookmaker's own enum, read off the filter parameters
@@ -225,7 +225,7 @@ export interface Bonus {
   type: BonusType;
   trigger: BonusTrigger;
   status: BonusStatus;
-  /** Face value of the grant — a promise, not income. See `realizedBonusValue`. */
+  /** Face value of the grant - a promise, not income. See `realizedBonusValue`. */
   grantedAmount: number;
   /** What is sitting in the bonus wallet right now. */
   currentAmount: number;
@@ -264,7 +264,7 @@ export interface AccountPerks {
   rakeback: { enabled: boolean; balances: RakebackBalance[] } | null;
   /** The loyalty tier and how far into it the account is, 0–1. */
   vip: { level: string | null; progress: number | null } | null;
-  /** A claim that refills on a timer — worth showing only while it is armed. */
+  /** A claim that refills on a timer - worth showing only while it is armed. */
   reload: {
     active: boolean;
     value: number;

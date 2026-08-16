@@ -66,7 +66,7 @@ const kickoffMs = (leg: BetLeg): number => {
 
 /**
  * Several picks on one fixture are one line with the picks under it, and the
- * fixtures run in kickoff order — the slip reads as the evening it will play out
+ * fixtures run in kickoff order - the slip reads as the evening it will play out
  * rather than the order the picks happened to be added in.
  */
 const groupByEvent = (legs: BetLeg[]): LegGroup[] => {
@@ -102,7 +102,7 @@ const groupStatus = (group: LegGroup): BetStatus =>
   group.find((leg) => leg.status === 'pending')?.status ??
   group[0].status;
 
-/** A builder is a combo whose fixtures coincide — the punter reads both alike. */
+/** A builder is a combo whose fixtures coincide - the punter reads both alike. */
 const slipTitle = (bet: Bet): string => {
   const kind = slipKind(bet);
   return SLIP_KIND_LABEL[kind === 'betBuilder' ? 'combo' : kind];
@@ -128,7 +128,7 @@ export const ActiveSlipCard = ({
 }: ActiveSlipCardProps): JSX.Element => {
   const [expanded, setExpanded] = useState(false);
   const { oddsFormat } = useDashboard();
-  // Anything with more than one pick reads as a combo — a builder is just a
+  // Anything with more than one pick reads as a combo - a builder is just a
   // combo whose fixtures happen to coincide, so it collapses the same way and
   // the picks are what a click reveals. A single shows its pick either way, so
   // a click there only asks for when the figures were last read.
@@ -159,48 +159,48 @@ export const ActiveSlipCard = ({
       {/* The rule closes whatever the header is showing: the title alone while
           the card is shut, the stamps below it once it is open. */}
       <header className="mb-2 border-b border-border pb-2">
-      <div className="flex items-baseline gap-2">
-        <AccountIcon bookmaker={bet.bookmaker} className="h-4 w-4 shrink-0 text-[9px]" />
-        {multi ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpanded((v) => !v);
-            }}
-            aria-expanded={expanded}
-            className="flex min-w-0 flex-1 items-center gap-2 text-left"
-          >
-            <span className="truncate text-sm font-medium">{slipTitle(bet)}</span>
-            <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-              {bet.legs.length}
-            </span>
-          </button>
-        ) : (
-          <h3 className="min-w-0 flex-1 truncate text-sm font-medium">
-            {bet.event ?? bet.selection ?? bet.betId}
-          </h3>
-        )}
-        <OpenAtBook url={siteUrl} />
-      </div>
-      {/* When the figures above were read, and the day the slip was placed —
-          neither is worth a line until the card is asked to open. */}
-      {expanded && (
-      <p className="flex items-baseline justify-between gap-2 text-[11px] text-muted-foreground">
-        {/* Says only how fresh the figures are, so it sits a size under them. */}
-        <span className="text-[9px]">
-          {refreshedAt !== null && (
-            <>
-              last update{' '}
-              <span className="tabular-nums">
-                {formatTime(new Date(refreshedAt).toISOString())}
+        <div className="flex items-baseline gap-2">
+          <AccountIcon bookmaker={bet.bookmaker} className="h-4 w-4 shrink-0 text-[9px]" />
+          {multi ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded((v) => !v);
+              }}
+              aria-expanded={expanded}
+              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+            >
+              <span className="truncate text-sm font-medium">{slipTitle(bet)}</span>
+              <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                {bet.legs.length}
               </span>
-            </>
+            </button>
+          ) : (
+            <h3 className="min-w-0 flex-1 truncate text-sm font-medium">
+              {bet.event ?? bet.selection ?? bet.betId}
+            </h3>
           )}
-        </span>
-        <span className="tabular-nums">{formatDate(bet.placedAt)}</span>
-      </p>
-      )}
+          <OpenAtBook url={siteUrl} />
+        </div>
+        {/* When the figures above were read, and the day the slip was placed -
+          neither is worth a line until the card is asked to open. */}
+        {expanded && (
+          <p className="flex items-baseline justify-between gap-2 text-[11px] text-muted-foreground">
+            {/* Says only how fresh the figures are, so it sits a size under them. */}
+            <span className="text-[9px]">
+              {refreshedAt !== null && (
+                <>
+                  last update{' '}
+                  <span className="tabular-nums">
+                    {formatTime(new Date(refreshedAt).toISOString())}
+                  </span>
+                </>
+              )}
+            </span>
+            <span className="tabular-nums">{formatDate(bet.placedAt)}</span>
+          </p>
+        )}
       </header>
 
       {(multi || showPicks) && (

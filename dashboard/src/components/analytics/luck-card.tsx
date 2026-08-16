@@ -67,12 +67,7 @@ export const LuckCard = ({ bets, currency, open, onToggle }: LuckCardProps): JSX
   const hundred = money(100);
 
   return (
-    <QuestionCard
-      title="Was it luck or skill?"
-      answer={answer}
-      open={open}
-      onToggle={onToggle}
-    >
+    <QuestionCard title="Was it luck or skill?" answer={answer} open={open} onToggle={onToggle}>
       <dl className="grid grid-cols-3 gap-2 text-center">
         {[
           { label: 'Came back per 100', value: money(100 + info.yield), money: true },
@@ -125,7 +120,7 @@ export const LuckCard = ({ bets, currency, open, onToggle }: LuckCardProps): JSX
             {sure
               ? ', so luck does not cover it.'
               : leaning
-                ? ' — uncommon, but not enough to rule luck out.'
+                ? ' - uncommon, but not enough to rule luck out.'
                 : ', so luck covers it.'}
             {sure || needed === null
               ? ''

@@ -39,7 +39,7 @@ const V5_BOOKMAKERS: readonly Bookmaker[] = ['bet-at-home', 'stake'];
  */
 const metaKey = (base: string, account: AccountRef): string => `${base}:${accountKey(account)}`;
 
-/** The registry row itself is per bookmaker — it is what lists the accounts. */
+/** The registry row itself is per bookmaker - it is what lists the accounts. */
 const registryKey = (bookmaker: Bookmaker): string => `accounts:${bookmaker}`;
 
 /** Where migrated rows land until a real identity claims them. */
@@ -96,7 +96,7 @@ export interface AppSettings {
   /**
    * Show rewards the bookmaker is holding until they are claimed. They are not
    * in the balance and no sync collects them, so the figure is a reminder rather
-   * than money in hand — and a reminder nobody acts on is just noise.
+   * than money in hand - and a reminder nobody acts on is just noise.
    */
   showClaimable: boolean;
   /** Toast when a sync brings in bets the tracker did not have. */
@@ -105,7 +105,7 @@ export interface AppSettings {
   expiryAlerts: boolean;
   /** Toast when a connected account stopped syncing or signed itself out. */
   connectionAlerts: boolean;
-  /** Figures switched off on the account page. Ids, not labels — labels change. */
+  /** Figures switched off on the account page. Ids, not labels - labels change. */
   hiddenAccountStats: string[];
   /** What the user calls each account, keyed by account key. */
   accountNames: Record<string, string>;
@@ -156,7 +156,7 @@ export interface BalanceInfo {
   holdings?: readonly { currency: string; amount: number }[];
   /**
    * Worth put aside in the site's vault, in the same currency as `amount` and
-   * deliberately not part of it — the site's own header leaves it out too. Still
+   * deliberately not part of it - the site's own header leaves it out too. Still
    * the account's money, so a wallet that ignores it reads money moved out of
    * betting reach as money that went missing.
    */
@@ -174,7 +174,7 @@ export interface BalanceInfo {
  * A bet as it sits in the store: the domain record plus the one date the
  * dashboard files it under. It is a copy of `settledAt ?? cashedOutAt ??
  * placedAt`, written down only because IndexedDB cannot index a value it has to
- * compute — and without an index a period can only be found by reading every bet
+ * compute - and without an index a period can only be found by reading every bet
  * ever stored and throwing most of them away.
  */
 type StoredBet = Bet & { periodDate: string };
@@ -267,7 +267,7 @@ export const openDb = (): Promise<IDBPDatabase<BetAnalDB>> => {
         }
 
         // v6: scope drops from the bookmaker to one login at it. Which login
-        // wrote these rows is not knowable here — nothing recorded it — so they
+        // wrote these rows is not knowable here - nothing recorded it - so they
         // are marked unclaimed and the first identity seen takes them over.
         if (oldVersion > 0 && oldVersion < 6) {
           for (const name of ['bets', 'transactions', 'bonuses'] as const) {
@@ -285,7 +285,10 @@ export const openDb = (): Promise<IDBPDatabase<BetAnalDB>> => {
               for (const bookmaker of V5_BOOKMAKERS) {
                 const row = await meta.get(`${base}:${bookmaker}`);
                 if (row === undefined) continue;
-                await meta.put({ key: metaKey(base, { bookmaker, accountId: UNCLAIMED }), value: row.value });
+                await meta.put({
+                  key: metaKey(base, { bookmaker, accountId: UNCLAIMED }),
+                  value: row.value,
+                });
                 await meta.delete(`${base}:${bookmaker}`);
               }
             }
@@ -362,7 +365,7 @@ export const getAllBets = async (): Promise<Bet[]> => {
  * null is every bet, which is what the All period asks for and the only case
  * that still costs the whole store.
  *
- * Open slips are deliberately not included — they are pinned above whatever
+ * Open slips are deliberately not included - they are pinned above whatever
  * period is showing, so callers read them with `getPendingBets`.
  */
 export const getBetsInRange = async (from: string | null, to: string | null): Promise<Bet[]> => {
@@ -429,7 +432,7 @@ export const getRecordCounts = async (
  * Whether this login has a single bet stored. Asked of a sync that was killed
  * mid-run, to tell "wrote nothing" from "wrote something and never said so".
  * Walks the bookmaker index and stops at the first row that matches, because
- * there is no index on the login itself — reading the whole store to answer a
+ * there is no index on the login itself - reading the whole store to answer a
  * yes/no cost the worker its entire bet history on every wake-up.
  */
 export const hasBets = async (account: AccountRef): Promise<boolean> => {
@@ -612,10 +615,7 @@ export const claimUnclaimed = async (account: AccountRef): Promise<void> => {
   const tx = db.transaction(['bets', 'transactions', 'bonuses'], 'readwrite');
   for (const name of ['bets', 'transactions', 'bonuses'] as const) {
     const store = tx.objectStore(name);
-    for (const row of ofAccount(
-      await store.index('bookmaker').getAll(account.bookmaker),
-      orphan,
-    )) {
+    for (const row of ofAccount(await store.index('bookmaker').getAll(account.bookmaker), orphan)) {
       await store.put({ ...row, accountId: account.accountId });
     }
   }
@@ -627,7 +627,10 @@ export const claimUnclaimed = async (account: AccountRef): Promise<void> => {
     const row = await db.get('meta', `${base}:${from}`);
     if (row === undefined) continue;
     if ((await db.get('meta', `${base}:${to}`)) === undefined) {
-      await db.put('meta', { key: `${base}:${to}`, value: reAccount(row.value, account.accountId) });
+      await db.put('meta', {
+        key: `${base}:${to}`,
+        value: reAccount(row.value, account.accountId),
+      });
     }
     await db.delete('meta', `${base}:${from}`);
   }
@@ -736,7 +739,7 @@ export interface BackfillState {
    * How far into an offset-paged history the walk has already read. Sites that
    * page by timestamp resume from `oldestFetchedAt` and leave this at 0; ones
    * that page by position have nothing else to resume from, and without it a
-   * worker stopped mid-walk started again at the first page every time — on a
+   * worker stopped mid-walk started again at the first page every time - on a
    * long history that meant it never reached the end at all.
    */
   betOffset: number;
@@ -749,7 +752,7 @@ export interface BackfillState {
   moneyComplete: boolean;
   /**
    * An open bet has been read off the site at least once. A bet settles, and
-   * with it the only evidence that the site's open-bet endpoint works at all —
+   * with it the only evidence that the site's open-bet endpoint works at all -
    * so the fact is kept rather than re-derived from what is stored today.
    */
   openBetsSeen: boolean;
@@ -858,7 +861,9 @@ export const getAllBalanceHistory = async (): Promise<BalanceInfo[]> =>
   (await Promise.all((await getKnownAccounts()).map(getBalanceHistory))).flat();
 
 export const getAllPerks = async (): Promise<AccountPerks[]> =>
-  (await Promise.all((await getKnownAccounts()).map(getPerks))).flatMap((p) => (p === null ? [] : [p]));
+  (await Promise.all((await getKnownAccounts()).map(getPerks))).flatMap((p) =>
+    p === null ? [] : [p],
+  );
 
 export const getAllSyncMeta = async (): Promise<{ account: AccountRef; meta: SyncMeta }[]> =>
   Promise.all(

@@ -81,7 +81,7 @@ export const PrivacyPage = (): JSX.Element => (
               stay apart.
             </Point>
             <Point term="An activity log">
-              The last 500 lines of what the extension did — synced, paused, failed — so you can see
+              The last 500 lines of what the extension did - synced, paused, failed - so you can see
               why something is missing. Readable under Settings.
             </Point>
             <Point term="Your settings">
@@ -93,7 +93,7 @@ export const PrivacyPage = (): JSX.Element => (
         <Section title="What leaves your computer">
           <Pair>
             <Point term="The bookmaker's own site">
-              Requests carrying the session you are already signed in with — the same calls the site
+              Requests carrying the session you are already signed in with - the same calls the site
               makes when you open your bet history. For bet-at-home those run through its own
               backends, sports-api.everymatrix.com and betathomecom.nwacdn.com.
             </Point>
@@ -126,7 +126,7 @@ export const PrivacyPage = (): JSX.Element => (
               answered for again.
             </Point>
             <Point term="Delete everything">
-              Settings, Your data, Delete. Clears every bet, payment and setting here — it cannot be
+              Settings, Your data, Delete. Clears every bet, payment and setting here - it cannot be
               undone.
             </Point>
             <Point term="Uninstalling">
@@ -167,7 +167,7 @@ export const PrivacyPage = (): JSX.Element => (
       <div className="flex flex-col gap-4">
         <Section title="What is never stored">
           <Point term="Passwords and card details">
-            It reads pages you are already signed in to — it never asks for a login, fills one in,
+            It reads pages you are already signed in to - it never asks for a login, fills one in,
             or sees a payment detail.
           </Point>
           <Point term="Casino and slots play">
@@ -185,7 +185,7 @@ export const PrivacyPage = (): JSX.Element => (
         <Section title="Your login session">
           <Prose>
             To read your history the extension needs the same sign-in the site is already using. It
-            takes it from the requests the site itself makes — it never asks for a password, never
+            takes it from the requests the site itself makes - it never asks for a password, never
             fills a login form in, and never signs in on your behalf.
           </Prose>
           <Point term="Held in memory only">
@@ -231,15 +231,13 @@ export const PrivacyPage = (): JSX.Element => (
           <Prose>
             Your data is never sold, never used for advertising, never used to train anything, and
             never handed to anyone. There is nothing to request access to or ask to be deleted,
-            because nobody but you ever holds it — deleting it is the buttons under Settings.
+            because nobody but you ever holds it - deleting it is the buttons under Settings.
           </Prose>
           <Prose>
             For adults only, and not for anyone under 18. If a later version ever collects more than
             this, the policy changes with it and the new version asks before it starts.
           </Prose>
-          <Prose>
-            Questions about any of this: info.m04studio@gmail.com.
-          </Prose>
+          <Prose>Questions about any of this: info.m04studio@gmail.com.</Prose>
         </Section>
       </div>
     </div>

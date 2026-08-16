@@ -6,7 +6,7 @@
  *
  * Two things are checked, both derived from the folders on disk. Every host a
  * folder names in its own code must be one it declared in its `bookmaker.json`
- * — which is also the list of hosts the manifest asks permission for, so an
+ * - which is also the list of hosts the manifest asks permission for, so an
  * undeclared host is a host the extension could not reach anyway, and naming one
  * is a sign of intent worth failing over. And the handful of calls that can move
  * data somewhere the network tab does not show are refused outright.
@@ -67,7 +67,9 @@ const declaredHosts = (meta: Meta): RegExp[] => [
   ...(meta.apiHosts ?? []).map(hostPattern),
   ...(meta.siteRanges ?? []).map(
     ({ prefix, suffixes }) =>
-      new RegExp(`^(?:[a-z0-9-]+\\.)*${escape(prefix)}\\d+\\.(?:${suffixes.map(escape).join('|')})$`),
+      new RegExp(
+        `^(?:[a-z0-9-]+\\.)*${escape(prefix)}\\d+\\.(?:${suffixes.map(escape).join('|')})$`,
+      ),
   ),
 ];
 

@@ -55,9 +55,10 @@ const Row = ({
 );
 
 /** One unit is one average stake, so results compare across stake sizes. */
-const formatUnits = (value: number): string => `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(1)}u`;
+const formatUnits = (value: number): string =>
+  `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(1)}u`;
 
-/** What a group costs per bet — the figure the rows are ranked on. */
+/** What a group costs per bet - the figure the rows are ranked on. */
 const formatPerBet = (value: number): string =>
   `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(2)}u/bet`;
 

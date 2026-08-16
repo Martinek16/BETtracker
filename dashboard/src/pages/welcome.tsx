@@ -20,7 +20,7 @@ const STEPS: readonly { title: string; body: string }[] = [
 
 /**
  * Opened once, by the extension, the moment it is installed. It exists because
- * nothing about this extension is visible until a bookmaker's site is open — the
+ * nothing about this extension is visible until a bookmaker's site is open - the
  * user would otherwise install it and see nothing at all.
  */
 export const WelcomePage = (): JSX.Element => (
@@ -30,9 +30,9 @@ export const WelcomePage = (): JSX.Element => (
         <div className="flex flex-col gap-2 text-center">
           <h1 className="text-2xl font-semibold text-foreground">Welcome</h1>
           <p className="text-sm text-muted-foreground">
-            Bettracker collects your betting history from the bookmakers you use and turns it
-            into numbers you can read. Everything stays in this browser — nothing is uploaded,
-            and no password is ever asked for.
+            Bettracker collects your betting history from the bookmakers you use and turns it into
+            numbers you can read. Everything stays in this browser - nothing is uploaded, and no
+            password is ever asked for.
           </p>
         </div>
 

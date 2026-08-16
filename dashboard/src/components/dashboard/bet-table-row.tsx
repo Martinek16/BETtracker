@@ -62,7 +62,7 @@ const Live = ({
 
 /**
  * Singles name the fixture with the pick alongside it. Multiples say only how
- * many selections are folded in — the legs themselves are one click away, and
+ * many selections are folded in - the legs themselves are one click away, and
  * spelling them out here is more text than the row can carry.
  */
 const BetCell = ({ bet, scores }: BetTableRowProps): JSX.Element => {
@@ -82,7 +82,11 @@ const BetCell = ({ bet, scores }: BetTableRowProps): JSX.Element => {
   );
 };
 
-export const BetTableRow = ({ bet, showAccount = false, scores }: BetTableRowProps): JSX.Element => {
+export const BetTableRow = ({
+  bet,
+  showAccount = false,
+  scores,
+}: BetTableRowProps): JSX.Element => {
   const [expanded, setExpanded] = useState(false);
   const { oddsFormat } = useDashboard();
   const pl = profitOf(bet);
@@ -118,9 +122,7 @@ export const BetTableRow = ({ bet, showAccount = false, scores }: BetTableRowPro
         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
           {formatDateTime(bet.placedAt)}
         </TableCell>
-        <TableCell className="overflow-hidden text-sm">
-          {SLIP_KIND_LABEL[slipKind(bet)]}
-        </TableCell>
+        <TableCell className="overflow-hidden text-sm">{SLIP_KIND_LABEL[slipKind(bet)]}</TableCell>
         <TableCell className="overflow-hidden">
           <BetCell bet={bet} scores={scores} />
         </TableCell>
@@ -141,7 +143,7 @@ export const BetTableRow = ({ bet, showAccount = false, scores }: BetTableRowPro
         </TableCell>
         <TableCell>
           {/* With the scores, so a slip reads Live only while its match is
-              actually being played — the same rule the slip panel goes by. */}
+              actually being played - the same rule the slip panel goes by. */}
           <StatusBadge status={bet.status} live={isLiveBet(bet, Date.now(), scores)} />
         </TableCell>
       </TableRow>
@@ -152,41 +154,41 @@ export const BetTableRow = ({ bet, showAccount = false, scores }: BetTableRowPro
           [...bet.legs]
             .sort((a, b) => kickoffMs(a) - kickoffMs(b))
             .map((leg, index) => (
-            <TableRow
-              key={`${bet.betId}-leg-${index}`}
-              className="border-border bg-muted/10 hover:bg-muted/15"
-            >
-              {showAccount ? <TableCell className="py-1.5" /> : null}
-              {/* The kickoff, under the slip's own placement date: the column
+              <TableRow
+                key={`${bet.betId}-leg-${index}`}
+                className="border-border bg-muted/10 hover:bg-muted/15"
+              >
+                {showAccount ? <TableCell className="py-1.5" /> : null}
+                {/* The kickoff, under the slip's own placement date: the column
                   reads as dates throughout, and it is what the order is by. */}
-              <TableCell className="whitespace-nowrap py-1.5 text-[11px] leading-tight text-muted-foreground/70">
-                {leg.eventDate == null ? '' : formatDateTime(leg.eventDate)}
-              </TableCell>
-              <TableCell className="py-1.5" />
-              <TableCell className="overflow-hidden border-l-2 border-border/40 py-1.5 pl-4">
-                <span className="flex min-w-0 items-baseline gap-1.5">
-                  <span className="min-w-0 flex-1 truncate text-[11px] font-semibold leading-tight text-foreground">
-                    {formatLegEvent(leg)}
+                <TableCell className="whitespace-nowrap py-1.5 text-[11px] leading-tight text-muted-foreground/70">
+                  {leg.eventDate == null ? '' : formatDateTime(leg.eventDate)}
+                </TableCell>
+                <TableCell className="py-1.5" />
+                <TableCell className="overflow-hidden border-l-2 border-border/40 py-1.5 pl-4">
+                  <span className="flex min-w-0 items-baseline gap-1.5">
+                    <span className="min-w-0 flex-1 truncate text-[11px] font-semibold leading-tight text-foreground">
+                      {formatLegEvent(leg)}
+                    </span>
+                    <Live leg={leg} scores={scores} />
                   </span>
-                  <Live leg={leg} scores={scores} />
-                </span>
-                <span className="block truncate text-[11px] leading-tight text-muted-foreground/70">
-                  {formatLegSelection(leg, oddsFormat)}
-                </span>
-              </TableCell>
-              <TableCell className="py-1.5 tabular-nums text-[11px] leading-tight text-muted-foreground/70">
-                {leg.odds != null ? formatOdds(leg.odds, oddsFormat) : '—'}
-              </TableCell>
-              <TableCell className="py-1.5" />
-              <TableCell className="py-1.5" />
-              <TableCell className="py-1.5" />
-              <TableCell className="py-1.5">
-                <span className="inline-block origin-left scale-[0.85]">
-                  <StatusBadge status={leg.status} live={isLiveLeg(leg, Date.now(), scores)} />
-                </span>
-              </TableCell>
-            </TableRow>
-          ))
+                  <span className="block truncate text-[11px] leading-tight text-muted-foreground/70">
+                    {formatLegSelection(leg, oddsFormat)}
+                  </span>
+                </TableCell>
+                <TableCell className="py-1.5 tabular-nums text-[11px] leading-tight text-muted-foreground/70">
+                  {leg.odds != null ? formatOdds(leg.odds, oddsFormat) : '—'}
+                </TableCell>
+                <TableCell className="py-1.5" />
+                <TableCell className="py-1.5" />
+                <TableCell className="py-1.5" />
+                <TableCell className="py-1.5">
+                  <span className="inline-block origin-left scale-[0.85]">
+                    <StatusBadge status={leg.status} live={isLiveLeg(leg, Date.now(), scores)} />
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))
         : null}
     </>
   );

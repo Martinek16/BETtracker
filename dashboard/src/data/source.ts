@@ -80,8 +80,8 @@ export const loadBets = async (from: string | null, to: string | null): Promise<
 };
 
 /**
- * Every stored bet, however far back. Only the account pages ask for this — they
- * report on a login's whole life, which no window can answer — and it is the one
+ * Every stored bet, however far back. Only the account pages ask for this - they
+ * report on a login's whole life, which no window can answer - and it is the one
  * read left whose cost grows with the history.
  */
 export const loadAllBets = async (): Promise<Bet[]> => {
@@ -165,7 +165,7 @@ export interface ActiveBetsSnapshot {
 }
 
 /**
- * The worker hands back bets exactly as the bookmaker denominated them — a
+ * The worker hands back bets exactly as the bookmaker denominated them - a
  * Stake slip in LTC, another in BTC. Everything the dashboard has already read
  * from the database went through the same conversion in the context, so
  * without this one the panel would list a freshly fetched slip in coins beside
@@ -239,8 +239,8 @@ const IMPORTED_PREFIXES = ['bah-', 'stake-'];
 /**
  * Drops rows the import can never overwrite, and deletes them for good.
  *
- * Two earlier features wrote transactions of their own — a manual entry form and
- * a flow that guessed movements from balance jumps — and an earlier import keyed
+ * Two earlier features wrote transactions of their own - a manual entry form and
+ * a flow that guessed movements from balance jumps - and an earlier import keyed
  * rows on a number too large to survive JSON, so the same movement could land
  * twice under ids differing in their last digits. All of it duplicates what the
  * account API now returns, which is the only source left.
@@ -267,7 +267,7 @@ const withoutDuplicates = async (rows: readonly Transaction[]): Promise<Transact
  */
 const NOISE_BONUS_NAMES = new Set(['COMBI+']);
 
-/** Bonus grants, newest first. Never mixed into transactions — see `Bonus`. */
+/** Bonus grants, newest first. Never mixed into transactions - see `Bonus`. */
 export const loadBonuses = async (): Promise<Bonus[]> => {
   if (isDemoData()) return demoBonuses();
   try {
@@ -328,15 +328,7 @@ export const loadOpenBetsSeen = async (): Promise<Bookmaker[]> => {
   }
 };
 
-export {
-  clearAccount,
-  getBetCounts,
-  getSettings,
-  setSettings,
-  getRates,
-  exportAll,
-  clearAll,
-};
+export { clearAccount, getBetCounts, getSettings, setSettings, getRates, exportAll, clearAll };
 export type {
   AccountPerks,
   AppSettings,

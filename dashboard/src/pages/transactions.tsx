@@ -10,10 +10,7 @@ import {
 } from 'lucide-react';
 import { bonusesByTransaction } from '@betanal/shared';
 import { AccountIcon } from '@/components/dashboard/account-icon';
-import {
-  DashboardCard,
-  DashboardCardHeading,
-} from '@/components/dashboard/dashboard-card';
+import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import {
   Table,
@@ -108,7 +105,7 @@ export const TransactionsPage = (): JSX.Element => {
     [inPeriod, filter, bonusByDeposit],
   );
 
-  // Bonus money is not a transaction, so it never lands in the ledger — but on a
+  // Bonus money is not a transaction, so it never lands in the ledger - but on a
   // cash-flow page it is the one figure that says how much came in for free.
   const grants = useMemo(
     () =>
@@ -233,9 +230,7 @@ export const TransactionsPage = (): JSX.Element => {
                       <span
                         className={cn(
                           'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium capitalize',
-                          isDeposit
-                            ? 'bg-loss/10 text-loss'
-                            : 'bg-profit/10 text-profit',
+                          isDeposit ? 'bg-loss/10 text-loss' : 'bg-profit/10 text-profit',
                         )}
                       >
                         {isDeposit ? <ArrowDownToLine size={12} /> : <ArrowUpFromLine size={12} />}

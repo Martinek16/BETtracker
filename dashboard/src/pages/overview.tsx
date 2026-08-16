@@ -1,10 +1,7 @@
 import { decisiveBets, equityCurve, isWin } from '@betanal/shared';
 import { CircleDollarSign, Coins, Flame, Percent, TrendingUp, Wallet } from 'lucide-react';
 import { useMemo } from 'react';
-import {
-  DashboardCard,
-  DashboardCardHeading,
-} from '@/components/dashboard/dashboard-card';
+import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { LeakCard } from '@/components/dashboard/leak-card';
 import { HighlightsCard } from '@/components/dashboard/highlights-card';
@@ -30,7 +27,7 @@ import { formatMoney, formatPercent } from '@/lib/utils';
 /** Which reading the profit card is showing: settled bets, or money in and out. */
 type ProfitView = 'betting' | 'cashflow';
 
-/** Only for a bookmaker with no colour of its own — every known one brings one. */
+/** Only for a bookmaker with no colour of its own - every known one brings one. */
 const FALLBACK_COLORS = ['hsl(38 92% 52%)', 'hsl(280 62% 62%)', 'hsl(172 62% 42%)'];
 
 const signTone = (value: number): 'profit' | 'loss' | 'neutral' =>
@@ -55,7 +52,7 @@ export const OverviewPage = (): JSX.Element => {
 
   const analytics = useMemo(() => analyzePeriod(periodBets), [periodBets]);
 
-  // Slips that settled either way — the same set the win rate is measured over.
+  // Slips that settled either way - the same set the win rate is measured over.
   const decidedSlips = useMemo(() => {
     const decided = decisiveBets(periodBets);
     return { won: decided.filter(isWin).length, total: decided.length };
@@ -188,7 +185,9 @@ export const OverviewPage = (): JSX.Element => {
           value={runLabel}
           subtitle={`Best streak ${analytics.streak.longestWin} wins`}
           iconHot={streak.currentType === 'W' && streak.current >= 5}
-          tone={streak.currentType === 'W' ? 'profit' : streak.currentType === 'L' ? 'loss' : 'neutral'}
+          tone={
+            streak.currentType === 'W' ? 'profit' : streak.currentType === 'L' ? 'loss' : 'neutral'
+          }
         />
       </div>
 
