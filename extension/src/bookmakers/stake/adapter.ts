@@ -158,7 +158,7 @@ const gql = async (
     // a throttled page of fifty bets came back as the same sentence fifty times
     // over — a log line thousands of characters long saying one thing.
     const message = [...new Set(root.errors.map((e) => e?.message ?? ''))].join('; ');
-    if (SESSION_REFUSED.test(message)) throw new SessionExpiredError(401);
+    if (SESSION_REFUSED.test(message)) throw new SessionExpiredError(401, message);
     // Named, because one refused field in one query reads exactly like every
     // query failing once the message reaches the console.
     const named = `Stake ${/query\s+(\w+)/.exec(query)?.[1] ?? 'GraphQL'}: ${message}`;

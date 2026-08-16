@@ -31,8 +31,12 @@ const MAX_PAGES = 1000;
  * retried.
  */
 export class SessionExpiredError extends Error {
-  constructor(public readonly status: number) {
-    super(`Session expired (HTTP ${status})`);
+  constructor(
+    public readonly status: number,
+    /** What the site said, and where we asked from. A bare status names neither. */
+    detail = '',
+  ) {
+    super(`Session expired (HTTP ${status})${detail === '' ? '' : `: ${detail}`}`);
     this.name = 'SessionExpiredError';
   }
 }
@@ -145,14 +149,21 @@ export const authedJson = async (
     const relayed = await fetchInPage(url, init);
     if (relayed === null) throw new RelayUnavailableError(new URL(url).host);
     if (relayed.status === 401 || relayed.status === 403)
-      throw new SessionExpiredError(relayed.status);
+      throw new SessionExpiredError(
+        relayed.status,
+        `from the tab, ${refusal(relayed.body) || 'with an empty body'}`,
+      );
     if (relayed.status === 0) throw new Error(`${url} unreachable from the page: ${relayed.body}`);
     if (relayed.status < 200 || relayed.status >= 300)
       throw httpFailure(relayed.status, url, relayed.body);
     return JSON.parse(relayed.body);
   }
   const res = await fetch(url, init);
-  if (res.status === 401 || res.status === 403) throw new SessionExpiredError(res.status);
+  if (res.status === 401 || res.status === 403)
+    throw new SessionExpiredError(
+      res.status,
+      `from the worker, ${refusal(await res.text()) || 'with an empty body'}`,
+    );
   if (!res.ok) throw httpFailure(res.status, url, await res.text());
   return res.json();
 };
@@ -164,8 +175,7 @@ export const toApiTimestamp = (iso: string): string =>
 const toMs = (iso: string): number => Date.parse(iso);
 
 /** A minute ahead, so a bet placed this second is still strictly before it. */
-export const nowCursor = (): string =>
-  toApiTimestamp(new Date(Date.now() + 60_000).toISOString());
+export const nowCursor = (): string => toApiTimestamp(new Date(Date.now() + 60_000).toISOString());
 
 export interface CursorSync {
   account: AccountRef;
