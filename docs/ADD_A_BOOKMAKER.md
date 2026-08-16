@@ -194,6 +194,19 @@ Then `chrome://extensions` → Developer mode → **Load unpacked** →
 asks. Wait for the sync to finish, then open the dashboard and go through every
 screen with the bookmaker's own history page open beside it.
 
+`extension/dist` is the folder `pnpm build` writes, and the browser reads it
+where it lies. So from here on it is build, then **Reload** on
+`chrome://extensions`, and your change is in. There is no zip to download and
+nothing to copy anywhere.
+
+> [!IMPORTANT]
+> **Turn off the store copy while you do this.** A bookmaker only exists in a
+> build that contains it, so the copy from Microsoft Edge Add&#8209;ons cannot see
+> your new site — it gets it when the change is released. Leaving both switched
+> on gives you two extensions reading the same accounts into two separate
+> databases, and the figures you are trying to check come from whichever one you
+> happen to have open.
+
 **Overview**
 
 - [ ] Bet count matches what the bookmaker says, not one page of it
