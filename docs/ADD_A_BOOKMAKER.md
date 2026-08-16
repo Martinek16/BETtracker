@@ -6,6 +6,13 @@ You do not need to know how the extension works. You do need an account at the
 bookmaker — support is written from a recording of a real signed-in session, and
 there is no way to fake one.
 
+> [!TIP]
+> **Working with an AI tool?** Steps 1 and 2 are yours alone: only you can sign
+> in and record. Do those, then point the tool at [AGENTS.md](../AGENTS.md) and
+> tell it the filename. It writes step 3 from your recording. Steps 5 and 6 come
+> back to you, because only you can look at your own figures and say whether
+> they are right.
+
 ## Before you start
 
 ```bash

@@ -107,6 +107,7 @@ are `feat:`, `fix:`, `refactor:`, `docs:` or `chore:`, and say why in the body.
 | | |
 |:--|:--|
 | [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md) | The whole process, start to finish |
+| [AGENTS.md](AGENTS.md) | The same job written for a coding agent, and what it may not do |
 | [extension/src/bookmakers/README.md](extension/src/bookmakers/README.md) | What each file in a folder owes |
 | [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) | How the extension reads a site and stores it |
 | [SECURITY.md](SECURITY.md) | Reporting a hole, and what counts as one |

@@ -144,6 +144,9 @@ extension/src/bookmakers/your-site/
 3. **Write it.** Copy an existing site's folder and work through it against your recording. Around 300 lines.
 4. **Prove it.** Load the extension, check your own numbers, open a pull request.
 
+Steps 1 and 2 are yours: nobody else can sign in as you. Step 3 is the one a
+coding agent can take off your hands — [AGENTS.md](AGENTS.md) is written for it.
+
 [**The whole process, step by step**](docs/ADD_A_BOOKMAKER.md)
 
 </td>
