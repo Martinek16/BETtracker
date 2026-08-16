@@ -96,8 +96,9 @@ into is one a capture rule actually recognises.
 
 ## Adding one
 
-Don't write this by hand. Capture a HAR of your own bet history and run
-`/add-bookmaker` — see [docs/ADD_A_BOOKMAKER.md](../../../docs/ADD_A_BOOKMAKER.md).
+Capture a HAR of your own bet history, sanitise it, then copy `stake/` and work
+through it against the recording — see
+[docs/ADD_A_BOOKMAKER.md](../../../docs/ADD_A_BOOKMAKER.md).
 
 **Never commit a raw `.har` file.** It contains live session tokens and your own
 financial history. `pnpm sanitize-har` strips both, and CI rejects the commit if
