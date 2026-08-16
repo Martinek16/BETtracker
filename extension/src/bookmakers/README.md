@@ -56,6 +56,11 @@ import myBookie from './my-bookie/bookmaker.json';
 export const CATALOG = [betAtHome, stake, myBookie];
 ```
 
+`released.ts` is a fourth list and is **not** one of them. It names the sites
+that have gone out to everyone, so the app can draw a site somebody added to
+their own copy apart from one that has been through review. A contribution never
+touches it; a release does.
+
 Forget one and `plugin.test.ts` fails by name — which is the point. An
 unregistered capture rule means the page is read and nothing happens; a missing
 catalogue entry means a bookmaker with no name and no colour on screen. Both are
