@@ -1,6 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Check as CheckMark, ChevronLeft, CircleDashed, X } from 'lucide-react';
+import {
+  Check as CheckMark,
+  ChevronLeft,
+  CircleDashed,
+  Copy,
+  Download,
+  ShieldAlert,
+  X,
+} from 'lucide-react';
 import { parseAccountKey } from '@betanal/shared';
 import { CATALOG } from '@bookmakers/catalog';
 import { isReleased } from '@bookmakers/released';
@@ -33,26 +41,66 @@ The project is ${REPO} — clone it,
 read AGENTS.md, and follow it. Ask me for whatever you cannot get
 yourself.`;
 
-/** One numbered thing to do, with whatever it takes to do it underneath. */
+/**
+ * One numbered thing to do, as its own card. `aside` sits on the header line, on
+ * the right, which is where the one action a card carries belongs.
+ */
 const Step = ({
   n,
   title,
+  aside,
   children,
 }: {
   n: number;
   title: string;
+  aside?: ReactNode;
   children: ReactNode;
 }): JSX.Element => (
-  <div className="flex gap-3 border-b border-border/60 py-3 last:border-0">
-    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-foreground">
-      {n}
-    </span>
-    <div className="min-w-0 flex-1">
-      <p className="text-sm font-medium text-foreground">{title}</p>
-      <div className="mt-1 text-sm text-muted-foreground">{children}</div>
+  <section className="rounded-xl border border-border bg-card">
+    <div className="flex items-center gap-2.5 border-b border-border/60 px-4 py-2.5">
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold tabular-nums text-foreground">
+        {n}
+      </span>
+      <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{title}</p>
+      {aside}
     </div>
-  </div>
+    <div className="px-4 py-3 text-sm text-muted-foreground">{children}</div>
+  </section>
 );
+
+/** What the reader types or clicks, set apart from the prose around it. */
+const Key = ({ children }: { children: ReactNode }): JSX.Element => (
+  <span className="rounded border border-border/80 bg-muted/50 px-1.5 py-0.5 text-xs font-medium text-foreground">
+    {children}
+  </span>
+);
+
+/** GitHub's copy affordance: an icon in the corner, ticked for a moment after. */
+const CopyButton = ({ text }: { text: string }): JSX.Element => {
+  const [copied, setCopied] = useState(false);
+
+  const onCopy = (): void => {
+    void navigator.clipboard.writeText(text);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={onCopy}
+      title={copied ? 'Copied' : 'Copy'}
+      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+    >
+      {copied ? (
+        <CheckMark size={14} strokeWidth={2} className="text-profit" />
+      ) : (
+        <Copy size={14} strokeWidth={1.75} />
+      )}
+    </Button>
+  );
+};
 
 const MARK = {
   true: { icon: CheckMark, tone: 'text-profit' },
@@ -106,19 +154,12 @@ const SiteReport = ({ id, name, checks }: { id: string; name: string; checks: Ch
  * goes wrong.
  */
 export const AddBookmakerPage = (): JSX.Element => {
-  const [copied, setCopied] = useState(false);
   const records = useStoredRecords();
   const metas = useSyncMetaByAccount();
   const openBetsSeen = useOpenBetsSeen();
   const { accountBalances } = useDashboard();
   const canAdd = canAddBookmaker();
   const added = CATALOG.filter((meta) => !isReleased(meta.id));
-
-  const onCopy = (): void => {
-    void navigator.clipboard.writeText(PROMPT);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1200);
-  };
 
   const all = {
     bets: records.bets,
@@ -141,94 +182,113 @@ export const AddBookmakerPage = (): JSX.Element => {
         <ChevronLeft size={13} strokeWidth={1.75} />
         All accounts
       </Link>
-      <Section title={canAdd ? 'Add a bookmaker' : 'Adding a bookmaker needs the project'}>
-        {canAdd ? (
-          <>
-            <p className="border-b border-border/60 py-3 text-sm text-muted-foreground">
-              A coding tool writes the site. Four things are yours, because nobody else can sign
-              in as you.
+      <div className="flex items-baseline gap-3 px-1">
+        <h2 className="text-sm font-semibold text-foreground">
+          {canAdd ? 'Add a bookmaker' : 'Adding a bookmaker needs the project'}
+        </h2>
+        <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+          {canAdd
+            ? 'A coding tool writes the site. These four are yours.'
+            : 'A site only exists in a build that contains it.'}
+        </p>
+      </div>
+
+      {canAdd ? (
+        <>
+          <Step n={1} title="Paste this into a coding tool" aside={<CopyButton text={PROMPT} />}>
+            <p>Claude Code, Cursor or similar. It clones the project and sets it up.</p>
+            <pre className="mt-2 overflow-x-auto rounded-lg bg-muted/40 p-3 text-xs leading-relaxed text-foreground">
+              {PROMPT}
+            </pre>
+          </Step>
+
+          <Step n={2} title="Record your account at the bookmaker">
+            <ol className="list-decimal space-y-1.5 pl-4 marker:text-muted-foreground/70">
+              <li>Sign in at the bookmaker.</li>
+              <li>
+                Press <Key>F12</Key>, open <Key>Network</Key>, tick <Key>Preserve log</Key>.
+              </li>
+              <li>
+                Click through: bet history — several pages back — open bets, balance, deposits and
+                withdrawals, bonuses.
+              </li>
+              <li className="flex flex-wrap items-center gap-1.5">
+                Right-click the list, then
+                <Key>
+                  <Download size={11} strokeWidth={2} className="mr-1 inline align-[-1px]" />
+                  Save all as HAR with content
+                </Key>
+              </li>
+            </ol>
+            <p className="mt-2.5 flex items-start gap-1.5 text-xs">
+              <ShieldAlert size={13} strokeWidth={1.75} className="mt-px shrink-0 text-pending" />
+              That file holds your live session. Keep it on your machine — the tool strips it
+              before any of it is published.
             </p>
-            <Step n={1} title="Paste this into a coding tool">
-              <p>Claude Code, Cursor or similar. It clones the project and sets it up.</p>
-              <div className="mt-2 flex items-start gap-3">
-                <pre className="min-w-0 flex-1 overflow-x-auto rounded-lg bg-muted/40 p-3 text-xs leading-relaxed text-foreground">
-                  {PROMPT}
-                </pre>
-                <Button variant="outline" size="sm" onClick={onCopy}>
-                  {copied ? 'Copied' : 'Copy'}
-                </Button>
-              </div>
-            </Step>
-            <Step n={2} title="Record your account at the bookmaker">
-              <p>
-                Sign in, press <b className="font-medium text-foreground">F12</b> →{' '}
-                <b className="font-medium text-foreground">Network</b>, tick{' '}
-                <b className="font-medium text-foreground">Preserve log</b>. Then click through
-                your bet history — several pages back — your open bets, your balance, deposits
-                and withdrawals, and bonuses. Right-click the list →{' '}
-                <b className="font-medium text-foreground">Save all as HAR with content</b>.
-              </p>
-              <p className="mt-1.5 text-xs">
-                That file holds your live session. Keep it on your machine; the tool strips it
-                before anything is published.
-              </p>
-            </Step>
-            <Step n={3} title="Tell the tool where you saved it">
-              <p>
-                From here it reads the recording, writes the site, runs the tests and builds. Answer
-                its questions about your bookmaker when it asks.
-              </p>
-            </Step>
-            <Step n={4} title="Load the build and check the figures">
-              <p>
-                <b className="font-medium text-foreground">edge://extensions</b> (or{' '}
-                <b className="font-medium text-foreground">chrome://extensions</b>) → Developer
-                mode → Load unpacked →{' '}
-                <b className="font-medium text-foreground">extension/dist</b>. Sign in at the
-                bookmaker, let it sync, then compare the totals with the bookmaker&apos;s own
-                history page. If you also have the copy from the store, switch it off while you
-                do — two copies read the same account into two separate histories.
-              </p>
-              <p className="mt-1.5 text-xs">
-                Something wrong? Tell the tool what you see. It reports back here, per site.
-              </p>
-            </Step>
-          </>
-        ) : (
-          <p className="border-b border-border/60 py-3 text-sm text-muted-foreground">
-            This copy came from the store, so it reads the bookmakers it was built with and no
-            others — a site only exists in a build that contains it. Adding one takes the project
-            itself: clone it, load the build it produces, and a coding tool writes the site from a
-            recording of your own signed-in session.
-          </p>
-        )}
-        <div className="flex flex-wrap gap-4 py-3 text-xs">
-          <a
-            href={REPO}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            The project
-          </a>
-          <a
-            href={`${REPO}/blob/main/docs/ADD_A_BOOKMAKER.md`}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Every step in detail
-          </a>
-          <a
-            href={`${REPO}/discussions`}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Ask before you start
-          </a>
-        </div>
-      </Section>
+          </Step>
+
+          <Step n={3} title="Tell the tool where you saved it">
+            <p>
+              From here it reads the recording, writes the site, runs the tests and builds. Answer
+              its questions about your bookmaker as they come.
+            </p>
+          </Step>
+
+          <Step n={4} title="Load the build and check the figures">
+            <ol className="list-decimal space-y-1.5 pl-4 marker:text-muted-foreground/70">
+              <li>
+                Open <Key>edge://extensions</Key> (or <Key>chrome://extensions</Key>) and turn on
+                Developer mode.
+              </li>
+              <li>
+                <Key>Load unpacked</Key> → the project&apos;s <Key>extension/dist</Key> folder.
+              </li>
+              <li>
+                Sign in at the bookmaker, let it sync, then compare the totals with the
+                bookmaker&apos;s own history page.
+              </li>
+            </ol>
+            <p className="mt-2.5 text-xs">
+              Have the copy from the store too? Switch it off first — two copies read the same
+              account into two separate histories. Whatever looks wrong, tell the tool; the report
+              for the new site appears below.
+            </p>
+          </Step>
+        </>
+      ) : (
+        <section className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          This copy came from the store, so it reads the bookmakers it was built with and no
+          others. Adding one takes the project itself: clone it, load the build it produces, and a
+          coding tool writes the site from a recording of your own signed-in session.
+        </section>
+      )}
+
+      <div className="flex flex-wrap gap-4 px-1 text-xs">
+        <a
+          href={REPO}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="text-muted-foreground transition-colors hover:text-foreground"
+        >
+          The project
+        </a>
+        <a
+          href={`${REPO}/blob/main/docs/ADD_A_BOOKMAKER.md`}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Every step in detail
+        </a>
+        <a
+          href={`${REPO}/discussions`}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Ask before you start
+        </a>
+      </div>
 
       {added.map((meta) => (
         <SiteReport key={meta.id} id={meta.id} name={meta.name} checks={checksFor(meta.id, all)} />
