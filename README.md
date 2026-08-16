@@ -128,18 +128,18 @@ The project is https://github.com/Martinek16/BETtracker — clone it,
 read AGENTS.md, and follow it.
 ```
 
-It sets everything up and tells you what to do next. All five steps:
+It sets everything up and tells you what to do next. The whole of it:
 
 1. **You** record your bet history. Press F12, open the Network tab, click
-   through your account, save the file. Ten minutes.
-2. **You** run `pnpm sanitize-har`. It deletes your tokens, your name and your
-   account number from that file.
-3. **The tool** reads the recording, writes the code and runs the tests.
-4. **You** load the extension and check the numbers against your bookmaker.
-5. **The tool** opens a pull request, if you want to share the site.
+   through your account, save the file. A few minutes.
+2. **The tool** strips your tokens and your name out of that file, writes the
+   folder, runs the tests and builds.
+3. **You** load the extension and check the figures. The extension itself lists
+   what the new site has proved and what is still untested — Options →
+   Accounts → Add a bookmaker.
 
-Two of the five are yours: signing in, and saying whether the numbers are right.
-Nobody else can do either.
+Two of the three are yours: signing in, and saying whether the numbers are
+right. Nobody else can do either.
 
 It all goes into one folder. Nothing else in the project changes.
 

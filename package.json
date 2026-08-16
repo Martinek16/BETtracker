@@ -15,6 +15,7 @@
     "package": "pnpm build:shared && pnpm build:extension",
     "zip": "pnpm package && node extension/scripts/zip.mjs",
     "sanitize-har": "node extension/scripts/sanitize-har.mjs",
+    "new-bookmaker": "node extension/scripts/new-bookmaker.mjs",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\"",
     "test": "pnpm -r test"

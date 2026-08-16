@@ -55,18 +55,23 @@ instruction is a chance to lose somebody:
 > tab, tick **Preserve log**. Now click slowly through your settled bet history —
 > page back several pages — then your open bets, your balance, and your deposits
 > and withdrawals. Right-click the list of requests, choose **Save all as HAR
-> with content**, and save it wherever your browser normally saves.
->
-> Then run `pnpm sanitize-har` in the project. No filename: it finds the
-> recording, strips your cookies, tokens and name out of it, and puts the clean
-> copy in `har/`. Tell me when it has printed a filename.
+> with content**, and save it wherever your browser normally saves. Tell me when
+> it is saved — I do the rest.
 
 Adapt only the site-specific part — where *that* bookmaker keeps its bet
-history, if you know. Never adapt the sanitising step.
+history, if you know. Then run the sanitiser yourself:
 
-If there is no sanitised recording in `har/`, say so and stop. Do not read a raw
-`.har` into context and never write one anywhere: it holds live session tokens
-and the person's financial history.
+```bash
+pnpm sanitize-har
+```
+
+No filename: it takes the newest recording out of their Downloads folder,
+strips the cookies, tokens and name out of it, and writes the clean copy into
+`har/`. Asking them to run it is one more command to mistype for nothing.
+
+Read only that clean copy. Never read a raw `.har` into context and never write
+one anywhere: it holds live session tokens and the person's financial history.
+If the sanitiser finds nothing, say so and stop.
 
 ## Never make them find a folder
 
@@ -107,27 +112,42 @@ than not opening it.
    they sync into the new one carries across. Better said now than discovered
    after an evening's work. Open the clone in their file manager when it is
    ready, so they can see where it went.
-1. **Ask** for the recording, in the words above. Do not proceed without it. Get
-   the logo yourself while you wait.
+1. **Ask** for the recording, in the words above, then run `pnpm sanitize-har`
+   yourself. Do not proceed without it. Get the logo yourself while you wait.
 2. **Read** `har/<site>.sanitized.har` and work out the six things in
    [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md#3-write-the-folder):
    hosts, authentication, fingerprint, endpoints, paging, bet shape.
 3. **Read** `extension/src/bookmakers/stake/` end to end — one endpoint, one
    session. If the site's money history sits behind a second login, read
    `bet-at-home/` instead, which does that.
-4. **Copy** the closer of those two folders to `extension/src/bookmakers/<id>/`
-   and rewrite it against the recording.
-5. **Register** it in the three collectors.
-6. **Run the checks** below until they pass. Never edit a test to make it pass —
+4. **Scaffold** the folder and register it in one command:
+
+   ```bash
+   pnpm new-bookmaker <id> <site> "<Name>"     # bet365 bet365.com "bet365"
+   ```
+
+   It writes `extension/src/bookmakers/<id>/` as a copy of `stake/` renamed to
+   its own id, writes a fresh `bookmaker.json`, and adds the three collector
+   lines. It leaves out the fixtures and the logo, which cannot be copied off
+   another site. Then rewrite the folder against the recording — the endpoints,
+   the paging, the bet shape, the host patterns and the `stake-` id prefix.
+5. **Run the checks** below until they pass. Never edit a test to make it pass —
    the shared tests are protected paths and CI rejects a diff that touches one.
-7. **Hand it back to them to load.** `pnpm build`, open `extension/dist` in their
+6. **Hand it back to them to load.** `pnpm build`, open `extension/dist` in their
    file manager, then tell them: `chrome://extensions` → Developer mode →
    **Load unpacked** → pick the folder you just opened. Tell them to switch off
    the Microsoft Edge Add-ons copy first if
    they have one, because two copies sync the same accounts into two databases.
    A new bookmaker only exists in a build that contains it; the store copy gets
-   it when a release ships. The checklist they should work through is step 6 of
-   [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md).
+   it when a release ships.
+7. **Send them to the report.** In the extension: **Options → Accounts → Add a
+   bookmaker**. A site added to a copy of the project is listed there with one
+   line per thing it has to have proved — bets read, every bet naming a sport,
+   a match and a selection, won/lost/void all seen, accumulators carrying their
+   legs, open bets, balance, money in and out, bonuses, and a sync without an
+   error. A line reading *untested* means their account has never had one of
+   those, not that it failed. Ask them for the lines that are wrong or
+   untested, and fix what they name.
 8. **Report** honestly: what you proved against the recording, and what is
    still unverified. You have never seen this run against a live account.
 
@@ -148,7 +168,8 @@ fails if any of them disagree.
 | `logo.png` | The site's mark, ~128px square, transparent background. Yours to find |
 | `README.md` | This site's quirks, and how to refresh the fixtures |
 
-The three collector lines:
+The three collector lines, which `pnpm new-bookmaker` writes for you and which
+you should recognise when you read the diff:
 
 ```ts
 // capture.ts

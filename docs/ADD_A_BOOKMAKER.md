@@ -135,15 +135,24 @@ write them down. Everything in the folder falls out of them.
 
 ### Then write it
 
-Copy `extension/src/bookmakers/stake/` to
-`extension/src/bookmakers/yoursite/` and work through it. `yoursite` is the id:
+```bash
+pnpm new-bookmaker yoursite yoursite.com "Your Site"
+```
+
+That writes `extension/src/bookmakers/yoursite/` as a copy of `stake/` under
+its own name, and adds the three lines that register it. `yoursite` is the id:
 lowercase, hyphens instead of spaces. It becomes the folder name, the JSON
-`id`, the logo filename and the storage key, and they all have to agree.
+`id`, the logo filename and the storage key, and they all have to agree —
+which is the whole reason the command writes them rather than you.
 `bet365`, `william-hill`, `bwin`.
 
+What it deliberately leaves empty is what only the recording can fill: the
+fixtures, the logo, the real hosts, and the parsing itself. Work through the
+folder against the sanitised recording and replace Stake's answers with your
+site's.
+
 Stake is one endpoint and one credential. If your site keeps its banking
-history behind a second session, copy `bet-at-home/` instead — it does that.
-Either way it is around 300 lines.
+history behind a second session, read `bet-at-home/` as well — it does that.
 
 [`extension/src/bookmakers/README.md`](../extension/src/bookmakers/README.md)
 is the contract: what each file owes, what `capture.ts` may import, and the
@@ -225,8 +234,25 @@ pnpm build
 
 Then `chrome://extensions` → Developer mode → **Load unpacked** →
 `extension/dist`. Open the bookmaker, sign in, and say yes when the extension
-asks. Wait for the sync to finish, then open the dashboard and go through every
-screen with the bookmaker's own history page open beside it.
+asks. Wait for the sync to finish.
+
+**Read the report first.** In the extension: **Options → Accounts → Add a
+bookmaker**. A site added to your own copy is listed there with one line per
+thing it has to have proved — bets read, every bet naming a sport, a match and
+a selection, won/lost/void all seen, accumulators carrying their legs, open
+bets, the balance, money in and out, bonuses, and a sync without an error. It
+reads that off what was actually stored, so it finds in a second the failure
+that otherwise costs a day: the sync says done, the total looks right, and
+every breakdown is blank because `sport` came through null.
+
+A line reading *untested* is not a failure. It means your account has never had
+one of those — no accumulator, no bonus — so nothing has been proved either
+way. Send the wrong and untested lines to the tool; that is the whole of the
+bug report it needs.
+
+Then go through every screen yourself, with the bookmaker's own history page
+open beside it. The report can only say a figure arrived, never that it is the
+right one.
 
 `extension/dist` is the folder `pnpm build` writes, and the browser reads it
 where it lies. So from here on it is build, then **Reload** on

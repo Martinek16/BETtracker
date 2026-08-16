@@ -49,19 +49,22 @@ const PROMPT = `Add the bookmaker https://www.yourbookmaker.com to BETtracker.
 The project is ${REPO} — clone it, read AGENTS.md, and follow it. Ask me for whatever you cannot get yourself.`;
 
 /**
- * One numbered thing to do, as its own card. A done step folds away: what is
- * behind you is not what you came back to the page to read.
+ * One numbered thing to do, as its own card. Only the step you are on is open:
+ * the ones behind you are finished, and the ones ahead read as instructions for
+ * a screen you have not reached yet, which is how a step gets skipped.
  */
 const Step = ({
   n,
   title,
   done,
+  open,
   onToggle,
   children,
 }: {
   n: number;
   title: string;
   done: boolean;
+  open: boolean;
   onToggle: () => void;
   children: ReactNode;
 }): JSX.Element => (
@@ -74,12 +77,17 @@ const Step = ({
     <button
       type="button"
       onClick={onToggle}
-      className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left"
+      disabled={!done && !open}
+      className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left disabled:cursor-default"
     >
       <span
         className={cn(
           'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
-          done ? 'bg-profit text-background' : 'bg-muted text-foreground',
+          done
+            ? 'bg-profit text-background'
+            : open
+              ? 'bg-muted text-foreground'
+              : 'bg-muted/40 text-muted-foreground',
         )}
       >
         {done ? <CheckMark size={12} strokeWidth={3} /> : n}
@@ -87,16 +95,18 @@ const Step = ({
       <p
         className={cn(
           'min-w-0 flex-1 truncate text-sm font-medium',
-          done ? 'text-muted-foreground' : 'text-foreground',
+          open ? 'text-foreground' : 'text-muted-foreground',
         )}
       >
         {title}
       </p>
-      <span className="shrink-0 text-[11px] text-muted-foreground">
-        {done ? 'Done' : 'Mark done'}
-      </span>
+      {(done || open) && (
+        <span className="shrink-0 text-[11px] text-muted-foreground">
+          {done ? 'Done' : 'Mark done'}
+        </span>
+      )}
     </button>
-    {!done && (
+    {open && (
       <div className="border-t border-border/60 px-3.5 py-2.5 text-muted-foreground">
         {children}
       </div>
@@ -226,8 +236,13 @@ export const AddBookmakerPage = (): JSX.Element => {
     setDone(next);
   };
 
-  const step = (n: number): { done: boolean; onToggle: () => void } => ({
+  /** The one step still to do. A step ahead of it stays shut: it reads as an
+   *  instruction for a screen you have not reached, which is how one gets skipped. */
+  const at = [1, 2, 3, 4].find((n) => !done.includes(n));
+
+  const step = (n: number): { done: boolean; open: boolean; onToggle: () => void } => ({
     done: done.includes(n),
+    open: n === at,
     onToggle: () => toggle(n),
   });
 
@@ -265,19 +280,7 @@ export const AddBookmakerPage = (): JSX.Element => {
 
       {canAdd ? (
         <div className="flex flex-col gap-2.5">
-          <Step n={1} title="Paste this into a coding tool" {...step(1)}>
-            <p className="text-xs">Claude Code, Cursor or similar. It clones the project itself.</p>
-            <div className="relative mt-2">
-              <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-2.5 pr-10 text-xs leading-snug text-foreground">
-                {PROMPT}
-              </pre>
-              <div className="absolute right-1 top-1">
-                <CopyButton text={PROMPT} />
-              </div>
-            </div>
-          </Step>
-
-          <Step n={2} title="Record your account at the bookmaker" {...step(2)}>
+          <Step n={1} title="Record your account at the bookmaker" {...step(1)}>
             <Substeps
               items={[
                 <>
@@ -305,14 +308,23 @@ export const AddBookmakerPage = (): JSX.Element => {
             </p>
           </Step>
 
-          <Step n={3} title="Tell the tool where you saved it" {...step(3)}>
+          <Step n={2} title="Paste this into a coding tool" {...step(2)}>
             <p className="text-xs">
-              It reads the recording, writes the site, runs the tests and builds. Answer its
-              questions about your bookmaker as they come.
+              Claude Code, Cursor or similar. It clones the project, finds the recording you just
+              saved, strips it, writes the site, tests it and builds. Answer its questions as they
+              come.
             </p>
+            <div className="relative mt-2">
+              <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-2.5 pr-10 text-xs leading-snug text-foreground">
+                {PROMPT}
+              </pre>
+              <div className="absolute right-1 top-1">
+                <CopyButton text={PROMPT} />
+              </div>
+            </div>
           </Step>
 
-          <Step n={4} title="Load the build and check the figures" {...step(4)}>
+          <Step n={3} title="Load the build" {...step(3)}>
             <Substeps
               items={[
                 <>
@@ -322,11 +334,33 @@ export const AddBookmakerPage = (): JSX.Element => {
                 <>
                   <Key>Load unpacked</Key> → the project&apos;s <Key>extension/dist</Key> folder.
                 </>,
-                <>Sign in, let it sync, compare the totals with the bookmaker&apos;s own page.</>,
+                <>Sign in at the bookmaker, say yes when asked, and let it sync.</>,
               ]}
             />
             <p className="mt-2 text-xs">
               Switch the store copy off first — two copies read one account into two histories.
+            </p>
+          </Step>
+
+          <Step n={4} title="Check that everything arrived" {...step(4)}>
+            <p className="text-xs">
+              Come back to this page. The new site is listed below, one line per thing it has to
+              have proved:
+            </p>
+            <Substeps
+              items={[
+                <>Bets read, each naming a sport, a match and a selection.</>,
+                <>Won, lost and void all read as what they are; accumulators carry their legs.</>,
+                <>Open bets, the balance, money in and out, bonuses.</>,
+                <>The account syncs without an error.</>,
+              ]}
+            />
+            <p className="mt-2 text-xs">
+              <span className="text-muted-foreground">Untested</span> means your account has never
+              had one of those, not that it failed. Send the wrong and untested lines back to the
+              tool — that is the whole bug report it needs. Then compare the totals with the
+              bookmaker&apos;s own history page: this page can say a figure arrived, never that it
+              is right.
             </p>
           </Step>
         </div>
