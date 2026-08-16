@@ -175,10 +175,10 @@ export const AddBookmakerPage = (): JSX.Element => {
 
   return (
     <div className="flex flex-1 flex-col gap-3 pb-1">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-1">
+      <div className="flex flex-col gap-1 px-1">
         <Link
           to="/options/accounts"
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-1 self-start text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           <ChevronLeft size={13} strokeWidth={1.75} />
           All accounts
@@ -191,23 +191,6 @@ export const AddBookmakerPage = (): JSX.Element => {
             ? 'A coding tool writes it. Two of the four are yours.'
             : 'A site only exists in a build that contains it.'}
         </p>
-        <div className="ml-auto flex gap-4 text-xs">
-          {[
-            [REPO, 'The project'],
-            [`${REPO}/blob/main/docs/ADD_A_BOOKMAKER.md`, 'Every step in detail'],
-            [`${REPO}/discussions`, 'Ask first'],
-          ].map(([href, label]) => (
-            <a
-              key={label}
-              href={href}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {label}
-            </a>
-          ))}
-        </div>
       </div>
 
       {canAdd ? (
@@ -301,6 +284,24 @@ export const AddBookmakerPage = (): JSX.Element => {
           </div>
         </Section>
       )}
+
+      <div className="mt-auto flex flex-wrap justify-center gap-5 pt-2 text-xs">
+        {[
+          [REPO, 'The project'],
+          [`${REPO}/blob/main/docs/ADD_A_BOOKMAKER.md`, 'Every step in detail'],
+          [`${REPO}/discussions`, 'Ask first'],
+        ].map(([href, label]) => (
+          <a
+            key={label}
+            href={href}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {label}
+          </a>
+        ))}
+      </div>
     </div>
   );
 };
