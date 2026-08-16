@@ -6,7 +6,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "pnpm -r build",
+    "_comment_build": "Ordered, not `pnpm -r build`: the extension copies the dashboard's dist into its own, so building them in parallel packages whatever the dashboard built last time.",
+    "build": "pnpm package",
     "build:shared": "pnpm --filter @betanal/shared build",
     "build:extension": "pnpm build:dashboard && pnpm --filter @betanal/extension build",
     "build:dashboard": "pnpm --filter @betanal/dashboard build",
