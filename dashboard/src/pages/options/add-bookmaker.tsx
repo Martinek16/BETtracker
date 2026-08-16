@@ -7,12 +7,7 @@ import { isReleased } from '@bookmakers/released';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { Button } from '@/components/ui/button';
 import { useDashboard } from '@/context/dashboard-context';
-import {
-  useAllKnownAccounts,
-  useOpenBetsSeen,
-  useStoredRecords,
-  useSyncMetaByAccount,
-} from '@/data/accounts';
+import { useOpenBetsSeen, useStoredRecords, useSyncMetaByAccount } from '@/data/accounts';
 import { cn } from '@/lib/utils';
 import { Section } from '@/pages/options/parts';
 import { checksFor, scoreOf, type Check } from '@/pages/options/readiness';
@@ -57,9 +52,10 @@ const CheckRow = ({ check }: { check: Check }): JSX.Element => {
 };
 
 /**
- * One site's report. Shown for the bookmakers this browser is actually signed in
- * to — a report on a site nobody here uses can only ever read "nothing stored",
- * which says nothing about the site and buries the ones that do.
+ * One site's report, and only for a site added to this copy. A released site has
+ * been checked by whoever released it, so its report is a page of ticks nobody
+ * came here to read — it belongs to the account it describes, not to the page
+ * about adding a new one.
  */
 const SiteReport = ({ id, name, checks }: { id: string; name: string; checks: Check[] }): JSX.Element => {
   const { passed, failed, open } = scoreOf(checks);
@@ -67,11 +63,7 @@ const SiteReport = ({ id, name, checks }: { id: string; name: string; checks: Ch
     <Section title={name}>
       <div className="flex items-center gap-2 border-b border-border/60 py-2.5 text-xs">
         <AccountIcon bookmaker={id} className="h-4 w-4" />
-        {isReleased(id) ? (
-          <span className="text-muted-foreground">Part of a release</span>
-        ) : (
-          <span className="text-primary">Added to this copy — nobody else has checked it</span>
-        )}
+        <span className="text-primary">Added to this copy — nobody else has checked it</span>
         <span className="ml-auto tabular-nums text-muted-foreground">
           {passed} proved · {failed} wrong · {open} untested
         </span>
@@ -96,10 +88,9 @@ export const AddBookmakerPage = (): JSX.Element => {
   const records = useStoredRecords();
   const metas = useSyncMetaByAccount();
   const openBetsSeen = useOpenBetsSeen();
-  const logins = useAllKnownAccounts();
   const { accountBalances } = useDashboard();
   const canAdd = canAddBookmaker();
-  const connected = new Set(logins.map((login) => login.bookmaker));
+  const added = CATALOG.filter((meta) => !isReleased(meta.id));
 
   const onCopy = (): void => {
     void navigator.clipboard.writeText(PROMPT);
@@ -189,26 +180,28 @@ export const AddBookmakerPage = (): JSX.Element => {
         </div>
       </Section>
 
-      {CATALOG.filter((meta) => connected.has(meta.id)).map((meta) => (
+      {added.map((meta) => (
         <SiteReport key={meta.id} id={meta.id} name={meta.name} checks={checksFor(meta.id, all)} />
       ))}
 
-      <Section title="What this page cannot check">
-        <div className="py-3 text-sm text-muted-foreground">
-          <p>
-            Everything above is read off what was stored, so it can only say that a figure
-            arrived — never that it is the right one. Those are yours, with the
-            bookmaker&apos;s own history page open beside this one:
-          </p>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>The bet count matches the site&apos;s own, not one page of it</li>
-            <li>Profit and turnover match, to the cent</li>
-            <li>The oldest bet you have is here — paging reached the end</li>
-            <li>Stake, odds and return match the site&apos;s figures on a bet you remember</li>
-            <li>A second sync changes nothing: no duplicates, the same counts</li>
-          </ul>
-        </div>
-      </Section>
+      {added.length > 0 && (
+        <Section title="What this page cannot check">
+          <div className="py-3 text-sm text-muted-foreground">
+            <p>
+              The report above is read off what was stored, so it can only say that a figure
+              arrived — never that it is the right one. Those are yours, with the
+              bookmaker&apos;s own history page open beside this one:
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>The bet count matches the site&apos;s own, not one page of it</li>
+              <li>Profit and turnover match, to the cent</li>
+              <li>The oldest bet you have is here — paging reached the end</li>
+              <li>Stake, odds and return match the site&apos;s figures on a bet you remember</li>
+              <li>A second sync changes nothing: no duplicates, the same counts</li>
+            </ul>
+          </div>
+        </Section>
+      )}
     </div>
   );
 };
