@@ -38,16 +38,15 @@ obtain that recording. Neither can you invent it: a fabricated API shape
 produces an adapter that reports someone's money wrongly, which is the one
 failure this project exists to prevent.
 
-So there are exactly two things you must get from the person you are working
-with, and you should ask for both at the very start rather than after an hour of
-scaffolding:
+There is exactly **one** thing you must get from the person you are working with,
+and you should ask for it at the very start rather than after an hour of
+scaffolding: `har/<site>.sanitized.har`. It comes out of their signed-in account
+and there is no other way to it.
 
-| You need | Why you cannot get it | What to ask for |
-|:--|:--|:--|
-| `har/<site>.sanitized.har` | It comes from their signed-in account | The recipe below, verbatim |
-| `logo.png` | You cannot verify the licence of an image you scrape | "A PNG of the site's mark, ~128px square, background removed" |
-
-Everything else in this list you can do yourself.
+Everything else, including the logo, you do yourself. Do not hand them a list of
+chores. Find the site's mark, save it as `logo.png` in the folder, around 128px
+square with the background removed, and show them the result. If you cannot find
+a usable one, say so and ask then — not before you have tried.
 
 Ask for the recording like this, in these words, because every extra
 instruction is a chance to lose somebody:
@@ -69,6 +68,28 @@ If there is no sanitised recording in `har/`, say so and stop. Do not read a raw
 `.har` into context and never write one anywhere: it holds live session tokens
 and the person's financial history.
 
+## Never make them find a folder
+
+Any time you name a folder they have to do something with, open it for them in
+the same breath. A path in a chat window is a thing to be copied wrong.
+
+```bash
+explorer .            # Windows
+open .                # macOS
+xdg-open .            # Linux
+```
+
+Three places this matters, and they are the three places people get stuck:
+
+- **After cloning**, so they can see where the project landed.
+- **`extension/dist`**, when they are about to drag it into `chrome://extensions`.
+  Open the folder, then tell them what to click.
+- **Anything you want them to look at** — a fixture you want checked, a logo you
+  found, the sanitised recording.
+
+Say what the folder is and what they do with it. Opening it silently is worse
+than not opening it.
+
 ## Order of work
 
 0. **Get the project onto their machine**, if somebody handed you a URL rather
@@ -84,8 +105,10 @@ and the person's financial history.
    running the build from this clone alongside it, with its own separate
    database. Their existing copy and its history are not touched, and nothing
    they sync into the new one carries across. Better said now than discovered
-   after an evening's work.
-1. **Ask** for the recording and the logo. Do not proceed without the recording.
+   after an evening's work. Open the clone in their file manager when it is
+   ready, so they can see where it went.
+1. **Ask** for the recording, in the words above. Do not proceed without it. Get
+   the logo yourself while you wait.
 2. **Read** `har/<site>.sanitized.har` and work out the six things in
    [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md#3-write-the-folder):
    hosts, authentication, fingerprint, endpoints, paging, bet shape.
@@ -97,9 +120,10 @@ and the person's financial history.
 5. **Register** it in the three collectors.
 6. **Run the checks** below until they pass. Never edit a test to make it pass —
    the shared tests are protected paths and CI rejects a diff that touches one.
-7. **Hand it back to them to load.** `pnpm build`, then tell them:
-   `chrome://extensions` → Developer mode → **Load unpacked** →
-   `extension/dist`, and to switch off the Microsoft Edge Add-ons copy first if
+7. **Hand it back to them to load.** `pnpm build`, open `extension/dist` in their
+   file manager, then tell them: `chrome://extensions` → Developer mode →
+   **Load unpacked** → pick the folder you just opened. Tell them to switch off
+   the Microsoft Edge Add-ons copy first if
    they have one, because two copies sync the same accounts into two databases.
    A new bookmaker only exists in a build that contains it; the store copy gets
    it when a release ships. The checklist they should work through is step 6 of
@@ -121,7 +145,7 @@ fails if any of them disagree.
 | `samples.ts` | `export const samples: Samples`, built from the fixtures through your own adapter |
 | `adapter.test.ts` | Parses the fixtures and asserts the normalised output |
 | `__fixtures__/*.json` | The shape of the site's answers, not the contributor's history — see below |
-| `logo.png` | From the contributor, not from the site |
+| `logo.png` | The site's mark, ~128px square, transparent background. Yours to find |
 | `README.md` | This site's quirks, and how to refresh the fixtures |
 
 The three collector lines:
