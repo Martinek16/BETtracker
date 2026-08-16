@@ -31,6 +31,7 @@ const AccountCard = ({
   transactions,
   currency,
   balance,
+  waiting,
 }: {
   account: AccountInfo;
   login: AccountRef;
@@ -41,6 +42,8 @@ const AccountCard = ({
   currency: string;
   /** null until the site has been open once with the extension connected. */
   balance: number | null;
+  /** Rakeback the site is holding. Not in the balance until it is claimed. */
+  waiting: number | null;
 }): JSX.Element => {
   const { isVisible, setVisible } = useAccountVisibility();
   const { nameFor } = useAccountNames();
@@ -92,6 +95,7 @@ const AccountCard = ({
           <Stat
             label="Balance"
             value={balance === null ? '—' : formatMoney(balance, currency)}
+            note={waiting === null ? undefined : `+${formatMoney(waiting, currency)} to claim`}
           />
           <Stat label="Bets" value={String(bets.length)} />
           <Stat label="Deposits" value={formatMoney(deposits, currency)} />
@@ -167,7 +171,7 @@ export const AccountsPage = (): JSX.Element => {
   const { bets, transactions, currency } = useStoredRecords();
   // Already converted to the display currency, and keyed by the same login, so
   // the card can read the header's own figure rather than work one out again.
-  const { accountBalances } = useDashboard();
+  const { accountBalances, claimable } = useDashboard();
   const metas = useSyncMetaByAccount();
   const logins = useAllKnownAccounts();
   const origins = useSiteOrigins();
@@ -196,6 +200,9 @@ export const AccountsPage = (): JSX.Element => {
                   currency={currency}
                   balance={
                     accountBalances.find((b) => b.key === accountKey(login))?.amount ?? null
+                  }
+                  waiting={
+                    claimable.find((r) => r.key === accountKey(login))?.worth ?? null
                   }
                 />
               );
