@@ -10,10 +10,12 @@
   <a href="https://microsoftedge.microsoft.com/addons/detail/bettracker/dofgloogkcigmpnkmoaefnejeffdbcmi">
     <img src="https://img.shields.io/badge/Install%20for%20Microsoft%20Edge-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white" alt="Install for Microsoft Edge" height="38">
   </a>
-  <a href="https://github.com/Martinek16/BETtracker/releases/latest">
-    <img src="https://img.shields.io/badge/Download%20for%20Chrome-1a1a1a?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Download for Chrome" height="38">
+  <a href="https://github.com/Martinek16/BETtracker/releases/latest/download/bettracker.zip">
+    <img src="https://img.shields.io/badge/%E2%AC%87%20Download%20.zip-2ea44f?style=for-the-badge&logoColor=white" alt="Download the zip for Chrome, Brave and Opera" height="38">
   </a>
 </p>
+
+<sub>Edge installs itself · the zip is for Chrome, Brave and Opera, and takes <a href="#install">three steps</a></sub>
 
 <p>
   <img src="https://img.shields.io/github/v/release/Martinek16/BETtracker?style=flat-square&label=version" alt="Version">
@@ -39,10 +41,12 @@ else.
 | Browser | What to do | Worth knowing |
 |:--|:--|:--|
 | **Edge** | [Get it from Microsoft&nbsp;Edge&nbsp;Add&#8209;ons](https://microsoftedge.microsoft.com/addons/detail/bettracker/dofgloogkcigmpnkmoaefnejeffdbcmi). One click. | Updates itself. |
-| **Chrome, Brave, Opera** | [Download the zip](https://github.com/Martinek16/BETtracker/releases/latest) and unzip it. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the folder. | Keep that folder: deleting it uninstalls the extension. |
+| **Chrome, Brave, Opera** | [Download `bettracker.zip`](https://github.com/Martinek16/BETtracker/releases/latest/download/bettracker.zip), then unzip it into a folder you intend to keep. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick that folder. | Unzip it properly, rather than loading it straight out of the archive viewer. Deleting the folder uninstalls the extension. |
 
 > [!NOTE]
 > There is no Chrome listing because Google removes gambling related extensions from its store, even ones that only read your own history. Edge accepted it.
+>
+> The green **Code** button at the top of this page, and the **Source code** files on the release, are the project's source. Chrome cannot load either of them: they have to be built first. `bettracker.zip` is the built extension.
 
 Then sign in at a bookmaker as you always do, and say yes once when the
 extension asks whether it may read that account. Your bets appear. Older
