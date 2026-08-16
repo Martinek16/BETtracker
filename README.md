@@ -110,103 +110,60 @@ It reads the same pages your browser already loaded, with your own session, slow
 
 ***
 
-# Join in
+# Add your bookmaker
 
-Nobody can keep up with every betting site. That is why this is open.
+Yours not in the list? Add it. One evening, and you do not need to know how the
+extension works.
 
-<table>
-<tr>
-<td width="50%" valign="top">
-
-### A bookmaker is one folder
-
-Everything a site needs lives in one directory, and adding it touches nothing
-else in the project. That is what makes a stranger's work reviewable in an
-evening.
-
-```
-extension/src/bookmakers/your-site/
-   bookmaker.json     what the site is called
-   capture.ts         how it is recognised
-   adapter.ts         how it is read
-   samples.ts         proof it parsed
-   logo.png           its mark
-   __fixtures__/      recorded answers
-```
-
-</td>
-<td width="50%" valign="top">
-
-### Four steps, one evening
-
-1. **Record.** Click through your own bet history with DevTools open, and save it.
-2. **Strip it.** One command removes your tokens, your name and your account number.
-3. **Write it.** Copy an existing site's folder and work through it against your recording. Around 300 lines.
-4. **Prove it.** Load the extension, check your own numbers, open a pull request.
-
-Steps 1 and 2 are yours: nobody else can sign in as you. Step 3 you can hand to
-a coding agent. Open Claude Code, Cursor or whatever you use, and paste this
-with your bookmaker's address in it:
+You need an account at that bookmaker and a coding tool such as Claude Code or
+Cursor. Paste this into it, with your bookmaker's address in place of the
+example:
 
 ```
 Add the bookmaker https://www.yourbookmaker.com to BETtracker.
 
 The project is https://github.com/Martinek16/BETtracker — clone it,
-read AGENTS.md, and follow it. Ask me for whatever you cannot get
-yourself.
+read AGENTS.md, and follow it.
 ```
 
-[AGENTS.md](AGENTS.md) tells it the rest: what to ask you for, what it may
-touch, and what it must not claim to have proved.
+It sets the project up, then walks you through the rest:
+
+1. **You record your bet history.** F12, the Network tab, click through your
+   account, save. Ten minutes.
+2. **You run one command.** `pnpm sanitize-har` takes out your tokens, your name
+   and your account number.
+3. **The tool writes the site's folder** from that recording, and gets the tests
+   passing.
+4. **You check your own figures** against the bookmaker's own pages.
+5. **The tool opens a pull request**, if you want everyone else to have the site
+   too.
+
+Only you can sign in to your account, and only you can say whether the numbers
+are right. The rest is the tool's job.
+
+It all lands in one folder, `extension/src/bookmakers/your-site/`, and touches
+nothing else. That is what makes a stranger's work reviewable in an evening.
 
 [**The whole process, step by step**](docs/ADD_A_BOOKMAKER.md)
 
-</td>
-</tr>
-</table>
+## Other ways to help
 
-<table>
-<tr>
-<td width="50%" valign="top">
-
-### Your site broke
-
-Bookmakers change their API without telling anyone. Fix the folder you use.
-
-</td>
-<td width="50%" valign="top">
-
-### Ask for a site
-
-No account there yourself?
-[Request it](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml)
-and somebody who plays there may pick it up.
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-### Report a bug
-
-A number that looks wrong is worth an
-[issue](https://github.com/Martinek16/BETtracker/issues/new?template=bug.yml).
-Wrong figures are the only real failure here.
-
-</td>
-<td width="50%" valign="top">
-
-### Say what is missing
-
-A figure you keep working out by hand belongs on a screen.
-[Say so](https://github.com/Martinek16/BETtracker/discussions).
-
-</td>
-</tr>
-</table>
+- **Your site stopped working.** Bookmakers change their API without telling
+  anyone, and the person who notices first is whoever uses it.
+- **No account at the site you want?**
+  [Request it](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml)
+  and somebody who plays there may pick it up.
+- **A number looks wrong.** That is worth an
+  [issue](https://github.com/Martinek16/BETtracker/issues/new?template=bug.yml).
+  Wrong figures are the only real failure here.
+- **A figure you keep working out by hand** belongs on a screen.
+  [Say so](https://github.com/Martinek16/BETtracker/discussions).
 
 > [!IMPORTANT]
-> **You may add a bookmaker. The shared core stays closed.** One change to how bets are stored or totalled can break every site at once, and the person who finds out is a stranger whose figures went quietly wrong. So contributions add sites, they do not change how sites work. CI checks it before a human reads the pull request, and every folder is held to the same tests: no invented ids, no money that is not a number, no site talking to a host that is not its own.
+> **You may add a bookmaker. The shared core stays closed.** One change to how
+> bets are stored or totalled can break every site at once, and the person who
+> finds out is a stranger whose figures went quietly wrong. CI checks this
+> before a human reads the pull request.
 
 [**Contributing guide**](CONTRIBUTING.md) &nbsp;·&nbsp;
 [**Discussions**](https://github.com/Martinek16/BETtracker/discussions) &nbsp;·&nbsp;
