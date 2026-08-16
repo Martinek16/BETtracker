@@ -282,6 +282,20 @@ describe('stake GraphQL failures', () => {
     expect(worker).not.toHaveBeenCalled();
   });
 
+  it('keeps the session when the site refuses the operation rather than the login', async () => {
+    // "You are not allowed to do that" is what Stake says to a signed-out visitor
+    // and to a signed-in one asking for something in a shape it will not serve.
+    // Reading it as an expiry dropped a live token on every run, so the account
+    // signed itself back in over and over and the refusal came again.
+    answers({ data: null, errors: [{ message: 'You are not allowed to do that.' }] });
+    const err = await stake.accountId(creds).then(
+      () => null,
+      (e: unknown) => e as Error,
+    );
+    expect(err?.name).not.toBe('SessionExpiredError');
+    expect(err?.message).toBe('Stake UserId: You are not allowed to do that.');
+  });
+
   it('says a repeated refusal once rather than once per field', async () => {
     // A throttled page of fifty bets came back as the same sentence fifty times,
     // which is what filled the log with thousand-character lines.

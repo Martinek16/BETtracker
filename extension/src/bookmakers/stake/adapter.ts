@@ -56,11 +56,13 @@ const GRAPHQL_PATH = '/_api/graphql';
 /** The site itself asks for 20; 50 halves the round trips without straining it. */
 const PAGE_LIMIT = 50;
 /**
- * Deposits and withdrawals. Stake's own wallet asks for 10, which is what fits
- * on the screen it draws; we are walking a whole history and paid a round trip
- * per ten rows for it. 50 is what the bet list uses against the same endpoint.
+ * Deposits and withdrawals, ten at a time because that is the only size Stake
+ * serves them in. Asking for fifty — which the bet list on the same endpoint is
+ * happy to give — was answered with "you are not allowed to do that", the same
+ * sentence it uses for a dead session, so the wallet read as an expired login
+ * for months while bets kept importing on the very same token.
  */
-const MONEY_PAGE_LIMIT = 50;
+const MONEY_PAGE_LIMIT = 10;
 /** Pages per run. The walk resumes across runs, so this only bounds one of them. */
 const MAX_PAGES = 200;
 /**
@@ -72,9 +74,17 @@ const SHALLOW_PAGES = 5;
 
 // ── GraphQL transport ────────────────────────────────────────────────────────
 
-/** Wording that can only mean the session itself was refused, not one field. */
+/**
+ * Wording that can only mean the session itself was refused, not one field.
+ *
+ * "You are not allowed to do that" is deliberately absent: Stake says it to a
+ * signed-out visitor and to a signed-in one asking for something in a shape it
+ * will not serve, and reading it as an expiry threw away a live token on every
+ * run — the account signed itself back in over and over, and the refusal came
+ * again, because nothing about the session was wrong.
+ */
 const SESSION_REFUSED =
-  /\b(unauthenti\w*|unauthori\w*|must be logged in|not logged in|invalid (access )?token|session (has )?expired)\b|you are not allowed to do that/i;
+  /\b(unauthenti\w*|unauthori\w*|must be logged in|not logged in|invalid (access )?token|session (has )?expired)\b/i;
 
 /**
  * Wording that means "stop asking for a while". Stake answers 200 with these in
