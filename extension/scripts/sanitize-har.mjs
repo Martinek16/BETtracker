@@ -189,13 +189,27 @@ const isInteresting = (entry) => {
   return KEEP_TYPE.test(type) && body.length > 0 && !/\.(png|jpe?g|gif|svg|woff2?|css|ico)(\?|$)/i.test(entry.request?.url ?? '');
 };
 
+/**
+ * Pages the site rendered on the server, thrown away with the fonts.
+ *
+ * Counted separately because dropping them is the one case where the number of
+ * survivors does not explain itself: a site that answers its bet history as
+ * markup leaves a contributor holding a recording that sanitises to almost
+ * nothing, with no hint that the site is the reason rather than their capture.
+ */
+const isRenderedPage = (entry) =>
+  /text\/html/i.test(entry.response?.content?.mimeType ?? '') &&
+  (entry.response?.content?.text ?? '').length > 0;
+
 export const sanitizeHar = (har) => {
   redactions = 0;
-  const entries = (har.log?.entries ?? []).filter(isInteresting).map(scrubEntry);
+  const all = har.log?.entries ?? [];
+  const entries = all.filter(isInteresting).map(scrubEntry);
   return {
     har: { log: { version: '1.2', creator: { name: 'bettracker-sanitize-har', version: '1' }, entries } },
     kept: entries.length,
-    dropped: (har.log?.entries ?? []).length - entries.length,
+    dropped: all.length - entries.length,
+    rendered: all.filter(isRenderedPage).length,
     redactions,
   };
 };
@@ -237,6 +251,14 @@ const main = () => {
   console.log(
     `${target}\n  kept ${result.kept} API calls, dropped ${result.dropped} others, redacted ${result.redactions} values`,
   );
+  if (result.rendered > 0 && result.kept === 0) {
+    console.log(
+      `\n  All ${result.rendered} of the pages you recorded came back as HTML and none as data.\n` +
+        '  This site draws your history on the server, so there is no API call to\n' +
+        '  read it from, and an adapter cannot be written the way the existing ones\n' +
+        '  are. Worth raising in a Discussion before you spend an evening on it.',
+    );
+  }
   console.log('  Read it before sharing it. This tool is a net, not a guarantee.');
 };
 
