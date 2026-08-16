@@ -27,7 +27,8 @@ signed-in session, and there is no way to fake one. No account there yourself?
 and somebody who plays there may pick it up.
 
 1. Record your own bet history with DevTools open. That gives you a `.har` file.
-2. `pnpm sanitize-har har/yoursite.har` strips the tokens and your identity out.
+2. `pnpm sanitize-har` picks that recording up and strips the tokens and your
+   identity out of it. No filename, no moving the file anywhere.
 3. Copy an existing bookmaker's folder and work through it against your
    recording. Around 300 lines.
 4. Load the built extension, sync your real account, check the numbers on screen.

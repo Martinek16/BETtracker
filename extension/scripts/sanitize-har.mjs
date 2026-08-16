@@ -16,12 +16,15 @@
  * proven against, and a stake of 12.50 with no name and no account behind it
  * identifies nobody.
  *
- * Usage: node scripts/sanitize-har.mjs <input.har> [output.har]
+ * Usage: pnpm sanitize-har              picks up the recording you just saved
+ *        pnpm sanitize-har <in.har> [out.har|outDir]
  */
 
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, statSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { basename, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Header and query names whose value is dropped outright. Matched loosely: a
@@ -220,15 +223,52 @@ export const findLeaks = (text) =>
     (found) => !found.startsWith('x-'),
   );
 
+/** `har/` at the top of the checkout, wherever the command was run from. */
+const HAR_DIR = join(fileURLToPath(new URL('../../', import.meta.url)), 'har');
+
+/**
+ * The folders a browser saves into, newest recording first.
+ *
+ * Looked through so that nobody has to find the file, move it into the project
+ * or type a path. Pressing save is the whole of the contributor's side of this
+ * step, and every instruction after it was a chance to get lost.
+ */
+const findRecording = () => {
+  const home = homedir();
+  return [HAR_DIR, join(home, 'Downloads'), join(home, 'OneDrive', 'Downloads')]
+    .flatMap((folder) => {
+      try {
+        return readdirSync(folder)
+          .filter((name) => name.endsWith('.har') && !name.endsWith('.sanitized.har'))
+          .map((name) => join(folder, name));
+      } catch {
+        return []; // no such folder on this machine
+      }
+    })
+    .map((path) => ({ path, at: statSync(path).mtimeMs }))
+    .sort((a, b) => b.at - a.at)[0]?.path;
+};
+
 const main = () => {
-  const [input, output] = process.argv.slice(2);
+  const [given, output] = process.argv.slice(2);
+  const input = given ?? findRecording();
   if (input === undefined) {
-    console.error('usage: node scripts/sanitize-har.mjs <input.har> [output.har|outputDir]');
+    console.error(
+      'No .har file found in har/ or your Downloads folder.\n' +
+        'Record your bet history first: F12, Network tab, tick Preserve log, click\n' +
+        'through your account, then right-click the list and Save all as HAR with content.',
+    );
     process.exit(1);
   }
+  if (given === undefined) console.log(`reading ${input}`);
 
   const target = (() => {
-    if (output === undefined) return join(dirname(input), `${basename(input, '.har')}.sanitized.har`);
+    if (output === undefined) {
+      // Into the project, not back into Downloads: this is the copy the rest of
+      // the work reads, and it belongs where git is already told to ignore it.
+      mkdirSync(HAR_DIR, { recursive: true });
+      return join(HAR_DIR, `${basename(input, '.har')}.sanitized.har`);
+    }
     try {
       if (statSync(output).isDirectory())
         return join(output, `${basename(input, '.har')}.sanitized.har`);

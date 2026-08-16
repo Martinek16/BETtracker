@@ -45,27 +45,32 @@ So you make those requests yourself, with the browser writing them down.
    - your balance, wherever it is shown
    - deposits and withdrawals
    - bonuses or free bets, if the site has them
-5. Right-click anywhere in the request list → **Save all as HAR with content**.
-6. Save it into the `har/` folder in the project. Create it if it is not there.
+5. Right-click anywhere in the request list → **Save all as HAR with content**,
+   and let it save wherever your browser normally saves.
 
 > **The file you just saved is dangerous.** It contains your live session
 > cookies, your name, your account number and every deposit you have made.
-> Anyone who gets it can sign in as you. `har/` is gitignored, so git will not
-> pick it up by accident — but do not email it, do not attach it to an issue,
-> and do not put it in a chat.
+> Anyone who gets it can sign in as you. Do not email it, do not attach it to an
+> issue, and do not put it in a chat.
 
 ## 2. Strip it
 
 ```bash
-pnpm sanitize-har har/yoursite.har
+pnpm sanitize-har
 ```
 
-This writes `har/yoursite.sanitized.har` and tells you what it did:
+No filename. It takes the most recent recording out of your Downloads folder,
+cleans it, and puts the clean copy in the project's `har/` folder, which git is
+already told to ignore:
 
 ```
+reading C:\Users\you\Downloads\yoursite.har
 har/yoursite.sanitized.har
   kept 47 API calls, dropped 312 others, redacted 68 values
 ```
+
+(Recorded more than one site in a sitting, or keep your downloads somewhere
+unusual? `pnpm sanitize-har path/to/that.har` instead.)
 
 It removes cookies and tokens, replaces your name, email and account number with
 stand-ins, and throws away everything that is not an API response. Amounts and
