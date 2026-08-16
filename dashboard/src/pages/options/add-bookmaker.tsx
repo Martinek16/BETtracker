@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Check as CheckMark, ChevronLeft, CircleDashed, X } from 'lucide-react';
 import { parseAccountKey } from '@betanal/shared';
@@ -30,7 +30,29 @@ const canAddBookmaker = (): boolean =>
 const PROMPT = `Add the bookmaker https://www.yourbookmaker.com to BETtracker.
 
 The project is ${REPO} — clone it,
-read AGENTS.md, and follow it.`;
+read AGENTS.md, and follow it. Ask me for whatever you cannot get
+yourself.`;
+
+/** One numbered thing to do, with whatever it takes to do it underneath. */
+const Step = ({
+  n,
+  title,
+  children,
+}: {
+  n: number;
+  title: string;
+  children: ReactNode;
+}): JSX.Element => (
+  <div className="flex gap-3 border-b border-border/60 py-3 last:border-0">
+    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-foreground">
+      {n}
+    </span>
+    <div className="min-w-0 flex-1">
+      <p className="text-sm font-medium text-foreground">{title}</p>
+      <div className="mt-1 text-sm text-muted-foreground">{children}</div>
+    </div>
+  </div>
+);
 
 const MARK = {
   true: { icon: CheckMark, tone: 'text-profit' },
@@ -120,37 +142,65 @@ export const AddBookmakerPage = (): JSX.Element => {
         All accounts
       </Link>
       <Section title={canAdd ? 'Add a bookmaker' : 'Adding a bookmaker needs the project'}>
-        <div className="border-b border-border/60 py-3 text-sm text-muted-foreground">
-          {canAdd ? (
-            <>
-              <p>
-                A bookmaker that is missing can be added in a few minutes. A coding tool writes
-                the code from a recording of your own signed-in session; you sign in and say
-                whether the figures are right, which is the part nobody else can do.
-              </p>
-              <p className="mt-2">
-                Paste this into Claude Code, Cursor or similar, with your bookmaker&apos;s
-                address in place of the example.
-              </p>
-            </>
-          ) : (
-            <p>
-              This copy came from the store, so it reads the bookmakers it was built with and no
-              others — a site only exists in a build that contains it. Adding one takes the
-              project itself: clone it, load the build it produces, and a coding tool writes the
-              site from a recording of your own signed-in session.
+        {canAdd ? (
+          <>
+            <p className="border-b border-border/60 py-3 text-sm text-muted-foreground">
+              A coding tool writes the site. Four things are yours, because nobody else can sign
+              in as you.
             </p>
-          )}
-        </div>
-        {canAdd && (
-          <div className="flex items-start gap-3 border-b border-border/60 py-3">
-            <pre className="min-w-0 flex-1 overflow-x-auto rounded-lg bg-muted/40 p-3 text-xs leading-relaxed text-foreground">
-              {PROMPT}
-            </pre>
-            <Button variant="outline" size="sm" onClick={onCopy}>
-              {copied ? 'Copied' : 'Copy'}
-            </Button>
-          </div>
+            <Step n={1} title="Paste this into a coding tool">
+              <p>Claude Code, Cursor or similar. It clones the project and sets it up.</p>
+              <div className="mt-2 flex items-start gap-3">
+                <pre className="min-w-0 flex-1 overflow-x-auto rounded-lg bg-muted/40 p-3 text-xs leading-relaxed text-foreground">
+                  {PROMPT}
+                </pre>
+                <Button variant="outline" size="sm" onClick={onCopy}>
+                  {copied ? 'Copied' : 'Copy'}
+                </Button>
+              </div>
+            </Step>
+            <Step n={2} title="Record your account at the bookmaker">
+              <p>
+                Sign in, press <b className="font-medium text-foreground">F12</b> →{' '}
+                <b className="font-medium text-foreground">Network</b>, tick{' '}
+                <b className="font-medium text-foreground">Preserve log</b>. Then click through
+                your bet history — several pages back — your open bets, your balance, deposits
+                and withdrawals, and bonuses. Right-click the list →{' '}
+                <b className="font-medium text-foreground">Save all as HAR with content</b>.
+              </p>
+              <p className="mt-1.5 text-xs">
+                That file holds your live session. Keep it on your machine; the tool strips it
+                before anything is published.
+              </p>
+            </Step>
+            <Step n={3} title="Tell the tool where you saved it">
+              <p>
+                From here it reads the recording, writes the site, runs the tests and builds. Answer
+                its questions about your bookmaker when it asks.
+              </p>
+            </Step>
+            <Step n={4} title="Load the build and check the figures">
+              <p>
+                <b className="font-medium text-foreground">edge://extensions</b> (or{' '}
+                <b className="font-medium text-foreground">chrome://extensions</b>) → Developer
+                mode → Load unpacked →{' '}
+                <b className="font-medium text-foreground">extension/dist</b>. Sign in at the
+                bookmaker, let it sync, then compare the totals with the bookmaker&apos;s own
+                history page. If you also have the copy from the store, switch it off while you
+                do — two copies read the same account into two separate histories.
+              </p>
+              <p className="mt-1.5 text-xs">
+                Something wrong? Tell the tool what you see. It reports back here, per site.
+              </p>
+            </Step>
+          </>
+        ) : (
+          <p className="border-b border-border/60 py-3 text-sm text-muted-foreground">
+            This copy came from the store, so it reads the bookmakers it was built with and no
+            others — a site only exists in a build that contains it. Adding one takes the project
+            itself: clone it, load the build it produces, and a coding tool writes the site from a
+            recording of your own signed-in session.
+          </p>
         )}
         <div className="flex flex-wrap gap-4 py-3 text-xs">
           <a
