@@ -271,19 +271,6 @@ export const AddBookmakerPage = (): JSX.Element => {
     setDone(count);
   };
 
-  /**
-   * Only the step after the last finished one is open. Reopening a step drops
-   * the ones after it too: they were done on a folder that is about to change.
-   */
-  const step = (
-    n: number,
-  ): { done: boolean; open: boolean; onReopen: () => void; onDone: () => void } => ({
-    done: n <= done,
-    open: n === done + 1,
-    onReopen: () => moveTo(n - 1),
-    onDone: () => moveTo(n),
-  });
-
   const all = {
     bets: records.bets,
     transactions: records.transactions,
@@ -295,6 +282,37 @@ export const AddBookmakerPage = (): JSX.Element => {
       return account === null ? [] : [{ account, meta }];
     }),
   };
+
+  const reports = added.map((meta) => {
+    const checks = checksFor(meta.id, all);
+    return { meta, checks, score: scoreOf(checks) };
+  });
+
+  /**
+   * What the page can see for itself, rather than take the reader's word for.
+   *
+   * A site is in `CATALOG` only if a folder was written, registered, built and
+   * loaded — which is every step up to the browser in one fact. Whether its
+   * figures then arrived is the report's own answer. Ticks a reader sets by
+   * hand only ever cover the steps before that, and they never disagree with
+   * this: what the build contains is not a matter of opinion.
+   */
+  const seen =
+    reports.length === 0
+      ? 0
+      : reports.every((report) => report.score.failed === 0 && report.score.passed > 0)
+        ? 6
+        : 5;
+  const at = Math.max(done, seen);
+
+  const step = (
+    n: number,
+  ): { done: boolean; open: boolean; onReopen: () => void; onDone: () => void } => ({
+    done: n <= at,
+    open: n === at + 1,
+    onReopen: () => moveTo(n - 1),
+    onDone: () => moveTo(n),
+  });
 
   return (
     <div className="flex flex-1 flex-col gap-3 pb-1">
@@ -411,8 +429,8 @@ export const AddBookmakerPage = (): JSX.Element => {
 
           <Step n={6} title="Check that everything arrived" {...step(6)}>
             <p className="text-xs">
-              Come back to this page. The new site is listed below, one line per thing it has to
-              have proved:
+              Come back to this page and let it sync. The new site is listed below, one line per
+              thing it has to have proved, and this step ticks itself when none of them is wrong:
             </p>
             <Substeps
               items={[
@@ -439,8 +457,21 @@ export const AddBookmakerPage = (): JSX.Element => {
         </section>
       )}
 
-      {added.map((meta) => (
-        <SiteReport key={meta.id} id={meta.id} name={meta.name} checks={checksFor(meta.id, all)} />
+      {seen > 0 && (
+        <p className="px-1 text-xs text-muted-foreground">
+          {reports.map((report) => report.meta.name).join(', ')}{' '}
+          {reports.length === 1 ? 'is' : 'are'} in this build, so the steps up to loading it are
+          ticked for you — a folder reaches the browser only by passing all of them.
+        </p>
+      )}
+
+      {reports.map((report) => (
+        <SiteReport
+          key={report.meta.id}
+          id={report.meta.id}
+          name={report.meta.name}
+          checks={report.checks}
+        />
       ))}
 
       {added.length > 0 && (
