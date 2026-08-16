@@ -62,9 +62,26 @@ const Step = ({
 
 /** What the reader types or clicks, set apart from the prose around it. */
 const Key = ({ children }: { children: ReactNode }): JSX.Element => (
-  <span className="rounded border border-border/80 bg-muted/50 px-1.5 py-0.5 text-xs font-medium text-foreground">
+  <span className="inline-flex items-center whitespace-nowrap rounded border border-border/80 bg-muted/50 px-1.5 py-0.5 text-xs font-medium text-foreground">
     {children}
   </span>
+);
+
+/**
+ * The moves inside one step, one to a line. A ruled list reads as a sequence to
+ * work through; a wrapped paragraph of them reads as something to skim.
+ */
+const Substeps = ({ items }: { items: ReactNode[] }): JSX.Element => (
+  <ol className="divide-y divide-border/50">
+    {items.map((item, i) => (
+      <li key={i} className="flex items-start gap-2.5 py-1.5 first:pt-0 last:pb-0">
+        <span className="w-3 shrink-0 text-right text-[11px] leading-5 tabular-nums text-muted-foreground/60">
+          {i + 1}
+        </span>
+        <span className="min-w-0 flex-1 text-xs leading-5 text-foreground/90">{item}</span>
+      </li>
+    ))}
+  </ol>
 );
 
 /** GitHub's copy affordance: an icon in the corner, ticked for a moment after. */
@@ -208,23 +225,27 @@ export const AddBookmakerPage = (): JSX.Element => {
           </Step>
 
           <Step n={2} title="Record your account at the bookmaker">
-            <ol className="list-decimal space-y-1 pl-4 text-xs marker:text-muted-foreground/70">
-              <li>
-                Sign in, press <Key>F12</Key>, open <Key>Network</Key>, tick <Key>Preserve log</Key>
-                .
-              </li>
-              <li>
-                Click through bet history — several pages back — open bets, balance, payments,
-                bonuses.
-              </li>
-              <li className="flex flex-wrap items-center gap-1.5">
-                Right-click the list, then
-                <Key>
-                  <Download size={11} strokeWidth={2} className="mr-1 inline align-[-1px]" />
-                  Save all as HAR with content
-                </Key>
-              </li>
-            </ol>
+            <Substeps
+              items={[
+                <>
+                  Sign in at the bookmaker, then press <Key>F12</Key>.
+                </>,
+                <>
+                  Open <Key>Network</Key> and tick <Key>Preserve log</Key>.
+                </>,
+                <>
+                  Click through bet history — several pages back — open bets, balance, payments,
+                  bonuses.
+                </>,
+                <>
+                  Right-click the list, then{' '}
+                  <Key>
+                    <Download size={11} strokeWidth={2} className="mr-1" />
+                    Save all as HAR with content
+                  </Key>
+                </>,
+              ]}
+            />
             <p className="mt-2 flex items-start gap-1.5 text-xs">
               <ShieldAlert size={13} strokeWidth={1.75} className="mt-px shrink-0 text-pending" />
               That file holds your live session. Keep it on your machine; the tool strips it.
@@ -239,16 +260,18 @@ export const AddBookmakerPage = (): JSX.Element => {
           </Step>
 
           <Step n={4} title="Load the build and check the figures">
-            <ol className="list-decimal space-y-1 pl-4 text-xs marker:text-muted-foreground/70">
-              <li>
-                <Key>edge://extensions</Key> or <Key>chrome://extensions</Key>, turn on Developer
-                mode.
-              </li>
-              <li>
-                <Key>Load unpacked</Key> → the project&apos;s <Key>extension/dist</Key> folder.
-              </li>
-              <li>Sign in, let it sync, compare the totals with the bookmaker&apos;s own page.</li>
-            </ol>
+            <Substeps
+              items={[
+                <>
+                  Open <Key>edge://extensions</Key> or <Key>chrome://extensions</Key>, and turn on
+                  Developer mode.
+                </>,
+                <>
+                  <Key>Load unpacked</Key> → the project&apos;s <Key>extension/dist</Key> folder.
+                </>,
+                <>Sign in, let it sync, compare the totals with the bookmaker&apos;s own page.</>,
+              ]}
+            />
             <p className="mt-2 text-xs">
               Switch the store copy off first — two copies read one account into two histories.
             </p>
