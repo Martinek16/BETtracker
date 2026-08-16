@@ -1,6 +1,7 @@
 # Add a bookmaker
 
-This is the whole process, start to finish. It takes an evening the first time.
+This is the whole process, start to finish. It takes a few minutes, most of them
+spent waiting on the tool rather than on you.
 
 You do not need to know how the extension works. You do need an account at the
 bookmaker — support is written from a recording of a real signed-in session, and
@@ -49,8 +50,8 @@ alongside — or instead of — the one you have.
 
 They do not share anything. Your existing copy keeps its history and is not
 touched, and whatever the new one syncs while you are testing stays in the new
-one. Nothing is lost either way; it just does not carry across, so do not spend
-an evening waiting for it to.
+one. Nothing is lost either way; it just does not carry across, so do not sit
+waiting for it to.
 
 Run one at a time. Two copies both signed in to the same bookmaker sync the same
 account into two separate databases, and the figures you are checking in step 6

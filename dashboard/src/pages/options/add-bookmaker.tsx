@@ -7,12 +7,29 @@ import { isReleased } from '@bookmakers/released';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { Button } from '@/components/ui/button';
 import { useDashboard } from '@/context/dashboard-context';
-import { useOpenBetsSeen, useStoredRecords, useSyncMetaByAccount } from '@/data/accounts';
+import {
+  useAllKnownAccounts,
+  useOpenBetsSeen,
+  useStoredRecords,
+  useSyncMetaByAccount,
+} from '@/data/accounts';
 import { cn } from '@/lib/utils';
 import { Section } from '@/pages/options/parts';
 import { checksFor, scoreOf, type Check } from '@/pages/options/readiness';
 
 const REPO = 'https://github.com/Martinek16/BETtracker';
+
+/**
+ * Whether adding a bookmaker is something this copy can actually do. A site only
+ * exists in a build that contains it, so it takes the project and a rebuild —
+ * which the store copy cannot be given. The store writes `update_url` into the
+ * manifest it serves; a build loaded from a folder has none, and the dashboard
+ * run on its own dev server has no extension at all.
+ */
+const canAddBookmaker = (): boolean =>
+  typeof chrome === 'undefined' ||
+  !chrome.runtime?.id ||
+  chrome.runtime.getManifest().update_url === undefined;
 
 /** What to paste into a coding tool. The address is the only part to change. */
 const PROMPT = `Add the bookmaker https://www.yourbookmaker.com to BETtracker.
@@ -40,9 +57,9 @@ const CheckRow = ({ check }: { check: Check }): JSX.Element => {
 };
 
 /**
- * One site's report. Shown for every bookmaker in the build, not only the ones
- * somebody added: a released site whose API moved fails these the same way, and
- * this is where that shows up first.
+ * One site's report. Shown for the bookmakers this browser is actually signed in
+ * to — a report on a site nobody here uses can only ever read "nothing stored",
+ * which says nothing about the site and buries the ones that do.
  */
 const SiteReport = ({ id, name, checks }: { id: string; name: string; checks: Check[] }): JSX.Element => {
   const { passed, failed, open } = scoreOf(checks);
@@ -71,15 +88,18 @@ const SiteReport = ({ id, name, checks }: { id: string; name: string; checks: Ch
  *
  * The second half is the reason this page exists rather than a paragraph in the
  * README. A green test run proves a recording parses; it says nothing about
- * whether the site fills the screens, and the gap between those two is where an
- * evening's work quietly goes wrong.
+ * whether the site fills the screens, and that gap is where the work quietly
+ * goes wrong.
  */
 export const AddBookmakerPage = (): JSX.Element => {
   const [copied, setCopied] = useState(false);
   const records = useStoredRecords();
   const metas = useSyncMetaByAccount();
   const openBetsSeen = useOpenBetsSeen();
+  const logins = useAllKnownAccounts();
   const { accountBalances } = useDashboard();
+  const canAdd = canAddBookmaker();
+  const connected = new Set(logins.map((login) => login.bookmaker));
 
   const onCopy = (): void => {
     void navigator.clipboard.writeText(PROMPT);
@@ -108,28 +128,48 @@ export const AddBookmakerPage = (): JSX.Element => {
         <ChevronLeft size={13} strokeWidth={1.75} />
         All accounts
       </Link>
-      <Section title="Add a bookmaker">
+      <Section title={canAdd ? 'Add a bookmaker' : 'Adding a bookmaker needs the project'}>
         <div className="border-b border-border/60 py-3 text-sm text-muted-foreground">
-          <p>
-            A bookmaker that is missing can be added in an evening. A coding tool writes the
-            code from a recording of your own signed-in session; you sign in and say whether
-            the figures are right, which is the part nobody else can do.
-          </p>
-          <p className="mt-2">
-            It needs the project itself, not the copy from the store — a site only exists in a
-            build that contains it. Paste this into Claude Code, Cursor or similar, with your
-            bookmaker&apos;s address in place of the example.
-          </p>
+          {canAdd ? (
+            <>
+              <p>
+                A bookmaker that is missing can be added in a few minutes. A coding tool writes
+                the code from a recording of your own signed-in session; you sign in and say
+                whether the figures are right, which is the part nobody else can do.
+              </p>
+              <p className="mt-2">
+                Paste this into Claude Code, Cursor or similar, with your bookmaker&apos;s
+                address in place of the example.
+              </p>
+            </>
+          ) : (
+            <p>
+              This copy came from the store, so it reads the bookmakers it was built with and no
+              others — a site only exists in a build that contains it. Adding one takes the
+              project itself: clone it, load the build it produces, and a coding tool writes the
+              site from a recording of your own signed-in session.
+            </p>
+          )}
         </div>
-        <div className="flex items-start gap-3 border-b border-border/60 py-3">
-          <pre className="min-w-0 flex-1 overflow-x-auto rounded-lg bg-muted/40 p-3 text-xs leading-relaxed text-foreground">
-            {PROMPT}
-          </pre>
-          <Button variant="outline" size="sm" onClick={onCopy}>
-            {copied ? 'Copied' : 'Copy'}
-          </Button>
-        </div>
+        {canAdd && (
+          <div className="flex items-start gap-3 border-b border-border/60 py-3">
+            <pre className="min-w-0 flex-1 overflow-x-auto rounded-lg bg-muted/40 p-3 text-xs leading-relaxed text-foreground">
+              {PROMPT}
+            </pre>
+            <Button variant="outline" size="sm" onClick={onCopy}>
+              {copied ? 'Copied' : 'Copy'}
+            </Button>
+          </div>
+        )}
         <div className="flex flex-wrap gap-4 py-3 text-xs">
+          <a
+            href={REPO}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            The project
+          </a>
           <a
             href={`${REPO}/blob/main/docs/ADD_A_BOOKMAKER.md`}
             target="_blank"
@@ -144,12 +184,12 @@ export const AddBookmakerPage = (): JSX.Element => {
             rel="noreferrer noopener"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
-            Ask before you spend an evening on it
+            Ask before you start
           </a>
         </div>
       </Section>
 
-      {CATALOG.map((meta) => (
+      {CATALOG.filter((meta) => connected.has(meta.id)).map((meta) => (
         <SiteReport key={meta.id} id={meta.id} name={meta.name} checks={checksFor(meta.id, all)} />
       ))}
 

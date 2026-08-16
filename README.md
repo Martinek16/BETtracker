@@ -112,7 +112,7 @@ It reads the same pages your browser already loaded, with your own session, slow
 
 # Add your bookmaker
 
-Missing yours? Add it yourself, in an evening. An AI tool writes the code. You
+Missing yours? Add it yourself, in a few minutes. An AI tool writes the code. You
 just follow the steps.
 
 **What you need:** an account at that bookmaker, and an AI coding tool —
