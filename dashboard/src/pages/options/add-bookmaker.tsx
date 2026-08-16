@@ -379,8 +379,32 @@ export const AddBookmakerPage = (): JSX.Element => {
                   Open <Key>Network</Key> and tick <Key>Preserve log</Key>.
                 </>,
                 <>
-                  Click through bet history — several pages back — open bets, balance, payments,
-                  bonuses.
+                  Now open every page the app has to read, and wait for each to finish loading.
+                  Every site names them differently; look for:
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-muted-foreground">
+                    <li>
+                      <span className="text-foreground/90">Bet history</span> — settled bets, and
+                      page back until the oldest one you have
+                    </li>
+                    <li>
+                      <span className="text-foreground/90">Open bets</span> — unsettled, pending, in
+                      play
+                    </li>
+                    <li>
+                      <span className="text-foreground/90">Balance</span> — the wallet or account
+                      page, each currency you hold
+                    </li>
+                    <li>
+                      <span className="text-foreground/90">Money in and out</span> — deposits,
+                      withdrawals, transactions, payments
+                    </li>
+                    <li>
+                      <span className="text-foreground/90">Bonuses</span> — free bets, promotions,
+                      rakeback, whatever is waiting to be claimed
+                    </li>
+                  </ul>
+                  A page you do not open is not in the recording, and the site cannot be read for it
+                  later.
                 </>,
                 <>
                   Right-click the list, then{' '}
