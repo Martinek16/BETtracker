@@ -294,6 +294,14 @@ const identify = async (
     return await adapter.accountId(creds);
   } catch (err) {
     if (err instanceof SessionExpiredError) throw err;
+    // A site that cannot answer at all says nothing about who is signed in, and
+    // reporting it as an unreadable identity read as "your account is gone" while
+    // the account was fine and the site was in maintenance. Backed off instead, so
+    // the rest of the run does not spend itself on an endpoint that is down.
+    if (err instanceof RateLimitedError) {
+      startCooldown(adapter.id, err.retryAfterMs, err.message);
+      return null;
+    }
     // Nowhere to ask from is not an unreadable identity — it is one that was
     // never asked for. The next visit answers it, and warning about it on every
     // poll only buried the failures that were real.
