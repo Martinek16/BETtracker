@@ -128,12 +128,30 @@ const gql = async (
   // from the service worker never carries it — Stake then answers "You are not
   // allowed to do that" to every query, including the one asking who we are.
   // Such calls are made from the site's own tab instead.
-  let json = await ask(accessToken === undefined);
+  //
   // A token is enough for the bet list but not for the wallet: Stake guards the
   // deposit and withdrawal history behind headers its own scripts attach inside
-  // the page, and refuses everything else with the same "not allowed" it uses
-  // for a dead session. Asked again from the page, the request carries them.
-  if (accessToken !== undefined && refusedIn(json)) json = await ask(true);
+  // the page, and turns anything else away — sometimes as a flat 401, sometimes
+  // as the same "not allowed" it uses for a dead session. Either way the request
+  // is made again from the tab, where the site's own fetch decorates it. A
+  // session that really is dead is refused there too.
+  const opName = operationName ?? 'GraphQL';
+  let json: unknown;
+  try {
+    json = await ask(accessToken === undefined);
+    if (accessToken !== undefined && refusedIn(json)) {
+      log('info', BOOKMAKER, `${opName} refused with a token; asking the tab instead`);
+      json = await ask(true);
+    }
+  } catch (err) {
+    if (accessToken === undefined || !(err instanceof SessionExpiredError)) throw err;
+    log(
+      'info',
+      BOOKMAKER,
+      `${opName} refused with a token (${err.message}); asking the tab instead`,
+    );
+    json = await ask(true);
+  }
 
   // GraphQL answers 200 even when it refuses, so a dead session has to be read
   // out of the error text. Only wording that can mean nothing else counts: a

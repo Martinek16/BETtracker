@@ -277,6 +277,24 @@ describe('stake GraphQL failures', () => {
     expect(sendMessage).toHaveBeenCalledOnce();
   });
 
+  it('asks the tab again when the refusal is a bare 401 with no wording at all', async () => {
+    // The same guard also answers with a flat 401 and an empty body, which read
+    // as an expired session and stopped the whole transaction run.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 401, text: async () => '' }),
+    );
+    const sendMessage = vi.fn().mockResolvedValue({
+      status: 200,
+      body: JSON.stringify({ data: { user: { id: 'acc-1' } } }),
+    });
+    vi.stubGlobal('chrome', {
+      tabs: { query: vi.fn().mockResolvedValue([{ id: 7 }]), sendMessage },
+    });
+    await expect(stake.accountId(creds)).resolves.toBe('acc-1');
+    expect(sendMessage).toHaveBeenCalledOnce();
+  });
+
   it('says a repeated refusal once rather than once per field', async () => {
     // A throttled page of fifty bets came back as the same sentence fifty times,
     // which is what filled the log with thousand-character lines.
