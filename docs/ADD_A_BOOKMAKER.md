@@ -7,13 +7,25 @@ bookmaker — support is written from a recording of a real signed-in session, a
 there is no way to fake one.
 
 > [!TIP]
-> **Working with an AI tool?** Steps 1 and 2 are yours alone: only you can sign
-> in and record. Do those, then point the tool at [AGENTS.md](../AGENTS.md) and
-> tell it the filename. It writes step 3 from your recording. Steps 5 and 6 come
-> back to you, because only you can look at your own figures and say whether
-> they are right.
+> **Working with an AI tool?** Paste this into it, with your bookmaker's address
+> in place of the example, and it will take you through the rest:
+>
+> ```
+> Add the bookmaker https://www.yourbookmaker.com to BETtracker.
+>
+> The project is https://github.com/Martinek16/BETtracker — clone it,
+> read AGENTS.md, and follow it. Ask me for whatever you cannot get
+> yourself.
+> ```
+>
+> It will set the project up and then stop and ask you to record your history,
+> because only you can sign in. Steps 1, 2 and 6 below stay yours; it does the
+> rest. Read them anyway — knowing what it is doing is what lets you tell when
+> it has got something wrong.
 
 ## Before you start
+
+Skip this if you pasted the prompt above; the tool does it for you.
 
 ```bash
 git clone https://github.com/Martinek16/BETtracker
