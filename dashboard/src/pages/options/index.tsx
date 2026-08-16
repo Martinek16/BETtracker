@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { AccountDetailPage } from '@/pages/options/account';
 import { AccountsPage } from '@/pages/options/accounts';
 import { AboutPage } from '@/pages/options/about';
-import { AddSitePage } from '@/pages/options/add-site';
+import { AddBookmakerPage } from '@/pages/options/add-bookmaker';
 import { GeneralPage } from '@/pages/options/general';
 import { LogPage } from '@/pages/options/log';
 import { PrivacyPage } from '@/pages/options/privacy';
@@ -13,7 +13,6 @@ import { PrivacyPage } from '@/pages/options/privacy';
 const TABS = [
   { to: '/options', label: 'Settings', end: true },
   { to: '/options/accounts', label: 'Accounts', end: false },
-  { to: '/options/add-site', label: 'Add a site', end: false },
   { to: '/options/log', label: 'Log', end: false },
   { to: '/options/about', label: 'About', end: false },
 ];
@@ -50,8 +49,9 @@ export const OptionsPage = (): JSX.Element => (
     <Routes>
       <Route path="/" element={<GeneralPage />} />
       <Route path="accounts" element={<AccountsPage />} />
+      {/* Under Accounts, so its tab stays lit while the page is open. */}
+      <Route path="accounts/add-bookmaker" element={<AddBookmakerPage />} />
       <Route path="accounts/:bookmaker/:accountId" element={<AccountDetailPage />} />
-      <Route path="add-site" element={<AddSitePage />} />
       <Route path="log" element={<LogPage />} />
       <Route path="about" element={<AboutPage />} />
       {/* Under About, so its tab stays lit while the policy is open. */}

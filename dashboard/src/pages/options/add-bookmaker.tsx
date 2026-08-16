@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Check as CheckMark, CircleDashed, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Check as CheckMark, ChevronLeft, CircleDashed, X } from 'lucide-react';
 import { parseAccountKey } from '@betanal/shared';
 import { CATALOG } from '@bookmakers/catalog';
 import { isReleased } from '@bookmakers/released';
@@ -66,14 +67,14 @@ const SiteReport = ({ id, name, checks }: { id: string; name: string; checks: Ch
 };
 
 /**
- * Adding a site, and finding out whether the one you added works.
+ * Adding a bookmaker, and finding out whether the one you added works.
  *
  * The second half is the reason this page exists rather than a paragraph in the
  * README. A green test run proves a recording parses; it says nothing about
  * whether the site fills the screens, and the gap between those two is where an
  * evening's work quietly goes wrong.
  */
-export const AddSitePage = (): JSX.Element => {
+export const AddBookmakerPage = (): JSX.Element => {
   const [copied, setCopied] = useState(false);
   const records = useStoredRecords();
   const metas = useSyncMetaByAccount();
@@ -98,6 +99,13 @@ export const AddSitePage = (): JSX.Element => {
 
   return (
     <div className="flex flex-1 flex-col gap-4 pb-1">
+      <Link
+        to="/options/accounts"
+        className="inline-flex items-center gap-1 self-start text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ChevronLeft size={13} strokeWidth={1.75} />
+        All accounts
+      </Link>
       <Section title="Add a bookmaker">
         <div className="border-b border-border/60 py-3 text-sm text-muted-foreground">
           <p>

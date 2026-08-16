@@ -164,6 +164,13 @@ const SupportedFooter = (): JSX.Element => (
         );
       })}
     </div>
+    <Link
+      to="/options/accounts/add-bookmaker"
+      className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+    >
+      Missing one? Add a bookmaker
+      <ChevronRight size={13} strokeWidth={1.75} />
+    </Link>
   </div>
 );
 
