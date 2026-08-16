@@ -50,10 +50,13 @@ export const Stat = ({
   label,
   value,
   tone,
+  note,
 }: {
   label: string;
   value: string;
   tone?: string;
+  /** A second figure the first one does not contain, set apart by its colour. */
+  note?: string;
 }): JSX.Element => (
   <div className="min-w-0">
     <p className="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -62,6 +65,9 @@ export const Stat = ({
     <p className={cn('truncate text-sm font-semibold tabular-nums text-foreground', tone)}>
       {value}
     </p>
+    {note !== undefined && (
+      <p className="truncate text-[10px] tabular-nums text-emerald-500">{note}</p>
+    )}
   </div>
 );
 
