@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   camelId,
+  readIdentity,
   registerCapture,
   registerCatalog,
   registerRegistry,
@@ -52,6 +53,27 @@ describe('renaming the copied example', () => {
     expect(out).toContain("export const mySite: BookmakerAdapter = { id: 'my-site' };");
     expect(out).toContain('const stake = toNumber(raw.amount, 0);');
     expect(out).toContain('potentialReturn: stake * odds,');
+  });
+
+  it('takes the name, the colour and the squarest icon off the site itself', () => {
+    const html = `<head>
+      <meta property="og:site_name" content="Your Site">
+      <meta name="theme-color" content="#0f3d2e">
+      <link rel="icon" href="/favicon.ico" sizes="16x16">
+      <link rel="icon" href="/icon.svg">
+      <link rel="apple-touch-icon" href="/touch.png" sizes="180x180">
+    </head>`;
+
+    expect(readIdentity(html)).toEqual({
+      name: 'Your Site',
+      brand: '#0f3d2e',
+      icon: '/touch.png',
+    });
+  });
+
+  it('keeps nothing it cannot use', () => {
+    const out = readIdentity('<head><meta name="theme-color" content="rgb(1,2,3)"></head>');
+    expect(out).toEqual({ name: undefined, brand: undefined, icon: undefined });
   });
 
   it('reads a hyphenated id as the code would name it', () => {

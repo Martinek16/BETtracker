@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import { accountKey, type AccountRef, type Bet, type SyncMeta, type Transaction } from '@betanal/shared';
+import {
+  accountKey,
+  type AccountRef,
+  type Bet,
+  type SyncMeta,
+  type Transaction,
+} from '@betanal/shared';
 import { DashboardCard } from '@/components/dashboard/dashboard-card';
 import { useDashboard } from '@/context/dashboard-context';
 import { Switch } from '@/components/ui/switch';
@@ -135,37 +141,43 @@ const SectionTitle = ({ children }: { children: string }): JSX.Element => (
  * it works the same, but nobody else has checked it, and whoever added it is the
  * only person who can say whether its figures are right.
  */
-const SupportedFooter = (): JSX.Element => (
-  <div
-    data-tour="supported-books"
-    className="mt-auto flex flex-col items-center gap-2 border-t border-border/60 pb-2 pt-4"
-  >
-    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-      Supported bookmakers
+const SupportedFooter = (): JSX.Element => {
+  const chip = (account: (typeof ACCOUNTS)[number], released: boolean): JSX.Element => (
+    <span
+      key={account.id}
+      title={
+        released ? account.name : `${account.name} — added to this copy, not part of a release`
+      }
+      className={cn(
+        'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs text-muted-foreground',
+        released ? 'border-border/60' : 'border-dashed border-primary/50 text-primary',
+      )}
+    >
+      <AccountIcon bookmaker={account.id} className="h-4 w-4" />
+      {account.name}
     </span>
-    <div className="flex flex-wrap items-center justify-center gap-2">
-      {ACCOUNTS.map((account) => {
-        const released = isReleased(account.id);
-        return (
-          <span
-            key={account.id}
-            title={released ? account.name : `${account.name} — added to this copy, not part of a release`}
-            className={cn(
-              'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs text-muted-foreground',
-              released ? 'border-border/60' : 'border-dashed border-primary/50',
-            )}
-          >
-            <AccountIcon bookmaker={account.id} className="h-4 w-4" />
-            {account.name}
-            {!released && (
-              <span className="text-[10px] uppercase tracking-wide text-primary">Added here</span>
-            )}
-          </span>
-        );
-      })}
+  );
+
+  const added = ACCOUNTS.filter((account) => !isReleased(account.id));
+
+  return (
+    <div
+      data-tour="supported-books"
+      className="mt-auto flex flex-col items-center gap-1.5 border-t border-border/60 pb-0.5 pt-2.5"
+    >
+      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        Supported bookmakers
+      </span>
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
+        {ACCOUNTS.filter((account) => isReleased(account.id)).map((account) => chip(account, true))}
+        {/* What this copy was built with, and what its owner added, are not the
+            same claim: only the first has been checked by anybody else. */}
+        {added.length > 0 && <span className="mx-1 h-5 w-px bg-border" />}
+        {added.map((account) => chip(account, false))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const AccountsPage = (): JSX.Element => {
   const { bets, transactions, currency } = useStoredRecords();
@@ -208,12 +220,8 @@ export const AccountsPage = (): JSX.Element => {
                   bets={bets.filter((bet) => accountKey(bet) === accountKey(login))}
                   transactions={transactions.filter((t) => accountKey(t) === accountKey(login))}
                   currency={currency}
-                  balance={
-                    accountBalances.find((b) => b.key === accountKey(login))?.amount ?? null
-                  }
-                  waiting={
-                    claimable.find((r) => r.key === accountKey(login))?.worth ?? null
-                  }
+                  balance={accountBalances.find((b) => b.key === accountKey(login))?.amount ?? null}
+                  waiting={claimable.find((r) => r.key === accountKey(login))?.worth ?? null}
                 />
               );
             })}

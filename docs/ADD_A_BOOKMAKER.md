@@ -75,7 +75,9 @@ So you make those requests yourself, with the browser writing them down.
    - deposits and withdrawals
    - bonuses or free bets, if the site has them
 5. Right-click anywhere in the request list → **Save all as HAR with content**,
-   and let it save wherever your browser normally saves.
+   and save it into the project's `har/` folder, which `pnpm install` made for
+   you. (Downloads works too, but the folder is where the next steps look
+   first — and where the site's own name, colour and icon are read from.)
 
 > **The file you just saved is dangerous.** It contains your live session
 > cookies, your name, your account number and every deposit you have made.
@@ -146,8 +148,10 @@ lowercase, hyphens instead of spaces. It becomes the folder name, the JSON
 which is the whole reason the command writes them rather than you.
 `bet365`, `william-hill`, `bwin`.
 
-What it deliberately leaves empty is what only the recording can fill: the
-fixtures, the logo, the real hosts, and the parsing itself. Work through the
+The site's name, its brand colour and its icon are taken out of your recording:
+the front page your browser stored carries all three, and the command says which
+of them it found. What it deliberately leaves empty is what only the recording
+can fill: the fixtures, the real hosts, and the parsing itself. Work through the
 folder against the sanitised recording and replace Stake's answers with your
 site's.
 

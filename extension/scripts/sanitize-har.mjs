@@ -65,7 +65,10 @@ const REDACTED = 'REDACTED';
  * 64-character hash makes a fixture unreadable.
  */
 const pseudonym = (value, salt = '') =>
-  createHash('sha256').update(`${salt}${String(value)}`).digest('hex').slice(0, 12);
+  createHash('sha256')
+    .update(`${salt}${String(value)}`)
+    .digest('hex')
+    .slice(0, 12);
 
 let redactions = 0;
 const redact = (replacement) => {
@@ -126,7 +129,9 @@ const scrubHeaders = (headers = []) =>
       name: header.name,
       // The name is the part an adapter is written against — which header
       // carries the session is exactly what a contributor needs to see.
-      value: SECRET_NAME.test(header.name) ? redact(REDACTED) : scrubText(String(header.value ?? '')),
+      value: SECRET_NAME.test(header.name)
+        ? redact(REDACTED)
+        : scrubText(String(header.value ?? '')),
     }));
 
 const scrubQuery = (query = []) =>
@@ -189,7 +194,11 @@ const scrubEntry = (entry) => {
 const isInteresting = (entry) => {
   const type = entry.response?.content?.mimeType ?? '';
   const body = entry.response?.content?.text ?? '';
-  return KEEP_TYPE.test(type) && body.length > 0 && !/\.(png|jpe?g|gif|svg|woff2?|css|ico)(\?|$)/i.test(entry.request?.url ?? '');
+  return (
+    KEEP_TYPE.test(type) &&
+    body.length > 0 &&
+    !/\.(png|jpe?g|gif|svg|woff2?|css|ico)(\?|$)/i.test(entry.request?.url ?? '')
+  );
 };
 
 /**
@@ -209,7 +218,9 @@ export const sanitizeHar = (har) => {
   const all = har.log?.entries ?? [];
   const entries = all.filter(isInteresting).map(scrubEntry);
   return {
-    har: { log: { version: '1.2', creator: { name: 'bettracker-sanitize-har', version: '1' }, entries } },
+    har: {
+      log: { version: '1.2', creator: { name: 'bettracker-sanitize-har', version: '1' }, entries },
+    },
     kept: entries.length,
     dropped: all.length - entries.length,
     rendered: all.filter(isRenderedPage).length,
@@ -227,13 +238,30 @@ export const findLeaks = (text) =>
 const HAR_DIR = join(fileURLToPath(new URL('../../', import.meta.url)), 'har');
 
 /**
+ * Make the folder the recording goes into, on install. Git cannot carry it —
+ * the folder is ignored precisely because of what people drop in it — so a
+ * fresh checkout tells the contributor to save the file somewhere that is not
+ * there. The note is for whoever opens the folder later and wonders.
+ */
+export const makeHarDir = () => {
+  mkdirSync(HAR_DIR, { recursive: true });
+  writeFileSync(
+    join(HAR_DIR, 'README.txt'),
+    'Save your browser recording (.har) here, then run: pnpm sanitize-har\n\n' +
+      'A raw recording holds your live session. This folder is ignored by git and\n' +
+      'CI rejects a pull request carrying one, but nothing stops you sending it by\n' +
+      'hand — so share only the .sanitized.har that the command writes beside it.\n',
+  );
+};
+
+/**
  * The folders a browser saves into, newest recording first.
  *
  * Looked through so that nobody has to find the file, move it into the project
  * or type a path. Pressing save is the whole of the contributor's side of this
  * step, and every instruction after it was a chance to get lost.
  */
-const findRecording = () => {
+export const findRecording = () => {
   const home = homedir();
   return [HAR_DIR, join(home, 'Downloads'), join(home, 'OneDrive', 'Downloads')]
     .flatMap((folder) => {
@@ -251,6 +279,10 @@ const findRecording = () => {
 
 const main = () => {
   const [given, output] = process.argv.slice(2);
+  if (given === '--make-folder') {
+    makeHarDir();
+    return;
+  }
   const input = given ?? findRecording();
   if (input === undefined) {
     console.error(

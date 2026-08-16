@@ -14,6 +14,8 @@
     "dev:dashboard": "pnpm --filter @betanal/dashboard dev",
     "package": "pnpm build:shared && pnpm build:extension",
     "zip": "pnpm package && node extension/scripts/zip.mjs",
+    "_comment_postinstall": "Makes har/, which git cannot carry: the folder is ignored because of what gets dropped in it, so a fresh checkout would have nowhere to save the recording.",
+    "postinstall": "node extension/scripts/sanitize-har.mjs --make-folder",
     "sanitize-har": "node extension/scripts/sanitize-har.mjs",
     "new-bookmaker": "node extension/scripts/new-bookmaker.mjs",
     "lint": "eslint . --ext .ts,.tsx",

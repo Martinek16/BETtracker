@@ -16,6 +16,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findRecording } from './sanitize-har.mjs';
 
 const BOOKMAKERS = fileURLToPath(new URL('../src/bookmakers/', import.meta.url));
 
@@ -80,16 +81,149 @@ export const retarget = (source, from, to) =>
     .replaceAll(`bookmaker: '${from}'`, `bookmaker: '${to}'`);
 
 /** The declaration the manifest and `privacy.test.ts` both read. Hosts are the contributor's to fill. */
-const meta = (id, site, name) => ({
+const meta = (id, site, name, brand, color) => ({
   id,
   name,
   site,
-  brand: '#1f2937',
-  color: '#6366f1',
+  brand,
+  color,
   mirrors: [],
   sites: [`https://${site}/*`, `https://*.${site}/*`],
   apiHosts: [],
 });
+
+const attr = (tag, name) => new RegExp(`${name}=["']([^"']+)["']`, 'i').exec(tag)?.[1];
+
+const tags = (html, tag) =>
+  [...html.matchAll(new RegExp(`<${tag}\\b[^>]*>`, 'gi'))].map((m) => m[0]);
+
+/**
+ * What a site already says about itself in its own front page: how it writes its
+ * name, the colour a browser paints its chrome, and the square icon a phone puts
+ * on a home screen. All three are otherwise typed in by hand from looking at the
+ * site, which is a slow way to copy something the site is already publishing.
+ */
+export const readIdentity = (html) => {
+  const metas = tags(html, 'meta');
+  const named = (name, key = 'name') =>
+    metas
+      .filter((tag) => attr(tag, key)?.toLowerCase() === name)
+      .map((tag) => attr(tag, 'content'))[0];
+
+  const icons = tags(html, 'link')
+    .filter((tag) => /\bicon\b/i.test(attr(tag, 'rel') ?? ''))
+    .map((tag) => ({
+      href: attr(tag, 'href'),
+      touch: /apple-touch/i.test(attr(tag, 'rel') ?? ''),
+      size: Number.parseInt(attr(tag, 'sizes') ?? '0', 10) || 0,
+    }))
+    .filter((icon) => icon.href !== undefined && !icon.href.endsWith('.svg'))
+    // A home-screen icon is a filled square; a favicon is often 16px of nothing.
+    .sort((a, b) => Number(b.touch) - Number(a.touch) || b.size - a.size);
+
+  return {
+    name: named('og:site_name', 'property') ?? named('application-name'),
+    brand: /^#[0-9a-f]{3,8}$/i.test(named('theme-color') ?? '') ? named('theme-color') : undefined,
+    icon: icons[0]?.href,
+  };
+};
+
+/** How light a hex colour reads, 0 to 1. */
+const luminance = (hex) => {
+  const full = hex.length < 6 ? hex.slice(1).replace(/./g, (c) => c + c) : hex.slice(1, 7);
+  const [r, g, b] = [0, 2, 4].map((i) => Number.parseInt(full.slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+
+const PNG = Buffer.from('89504e470d0a1a0a', 'hex');
+
+/** Whatever the browser already downloaded, kept as a PNG worth using as a mark. */
+export const pickIcon = (entries) =>
+  entries
+    .filter(
+      (entry) =>
+        entry.response?.content?.encoding === 'base64' &&
+        /icon|logo|favicon|touch|apple|brand/i.test(entry.request?.url ?? ''),
+    )
+    .map((entry) => Buffer.from(entry.response.content.text, 'base64'))
+    .filter((bytes) => bytes.subarray(0, 8).equals(PNG))
+    .sort((a, b) => b.length - a.length)[0];
+
+/**
+ * Read the site's own identity out of the recording the contributor just made.
+ *
+ * Asked over the network instead, a bookmaker answers a script with 403 or with
+ * nothing at all — they are behind exactly the sort of thing that tells a robot
+ * from a browser. The recording was made by a real browser, signed in, and it
+ * already holds the front page, the colour in its head and the icon a phone
+ * would put on a home screen.
+ */
+const fromRecording = (host, folder) => {
+  const path = findRecording();
+  if (path === undefined) return {};
+  const entries = JSON.parse(readFileSync(path, 'utf8')).log?.entries ?? [];
+  const site = entries.filter((entry) => (entry.request?.url ?? '').includes(host));
+
+  const html = site
+    .filter((entry) => /text\/html/i.test(entry.response?.content?.mimeType ?? ''))
+    .map((entry) => entry.response.content.text ?? '')
+    .join('\n');
+
+  const icon = pickIcon(site);
+  if (icon !== undefined) writeFileSync(join(folder, 'logo.png'), icon);
+  return { ...(html === '' ? {} : readIdentity(html)), logo: icon !== undefined };
+};
+
+/**
+ * The same three things asked of the site directly, for the sites that answer.
+ * Failing is the normal case and costs nothing but the wait.
+ */
+const fromSite = async (host, folder) => {
+  const get = async (url) => {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(5000),
+      headers: { 'user-agent': 'Mozilla/5.0 (BETtracker new-bookmaker)' },
+    });
+    if (!response.ok) throw new Error(`${response.status} ${url}`);
+    return response;
+  };
+
+  try {
+    const found = readIdentity(await (await get(`https://${host}/`)).text());
+    if (folder === undefined) return found;
+    try {
+      const icon = await get(new URL(found.icon ?? '/apple-touch-icon.png', `https://${host}/`));
+      const bytes = Buffer.from(await icon.arrayBuffer());
+      // Written only if it really is a PNG: an .ico or a challenge page saved
+      // under that name breaks the build rather than the icon.
+      if (!bytes.subarray(0, 8).equals(PNG)) return found;
+      writeFileSync(join(folder, 'logo.png'), bytes);
+      return { ...found, logo: true };
+    } catch {
+      return found;
+    }
+  } catch {
+    return {};
+  }
+};
+
+/** The recording first, the live site for whatever it did not hold. */
+const identify = async (host, folder) => {
+  const har = fromRecording(host, folder);
+  const live =
+    har.name !== undefined && har.brand !== undefined && har.logo
+      ? {}
+      : await fromSite(host, har.logo ? undefined : folder);
+  const brand = har.brand ?? live.brand ?? '#1f2937';
+  return {
+    name: har.name ?? live.name,
+    brand,
+    // A near-black or near-white plate disappears into one theme or the other,
+    // and a chart line drawn in it would be invisible half the time.
+    color: luminance(brand) > 0.12 && luminance(brand) < 0.85 ? brand : '#6366f1',
+    logo: har.logo || live.logo === true,
+  };
+};
 
 const title = (id) =>
   id
@@ -97,7 +231,7 @@ const title = (id) =>
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
-const main = () => {
+const main = async () => {
   const [id, site, ...rest] = process.argv.slice(2);
   if (id === undefined || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id)) {
     console.error(
@@ -124,9 +258,14 @@ const main = () => {
     const source = readFileSync(join(BOOKMAKERS, from, file.name), 'utf8');
     writeFileSync(join(folder, file.name), retarget(source, from, id));
   }
+  const found = await identify(host, folder);
   writeFileSync(
     join(folder, 'bookmaker.json'),
-    `${JSON.stringify(meta(id, host, rest.join(' ') || title(id)), null, 2)}\n`,
+    `${JSON.stringify(
+      meta(id, host, rest.join(' ') || found.name || title(id), found.brand, found.color),
+      null,
+      2,
+    )}\n`,
   );
   mkdirSync(join(folder, '__fixtures__'));
 
@@ -142,9 +281,18 @@ const main = () => {
   console.log(
     `extension/src/bookmakers/${id}/ — registered in capture.ts, registry.ts and catalog.ts.\n` +
       `It is a copy of ${from}/ answering to its own name, so it compiles and does the wrong thing.\n` +
+      `Taken from the site itself: ${
+        [
+          found.name && 'its name',
+          found.brand !== '#1f2937' && 'its colour',
+          found.logo && 'its icon',
+        ]
+          .filter(Boolean)
+          .join(', ') || 'nothing — it answered neither the recording nor a request'
+      }.\n` +
       'What it still needs, none of which can be guessed:\n' +
       `  __fixtures__/*.json  the site's own answers, from har/<site>.sanitized.har\n` +
-      "  logo.png             the site's mark, ~128px square, transparent\n" +
+      (found.logo ? '' : "  logo.png             the site's mark, ~128px square, transparent\n") +
       `  bookmaker.json       its real hosts — sites, siteRanges, apiHosts\n` +
       `  capture.ts           the host and fingerprint patterns, and where the session lives\n` +
       `  adapter.ts           the endpoints, the paging and the bet shape — and the '${from}-' id prefix\n` +

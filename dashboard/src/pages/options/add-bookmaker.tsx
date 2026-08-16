@@ -35,18 +35,29 @@ const canAddBookmaker = (): boolean =>
   chrome.runtime.getManifest().update_url === undefined;
 
 /**
- * Which steps are behind you. Adding a site spans several sittings and at least
- * one extension reload, so the ticks have to outlive the page. Stored as plain
- * numbers, which cannot be parsed into a throw the way stray JSON can.
+ * How many steps are behind you. Adding a site spans several sittings and at
+ * least one extension reload, so this has to outlive the page. One number
+ * rather than a set of ticks: the steps only make sense in order, and a count
+ * cannot hold the state where the third is done and the first is not.
  */
 const DONE_KEY = 'bettracker.add-bookmaker.done';
-const readDone = (): number[] =>
-  (localStorage.getItem(DONE_KEY) ?? '').split(',').filter(Boolean).map(Number);
+const readDone = (): number => {
+  const stored = Number(localStorage.getItem(DONE_KEY));
+  return Number.isInteger(stored) && stored > 0 ? stored : 0;
+};
+
+/** The project, and the folder the recording goes in, in one paste. */
+const CLONE = `git clone ${REPO}.git
+cd BETtracker
+pnpm install`;
 
 /** What to paste into a coding tool. The address is the only part to change. */
 const PROMPT = `Add the bookmaker https://www.yourbookmaker.com to BETtracker.
 
-The project is ${REPO} — clone it, read AGENTS.md, and follow it. Ask me for whatever you cannot get yourself.`;
+Read AGENTS.md in this project and follow it. My recording is in har/. Ask me for whatever you cannot get yourself.`;
+
+/** What proves the site is in the build the browser will load, not only on disk. */
+const CHECK = 'pnpm test && pnpm build';
 
 /**
  * One numbered thing to do, as its own card. Only the step you are on is open:
@@ -58,14 +69,16 @@ const Step = ({
   title,
   done,
   open,
-  onToggle,
+  onReopen,
+  onDone,
   children,
 }: {
   n: number;
   title: string;
   done: boolean;
   open: boolean;
-  onToggle: () => void;
+  onReopen: () => void;
+  onDone: () => void;
   children: ReactNode;
 }): JSX.Element => (
   <section
@@ -76,8 +89,8 @@ const Step = ({
   >
     <button
       type="button"
-      onClick={onToggle}
-      disabled={!done && !open}
+      onClick={onReopen}
+      disabled={!done}
       className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left disabled:cursor-default"
     >
       <span
@@ -100,15 +113,20 @@ const Step = ({
       >
         {title}
       </p>
-      {(done || open) && (
-        <span className="shrink-0 text-[11px] text-muted-foreground">
-          {done ? 'Done' : 'Mark done'}
-        </span>
-      )}
+      {done && <span className="shrink-0 text-[11px] text-muted-foreground">Reopen</span>}
     </button>
     {open && (
       <div className="border-t border-border/60 px-3.5 py-2.5 text-muted-foreground">
         {children}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onDone}
+          className="mt-3 h-7 gap-1.5 px-2.5 text-xs"
+        >
+          <CheckMark size={12} strokeWidth={2.5} />
+          Mark done
+        </Button>
       </div>
     )}
   </section>
@@ -161,6 +179,18 @@ const CopyButton = ({ text }: { text: string }): JSX.Element => {
     </Button>
   );
 };
+
+/** Something to paste elsewhere, with the copy in its own corner. */
+const Code = ({ text }: { text: string }): JSX.Element => (
+  <div className="relative mt-2">
+    <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-2.5 pr-10 text-xs leading-snug text-foreground">
+      {text}
+    </pre>
+    <div className="absolute right-1 top-1">
+      <CopyButton text={text} />
+    </div>
+  </div>
+);
 
 const MARK = {
   true: { icon: CheckMark, tone: 'text-profit' },
@@ -230,20 +260,22 @@ export const AddBookmakerPage = (): JSX.Element => {
   const added = CATALOG.filter((meta) => !isReleased(meta.id));
   const [done, setDone] = useState(readDone);
 
-  const toggle = (n: number): void => {
-    const next = done.includes(n) ? done.filter((d) => d !== n) : [...done, n];
-    localStorage.setItem(DONE_KEY, next.join(','));
-    setDone(next);
+  const moveTo = (count: number): void => {
+    localStorage.setItem(DONE_KEY, String(count));
+    setDone(count);
   };
 
-  /** The one step still to do. A step ahead of it stays shut: it reads as an
-   *  instruction for a screen you have not reached, which is how one gets skipped. */
-  const at = [1, 2, 3, 4].find((n) => !done.includes(n));
-
-  const step = (n: number): { done: boolean; open: boolean; onToggle: () => void } => ({
-    done: done.includes(n),
-    open: n === at,
-    onToggle: () => toggle(n),
+  /**
+   * Only the step after the last finished one is open. Reopening a step drops
+   * the ones after it too: they were done on a folder that is about to change.
+   */
+  const step = (
+    n: number,
+  ): { done: boolean; open: boolean; onReopen: () => void; onDone: () => void } => ({
+    done: n <= done,
+    open: n === done + 1,
+    onReopen: () => moveTo(n - 1),
+    onDone: () => moveTo(n),
   });
 
   const all = {
@@ -280,7 +312,15 @@ export const AddBookmakerPage = (): JSX.Element => {
 
       {canAdd ? (
         <div className="flex flex-col gap-2.5">
-          <Step n={1} title="Record your account at the bookmaker" {...step(1)}>
+          <Step n={1} title="Get the project" {...step(1)}>
+            <p className="text-xs">
+              Needs Node and pnpm. This also makes the <Key>har/</Key> folder, which is where the
+              next step saves to and where the tool goes looking.
+            </p>
+            <Code text={CLONE} />
+          </Step>
+
+          <Step n={2} title="Record your account at the bookmaker" {...step(2)}>
             <Substeps
               items={[
                 <>
@@ -300,6 +340,9 @@ export const AddBookmakerPage = (): JSX.Element => {
                     Save all as HAR with content
                   </Key>
                 </>,
+                <>
+                  Save it into the project&apos;s <Key>har/</Key> folder.
+                </>,
               ]}
             />
             <p className="mt-2 flex items-start gap-1.5 text-xs">
@@ -308,23 +351,28 @@ export const AddBookmakerPage = (): JSX.Element => {
             </p>
           </Step>
 
-          <Step n={2} title="Paste this into a coding tool" {...step(2)}>
+          <Step n={3} title="Paste this into a coding tool" {...step(3)}>
             <p className="text-xs">
-              Claude Code, Cursor or similar. It clones the project, finds the recording you just
-              saved, strips it, writes the site, tests it and builds. Answer its questions as they
-              come.
+              Claude Code, Cursor or similar, opened in that folder. It strips the recording, writes
+              the site into <Key>extension/src/bookmakers/</Key> and registers it. Answer its
+              questions as they come.
             </p>
-            <div className="relative mt-2">
-              <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-2.5 pr-10 text-xs leading-snug text-foreground">
-                {PROMPT}
-              </pre>
-              <div className="absolute right-1 top-1">
-                <CopyButton text={PROMPT} />
-              </div>
-            </div>
+            <Code text={PROMPT} />
           </Step>
 
-          <Step n={3} title="Load the build" {...step(3)}>
+          <Step n={4} title="Run the tests and the build" {...step(4)}>
+            <p className="text-xs">
+              In the project folder. The tests read the new site&apos;s own recording back through
+              it; the build refuses outright if the folder was not registered, and copies everything
+              into <Key>extension/dist</Key> — the folder the browser loads.
+            </p>
+            <Code text={CHECK} />
+            <p className="mt-2 text-xs">
+              Red? Give the tool the output as it stands. It is written for it.
+            </p>
+          </Step>
+
+          <Step n={5} title="Load the build" {...step(5)}>
             <Substeps
               items={[
                 <>
@@ -342,7 +390,7 @@ export const AddBookmakerPage = (): JSX.Element => {
             </p>
           </Step>
 
-          <Step n={4} title="Check that everything arrived" {...step(4)}>
+          <Step n={6} title="Check that everything arrived" {...step(6)}>
             <p className="text-xs">
               Come back to this page. The new site is listed below, one line per thing it has to
               have proved:

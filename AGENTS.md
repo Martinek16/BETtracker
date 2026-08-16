@@ -44,9 +44,12 @@ scaffolding: `har/<site>.sanitized.har`. It comes out of their signed-in account
 and there is no other way to it.
 
 Everything else, including the logo, you do yourself. Do not hand them a list of
-chores. Find the site's mark, save it as `logo.png` in the folder, around 128px
-square with the background removed, and show them the result. If you cannot find
-a usable one, say so and ask then — not before you have tried.
+chores. `pnpm new-bookmaker` already lifts the site's name, its brand colour and
+its icon out of the recording, so look at what it wrote before you go looking:
+the site published all three to their browser. If it found no icon — plenty of
+sites ship only an SVG — find the mark yourself, save it as `logo.png` in the
+folder, around 128px square with the background removed, and show them the
+result. Ask only after you have tried.
 
 Ask for the recording like this, in these words, because every extra
 instruction is a chance to lose somebody:
@@ -55,8 +58,12 @@ instruction is a chance to lose somebody:
 > tab, tick **Preserve log**. Now click slowly through your settled bet history —
 > page back several pages — then your open bets, your balance, and your deposits
 > and withdrawals. Right-click the list of requests, choose **Save all as HAR
-> with content**, and save it wherever your browser normally saves. Tell me when
-> it is saved — I do the rest.
+> with content**, and save it into the project's `har/` folder. Tell me when it
+> is saved — I do the rest.
+
+`har/` is made by `pnpm install`, so it is already there; open it for them.
+Downloads works too — the sanitiser looks in both — but a recording in `har/` is
+also where the scaffold reads the site's name, colour and icon from.
 
 Adapt only the site-specific part — where *that* bookmaker keeps its bet
 history, if you know. Then run the sanitiser yourself:
@@ -128,14 +135,18 @@ than not opening it.
 
    It writes `extension/src/bookmakers/<id>/` as a copy of `stake/` renamed to
    its own id, writes a fresh `bookmaker.json`, and adds the three collector
-   lines. It leaves out the fixtures and the logo, which cannot be copied off
-   another site. Then rewrite the folder against the recording — the endpoints,
+   lines. Name, brand colour and `logo.png` come out of the recording in `har/`
+   — the front page the browser stored carries all three — and it says which of
+   them it found. Then rewrite the folder against the recording: the endpoints,
    the paging, the bet shape, the host patterns and the `stake-` id prefix.
 5. **Run the checks** below until they pass. Never edit a test to make it pass —
    the shared tests are protected paths and CI rejects a diff that touches one.
-6. **Hand it back to them to load.** `pnpm build`, open `extension/dist` in their
-   file manager, then tell them: `chrome://extensions` → Developer mode →
-   **Load unpacked** → pick the folder you just opened. Tell them to switch off
+6. **Hand it back to them to load.** Have them run `pnpm test && pnpm build`
+   themselves — it is the one moment they see the site pass on their own
+   machine, and the build refuses outright if the folder was never registered.
+   Then open `extension/dist` in their file manager and tell them:
+   `chrome://extensions` → Developer mode → **Load unpacked** → pick the folder
+   you just opened. Tell them to switch off
    the Microsoft Edge Add-ons copy first if
    they have one, because two copies sync the same accounts into two databases.
    A new bookmaker only exists in a build that contains it; the store copy gets
