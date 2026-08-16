@@ -71,39 +71,55 @@ credential.
 **Open the sanitised file and look at it anyway.** The tool is a net, not a
 guarantee. It does not know that `"nickname": "YourNickname87"` is you.
 
-## 3. Let Claude Code write it
+## 3. Write the folder
 
-In the project folder:
+### First, read the recording
 
-```
-claude
-```
+Before writing anything, work out these six things from the sanitised file and
+write them down. Everything in the folder falls out of them.
 
-then:
+- **Hosts.** Which host serves the API. Whether the site renumbers its domains
+  (`site42.com`), because that becomes a `siteRanges` block instead of a list.
+- **Authentication.** Which request headers carry the session. Cookie-only
+  counts — say so, because then no header is captured. If the money history
+  lives on a second host with a second credential, note both.
+- **A fingerprint.** One URL pattern that appears when, and only when, you are
+  on this bookmaker. It is how a page is recognised.
+- **Endpoints.** Settled bets, open bets, balance, deposits and withdrawals,
+  bonuses. Note which exist — several are optional.
+- **Paging.** Timestamp cursor, page number, offset, or a continuation token.
+  Each site pages its own way; do not force it to look like another's.
+- **The bet shape.** How a selection, a market, odds, stake, return and status
+  are represented, and how an accumulator differs from a single.
 
-```
-/add-bookmaker yoursite
-```
+### Then write it
 
-`yoursite` is the id: lowercase, hyphens instead of spaces, and it becomes the
-folder name. `bet365`, `william-hill`, `bwin`.
+Copy `extension/src/bookmakers/stake/` to
+`extension/src/bookmakers/yoursite/` and work through it. `yoursite` is the id:
+lowercase, hyphens instead of spaces. It becomes the folder name, the JSON
+`id`, the logo filename and the storage key, and they all have to agree.
+`bet365`, `william-hill`, `bwin`.
 
-It will read your sanitised recording, read how the two existing bookmakers are
-written, and produce the folder. It will ask you for a logo — a PNG of the
-site's mark, around 128px square with the background removed.
+Stake is one endpoint and one credential. If your site keeps its banking
+history behind a second session, copy `bet-at-home/` instead — it does that.
+Either way it is around 300 lines.
 
-It is told, in the command itself, that it may only add a folder and three
-lines. If it reports that the site cannot work without changing the core, that
-is worth
-[a Discussion](https://github.com/Martinek16/BETtracker/discussions) rather than
-a workaround.
-
-### Writing it by hand instead
-
-Perfectly reasonable. Read
 [`extension/src/bookmakers/README.md`](../extension/src/bookmakers/README.md)
-for the folder contract, then copy `extension/src/bookmakers/stake/` and work
-through it. It is about 300 lines for a straightforward site.
+is the contract: what each file owes, what `capture.ts` may import, and the
+three collector lines that register the folder. Miss one of those three and
+`plugin.test.ts` fails by name.
+
+Two rules the tests enforce, worth knowing before you hit them: throw
+`SessionExpiredError` on a dead token, so the user is asked to sign in rather
+than shown a silent zero, and skip a bet you cannot parse rather than invent a
+value to fill the gap.
+
+You will need a logo: a PNG of the site's mark, around 128px square with the
+background removed.
+
+If the site genuinely cannot work without a change to the core, stop and open
+[a Discussion](https://github.com/Martinek16/BETtracker/discussions). That is a
+real conversation to have, just not one to have inside a pull request.
 
 ## 4. Check it
 

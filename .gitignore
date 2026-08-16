@@ -7,6 +7,11 @@ dist/
 .env.local
 *.log
 
+# Whatever editor or assistant somebody works with is their own setup, not a
+# thing the project asks a contributor to install.
+.claude/
+.claude-flow/
+
 # Captured network data holds live session tokens and account history.
 # Drop recordings in har/ — the whole folder is ignored, and CI rejects a pull
 # request that carries one anyway. Run `pnpm sanitize-har` before sharing.

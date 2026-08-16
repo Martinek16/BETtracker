@@ -28,8 +28,8 @@ and somebody who plays there may pick it up.
 
 1. Record your own bet history with DevTools open. That gives you a `.har` file.
 2. `pnpm sanitize-har har/yoursite.har` strips the tokens and your identity out.
-3. `/add-bookmaker yoursite` in Claude Code reads the recording and writes the
-   folder. Writing it by hand is fine too.
+3. Copy an existing bookmaker's folder and work through it against your
+   recording. Around 300 lines.
 4. Load the built extension, sync your real account, check the numbers on screen.
 5. Open a pull request.
 

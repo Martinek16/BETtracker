@@ -141,7 +141,7 @@ extension/src/bookmakers/your-site/
 
 1. **Record.** Click through your own bet history with DevTools open, and save it.
 2. **Strip it.** One command removes your tokens, your name and your account number.
-3. **Let it write.** `/add-bookmaker yoursite` in Claude Code reads the recording and writes the folder.
+3. **Write it.** Copy an existing site's folder and work through it against your recording. Around 300 lines.
 4. **Prove it.** Load the extension, check your own numbers, open a pull request.
 
 [**The whole process, step by step**](docs/ADD_A_BOOKMAKER.md)
