@@ -37,34 +37,26 @@ const canAddBookmaker = (): boolean =>
 /** What to paste into a coding tool. The address is the only part to change. */
 const PROMPT = `Add the bookmaker https://www.yourbookmaker.com to BETtracker.
 
-The project is ${REPO} — clone it,
-read AGENTS.md, and follow it. Ask me for whatever you cannot get
-yourself.`;
+The project is ${REPO} — clone it, read AGENTS.md, and follow it. Ask me for whatever you cannot get yourself.`;
 
-/**
- * One numbered thing to do, as its own card. `aside` sits on the header line, on
- * the right, which is where the one action a card carries belongs.
- */
+/** One numbered thing to do, as its own card. */
 const Step = ({
   n,
   title,
-  aside,
   children,
 }: {
   n: number;
   title: string;
-  aside?: ReactNode;
   children: ReactNode;
 }): JSX.Element => (
   <section className="rounded-xl border border-border bg-card">
-    <div className="flex items-center gap-2.5 border-b border-border/60 px-4 py-2.5">
+    <div className="flex items-center gap-2.5 border-b border-border/60 px-3.5 py-2">
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold tabular-nums text-foreground">
         {n}
       </span>
       <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{title}</p>
-      {aside}
     </div>
-    <div className="px-4 py-3 text-sm text-muted-foreground">{children}</div>
+    <div className="px-3.5 py-2.5 text-muted-foreground">{children}</div>
   </section>
 );
 
@@ -127,7 +119,15 @@ const CheckRow = ({ check }: { check: Check }): JSX.Element => {
  * came here to read — it belongs to the account it describes, not to the page
  * about adding a new one.
  */
-const SiteReport = ({ id, name, checks }: { id: string; name: string; checks: Check[] }): JSX.Element => {
+const SiteReport = ({
+  id,
+  name,
+  checks,
+}: {
+  id: string;
+  name: string;
+  checks: Check[];
+}): JSX.Element => {
   const { passed, failed, open } = scoreOf(checks);
   return (
     <Section title={name}>
@@ -174,43 +174,65 @@ export const AddBookmakerPage = (): JSX.Element => {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 pb-1">
-      <Link
-        to="/options/accounts"
-        className="inline-flex items-center gap-1 self-start text-xs text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ChevronLeft size={13} strokeWidth={1.75} />
-        All accounts
-      </Link>
-      <div className="flex items-baseline gap-3 px-1">
+    <div className="flex flex-1 flex-col gap-3 pb-1">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-1">
+        <Link
+          to="/options/accounts"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ChevronLeft size={13} strokeWidth={1.75} />
+          All accounts
+        </Link>
         <h2 className="text-sm font-semibold text-foreground">
           {canAdd ? 'Add a bookmaker' : 'Adding a bookmaker needs the project'}
         </h2>
-        <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {canAdd
-            ? 'A coding tool writes the site. These four are yours.'
+            ? 'A coding tool writes it. Two of the four are yours.'
             : 'A site only exists in a build that contains it.'}
         </p>
+        <div className="ml-auto flex gap-4 text-xs">
+          {[
+            [REPO, 'The project'],
+            [`${REPO}/blob/main/docs/ADD_A_BOOKMAKER.md`, 'Every step in detail'],
+            [`${REPO}/discussions`, 'Ask first'],
+          ].map(([href, label]) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {label}
+            </a>
+          ))}
+        </div>
       </div>
 
       {canAdd ? (
-        <>
-          <Step n={1} title="Paste this into a coding tool" aside={<CopyButton text={PROMPT} />}>
-            <p>Claude Code, Cursor or similar. It clones the project and sets it up.</p>
-            <pre className="mt-2 overflow-x-auto rounded-lg bg-muted/40 p-3 text-xs leading-relaxed text-foreground">
-              {PROMPT}
-            </pre>
+        <div className="flex flex-col gap-2.5">
+          <Step n={1} title="Paste this into a coding tool">
+            <p className="text-xs">Claude Code, Cursor or similar. It clones the project itself.</p>
+            <div className="relative mt-2">
+              <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-2.5 pr-10 text-xs leading-snug text-foreground">
+                {PROMPT}
+              </pre>
+              <div className="absolute right-1 top-1">
+                <CopyButton text={PROMPT} />
+              </div>
+            </div>
           </Step>
 
           <Step n={2} title="Record your account at the bookmaker">
-            <ol className="list-decimal space-y-1.5 pl-4 marker:text-muted-foreground/70">
-              <li>Sign in at the bookmaker.</li>
+            <ol className="list-decimal space-y-1 pl-4 text-xs marker:text-muted-foreground/70">
               <li>
-                Press <Key>F12</Key>, open <Key>Network</Key>, tick <Key>Preserve log</Key>.
+                Sign in, press <Key>F12</Key>, open <Key>Network</Key>, tick <Key>Preserve log</Key>
+                .
               </li>
               <li>
-                Click through: bet history — several pages back — open bets, balance, deposits and
-                withdrawals, bonuses.
+                Click through bet history — several pages back — open bets, balance, payments,
+                bonuses.
               </li>
               <li className="flex flex-wrap items-center gap-1.5">
                 Right-click the list, then
@@ -220,75 +242,42 @@ export const AddBookmakerPage = (): JSX.Element => {
                 </Key>
               </li>
             </ol>
-            <p className="mt-2.5 flex items-start gap-1.5 text-xs">
+            <p className="mt-2 flex items-start gap-1.5 text-xs">
               <ShieldAlert size={13} strokeWidth={1.75} className="mt-px shrink-0 text-pending" />
-              That file holds your live session. Keep it on your machine — the tool strips it
-              before any of it is published.
+              That file holds your live session. Keep it on your machine; the tool strips it.
             </p>
           </Step>
 
           <Step n={3} title="Tell the tool where you saved it">
-            <p>
-              From here it reads the recording, writes the site, runs the tests and builds. Answer
-              its questions about your bookmaker as they come.
+            <p className="text-xs">
+              It reads the recording, writes the site, runs the tests and builds. Answer its
+              questions about your bookmaker as they come.
             </p>
           </Step>
 
           <Step n={4} title="Load the build and check the figures">
-            <ol className="list-decimal space-y-1.5 pl-4 marker:text-muted-foreground/70">
+            <ol className="list-decimal space-y-1 pl-4 text-xs marker:text-muted-foreground/70">
               <li>
-                Open <Key>edge://extensions</Key> (or <Key>chrome://extensions</Key>) and turn on
-                Developer mode.
+                <Key>edge://extensions</Key> or <Key>chrome://extensions</Key>, turn on Developer
+                mode.
               </li>
               <li>
                 <Key>Load unpacked</Key> → the project&apos;s <Key>extension/dist</Key> folder.
               </li>
-              <li>
-                Sign in at the bookmaker, let it sync, then compare the totals with the
-                bookmaker&apos;s own history page.
-              </li>
+              <li>Sign in, let it sync, compare the totals with the bookmaker&apos;s own page.</li>
             </ol>
-            <p className="mt-2.5 text-xs">
-              Have the copy from the store too? Switch it off first — two copies read the same
-              account into two separate histories. Whatever looks wrong, tell the tool; the report
-              for the new site appears below.
+            <p className="mt-2 text-xs">
+              Switch the store copy off first — two copies read one account into two histories.
             </p>
           </Step>
-        </>
+        </div>
       ) : (
         <section className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-          This copy came from the store, so it reads the bookmakers it was built with and no
-          others. Adding one takes the project itself: clone it, load the build it produces, and a
-          coding tool writes the site from a recording of your own signed-in session.
+          This copy came from the store, so it reads the bookmakers it was built with and no others.
+          Adding one takes the project itself: clone it, load the build it produces, and a coding
+          tool writes the site from a recording of your own signed-in session.
         </section>
       )}
-
-      <div className="flex flex-wrap gap-4 px-1 text-xs">
-        <a
-          href={REPO}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          The project
-        </a>
-        <a
-          href={`${REPO}/blob/main/docs/ADD_A_BOOKMAKER.md`}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Every step in detail
-        </a>
-        <a
-          href={`${REPO}/discussions`}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Ask before you start
-        </a>
-      </div>
 
       {added.map((meta) => (
         <SiteReport key={meta.id} id={meta.id} name={meta.name} checks={checksFor(meta.id, all)} />
@@ -298,9 +287,9 @@ export const AddBookmakerPage = (): JSX.Element => {
         <Section title="What this page cannot check">
           <div className="py-3 text-sm text-muted-foreground">
             <p>
-              The report above is read off what was stored, so it can only say that a figure
-              arrived — never that it is the right one. Those are yours, with the
-              bookmaker&apos;s own history page open beside this one:
+              The report above is read off what was stored, so it can only say that a figure arrived
+              — never that it is the right one. Those are yours, with the bookmaker&apos;s own
+              history page open beside this one:
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>The bet count matches the site&apos;s own, not one page of it</li>
