@@ -112,12 +112,14 @@ It reads the same pages your browser already loaded, with your own session, slow
 
 # Add your bookmaker
 
-Yours not in the list? Add it. One evening, and you do not need to know how the
-extension works.
+Missing yours? Add it yourself, in an evening. An AI tool writes the code. You
+just follow the steps.
 
-You need an account at that bookmaker and a coding tool such as Claude Code or
-Cursor. Paste this into it, with your bookmaker's address in place of the
-example:
+**What you need:** an account at that bookmaker, and an AI coding tool —
+Claude Code, Cursor or similar.
+
+**Where to start:** paste this into the tool, with your bookmaker's address
+instead of the example.
 
 ```
 Add the bookmaker https://www.yourbookmaker.com to BETtracker.
@@ -126,44 +128,41 @@ The project is https://github.com/Martinek16/BETtracker — clone it,
 read AGENTS.md, and follow it.
 ```
 
-It sets the project up, then walks you through the rest:
+It sets everything up and tells you what to do next. All five steps:
 
-1. **You record your bet history.** F12, the Network tab, click through your
-   account, save. Ten minutes.
-2. **You run one command.** `pnpm sanitize-har` takes out your tokens, your name
-   and your account number.
-3. **The tool writes the site's folder** from that recording, and gets the tests
-   passing.
-4. **You check your own figures** against the bookmaker's own pages.
-5. **The tool opens a pull request**, if you want everyone else to have the site
-   too.
+1. **You** record your bet history. Press F12, open the Network tab, click
+   through your account, save the file. Ten minutes.
+2. **You** run `pnpm sanitize-har`. It deletes your tokens, your name and your
+   account number from that file.
+3. **The tool** reads the recording, writes the code and runs the tests.
+4. **You** load the extension and check the numbers against your bookmaker.
+5. **The tool** opens a pull request, if you want to share the site.
 
-Only you can sign in to your account, and only you can say whether the numbers
-are right. The rest is the tool's job.
+Two of the five are yours: signing in, and saying whether the numbers are right.
+Nobody else can do either.
 
-It all lands in one folder, `extension/src/bookmakers/your-site/`, and touches
-nothing else. That is what makes a stranger's work reviewable in an evening.
+It all goes into one folder. Nothing else in the project changes.
 
-[**The whole process, step by step**](docs/ADD_A_BOOKMAKER.md)
+[**Every step in detail**](docs/ADD_A_BOOKMAKER.md)
 
 ## Other ways to help
 
-- **Your site stopped working.** Bookmakers change their API without telling
-  anyone, and the person who notices first is whoever uses it.
+- **Your site stopped working?** Bookmakers change their API without warning.
+  Fix the folder you use.
 - **No account at the site you want?**
-  [Request it](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml)
-  and somebody who plays there may pick it up.
-- **A number looks wrong.** That is worth an
+  [Ask for it](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml)
+  — somebody who plays there may pick it up.
+- **A number looks wrong?** Open an
   [issue](https://github.com/Martinek16/BETtracker/issues/new?template=bug.yml).
-  Wrong figures are the only real failure here.
-- **A figure you keep working out by hand** belongs on a screen.
+  Wrong numbers are the only real failure here.
+- **Missing something you keep working out by hand?**
   [Say so](https://github.com/Martinek16/BETtracker/discussions).
 
 > [!IMPORTANT]
-> **You may add a bookmaker. The shared core stays closed.** One change to how
-> bets are stored or totalled can break every site at once, and the person who
-> finds out is a stranger whose figures went quietly wrong. CI checks this
-> before a human reads the pull request.
+> **You can add a bookmaker. You cannot change the shared core.** One change to
+> how bets are stored or added up can break every site at once, and the person
+> who finds out is a stranger whose numbers went quietly wrong. CI checks this
+> before anyone reads your pull request.
 
 [**Contributing guide**](CONTRIBUTING.md) &nbsp;·&nbsp;
 [**Discussions**](https://github.com/Martinek16/BETtracker/discussions) &nbsp;·&nbsp;
