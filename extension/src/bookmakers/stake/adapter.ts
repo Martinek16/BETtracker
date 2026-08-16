@@ -94,6 +94,7 @@ const gql = async (
   variables: Record<string, unknown> = {},
 ): Promise<Record<string, unknown> | null> => {
   const accessToken = creds.fields.accessToken;
+  const operationName = /query\s+(\w+)/.exec(query)?.[1];
   const json = await authedJson(
     field(creds, 'apiBase') + GRAPHQL_PATH,
     {
@@ -102,6 +103,12 @@ const gql = async (
         'content-type': 'application/json',
         // Present only when Stake's own client sent one; the browser page does not.
         ...(accessToken === undefined ? {} : { 'x-access-token': accessToken }),
+        // Named in the headers as well as in the body, because that is what the
+        // site's own page does on every one of these calls, and what stands in
+        // front of the endpoint reads the request before the schema does.
+        ...(operationName === undefined
+          ? {}
+          : { 'x-operation-name': operationName, 'x-operation-type': 'query' }),
         'x-language': 'en',
       },
       credentials: 'include',
@@ -335,12 +342,58 @@ const ACTIVE_LISTS = [
   'activeSportsbookXMultiBetList',
 ] as const;
 
-const DEPOSIT_LIST = `query DepositList($offset: Int!, $limit: Int!) {
-  user { id depositList(offset: $offset, limit: $limit) { id createdAt amount currency status } }
+/**
+ * Both of these are the site's own query, field for field, rather than the
+ * smallest one that would answer. The wallet endpoints refuse a request that
+ * does not look like the page's — asking for a subset of the same fields was
+ * answered with a flat 401 while the bet list, asked our way, kept answering.
+ */
+const DEPOSIT_LIST = `query DepositList($offset: Int = 0, $limit: Int = 10) {
+  user {
+    id
+    depositList(offset: $offset, limit: $limit) {
+      ...DepositFragment
+    }
+  }
+}
+
+fragment DepositFragment on WalletDeposit {
+  id
+  createdAt
+  amount
+  currency
+  status
+  chain
+  hash
+  tokensReceived {
+    currency
+    amount
+  }
+  depositPaymentProvider
 }`;
 
-const WITHDRAWAL_LIST = `query WithdrawalList($offset: Int!, $limit: Int!) {
-  user { id withdrawalList(offset: $offset, limit: $limit) { id createdAt amount currency status } }
+const WITHDRAWAL_LIST = `query WithdrawalList($showFees: Boolean = false, $name: String, $offset: Int = 0, $limit: Int = 10) {
+  user(name: $name) {
+    id
+    withdrawalList(offset: $offset, limit: $limit) {
+      id
+      createdAt
+      amount
+      currency
+      status
+      hash
+      id
+      address
+      chain
+      refFee @include(if: $showFees)
+      walletFee @include(if: $showFees)
+      tokensSent {
+        currency
+        amount
+      }
+      withdrawalProvider
+    }
+  }
 }`;
 
 /**
