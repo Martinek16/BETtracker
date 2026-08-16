@@ -59,9 +59,12 @@ jobs:
             **Chrome, Brave, Opera, Vivaldi** — Google does not allow
             gambling-related extensions, so add it by hand:
 
-            1. Download `bettracker.zip` below and unzip it.
-            2. Open `chrome://extensions`, turn on **Developer mode**.
-            3. **Load unpacked**, and pick the unzipped folder.
+            1. Download `bettracker.zip` below — not **Source code**, which
+               is the project before it is built, and which Chrome refuses.
+            2. Unzip it into a folder you intend to keep. Deleting that folder
+               uninstalls the extension.
+            3. Open `chrome://extensions`, turn on **Developer mode**.
+            4. **Load unpacked**, and pick the unzipped folder.
 
             Verify the download if you like:
             `sha256sum -c bettracker.zip.sha256`
