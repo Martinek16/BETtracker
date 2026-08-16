@@ -11,9 +11,11 @@
     <img src="https://img.shields.io/badge/Install%20for%20Microsoft%20Edge-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white" alt="Install for Microsoft Edge" height="38">
   </a>
   <a href="https://github.com/Martinek16/BETtracker/releases/latest/download/bettracker.zip">
-    <img src="https://img.shields.io/badge/Download%20for%20Chrome-1a1a1a?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Download for Chrome" height="38">
+    <img src="https://img.shields.io/badge/%E2%AC%87%20Download%20.zip-2ea44f?style=for-the-badge&logoColor=white" alt="Download the zip for Chrome, Brave and Opera" height="38">
   </a>
 </p>
+
+<sub>Edge installs itself · the zip is for Chrome, Brave and Opera, and takes <a href="#install">three steps</a></sub>
 
 <p>
   <img src="https://img.shields.io/github/v/release/Martinek16/BETtracker?style=flat-square&label=version" alt="Version">
