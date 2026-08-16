@@ -34,29 +34,73 @@ const canAddBookmaker = (): boolean =>
   !chrome.runtime?.id ||
   chrome.runtime.getManifest().update_url === undefined;
 
+/**
+ * Which steps are behind you. Adding a site spans several sittings and at least
+ * one extension reload, so the ticks have to outlive the page. Stored as plain
+ * numbers, which cannot be parsed into a throw the way stray JSON can.
+ */
+const DONE_KEY = 'bettracker.add-bookmaker.done';
+const readDone = (): number[] =>
+  (localStorage.getItem(DONE_KEY) ?? '').split(',').filter(Boolean).map(Number);
+
 /** What to paste into a coding tool. The address is the only part to change. */
 const PROMPT = `Add the bookmaker https://www.yourbookmaker.com to BETtracker.
 
 The project is ${REPO} — clone it, read AGENTS.md, and follow it. Ask me for whatever you cannot get yourself.`;
 
-/** One numbered thing to do, as its own card. */
+/**
+ * One numbered thing to do, as its own card. A done step folds away: what is
+ * behind you is not what you came back to the page to read.
+ */
 const Step = ({
   n,
   title,
+  done,
+  onToggle,
   children,
 }: {
   n: number;
   title: string;
+  done: boolean;
+  onToggle: () => void;
   children: ReactNode;
 }): JSX.Element => (
-  <section className="rounded-xl border border-border bg-card">
-    <div className="flex items-center gap-2.5 border-b border-border/60 px-3.5 py-2">
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold tabular-nums text-foreground">
-        {n}
+  <section
+    className={cn(
+      'rounded-xl border bg-card transition-colors',
+      done ? 'border-profit/40' : 'border-border',
+    )}
+  >
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left"
+    >
+      <span
+        className={cn(
+          'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
+          done ? 'bg-profit text-background' : 'bg-muted text-foreground',
+        )}
+      >
+        {done ? <CheckMark size={12} strokeWidth={3} /> : n}
       </span>
-      <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{title}</p>
-    </div>
-    <div className="px-3.5 py-2.5 text-muted-foreground">{children}</div>
+      <p
+        className={cn(
+          'min-w-0 flex-1 truncate text-sm font-medium',
+          done ? 'text-muted-foreground' : 'text-foreground',
+        )}
+      >
+        {title}
+      </p>
+      <span className="shrink-0 text-[11px] text-muted-foreground">
+        {done ? 'Done' : 'Mark done'}
+      </span>
+    </button>
+    {!done && (
+      <div className="border-t border-border/60 px-3.5 py-2.5 text-muted-foreground">
+        {children}
+      </div>
+    )}
   </section>
 );
 
@@ -67,14 +111,11 @@ const Key = ({ children }: { children: ReactNode }): JSX.Element => (
   </span>
 );
 
-/**
- * The moves inside one step, one to a line. A ruled list reads as a sequence to
- * work through; a wrapped paragraph of them reads as something to skim.
- */
+/** The moves inside one step, one to a line, numbered in the margin. */
 const Substeps = ({ items }: { items: ReactNode[] }): JSX.Element => (
-  <ol className="divide-y divide-border/50">
+  <ol className="space-y-1">
     {items.map((item, i) => (
-      <li key={i} className="flex items-start gap-2.5 py-1.5 first:pt-0 last:pb-0">
+      <li key={i} className="flex items-start gap-2.5">
         <span className="w-3 shrink-0 text-right text-[11px] leading-5 tabular-nums text-muted-foreground/60">
           {i + 1}
         </span>
@@ -177,6 +218,18 @@ export const AddBookmakerPage = (): JSX.Element => {
   const { accountBalances } = useDashboard();
   const canAdd = canAddBookmaker();
   const added = CATALOG.filter((meta) => !isReleased(meta.id));
+  const [done, setDone] = useState(readDone);
+
+  const toggle = (n: number): void => {
+    const next = done.includes(n) ? done.filter((d) => d !== n) : [...done, n];
+    localStorage.setItem(DONE_KEY, next.join(','));
+    setDone(next);
+  };
+
+  const step = (n: number): { done: boolean; onToggle: () => void } => ({
+    done: done.includes(n),
+    onToggle: () => toggle(n),
+  });
 
   const all = {
     bets: records.bets,
@@ -203,16 +256,16 @@ export const AddBookmakerPage = (): JSX.Element => {
         <h2 className="text-sm font-semibold text-foreground">
           {canAdd ? 'Add a bookmaker' : 'Adding a bookmaker needs the project'}
         </h2>
-        <p className="text-xs text-muted-foreground">
-          {canAdd
-            ? 'A coding tool writes it. Two of the four are yours.'
-            : 'A site only exists in a build that contains it.'}
-        </p>
+        {!canAdd && (
+          <p className="text-xs text-muted-foreground">
+            A site only exists in a build that contains it.
+          </p>
+        )}
       </div>
 
       {canAdd ? (
         <div className="flex flex-col gap-2.5">
-          <Step n={1} title="Paste this into a coding tool">
+          <Step n={1} title="Paste this into a coding tool" {...step(1)}>
             <p className="text-xs">Claude Code, Cursor or similar. It clones the project itself.</p>
             <div className="relative mt-2">
               <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-2.5 pr-10 text-xs leading-snug text-foreground">
@@ -224,7 +277,7 @@ export const AddBookmakerPage = (): JSX.Element => {
             </div>
           </Step>
 
-          <Step n={2} title="Record your account at the bookmaker">
+          <Step n={2} title="Record your account at the bookmaker" {...step(2)}>
             <Substeps
               items={[
                 <>
@@ -252,14 +305,14 @@ export const AddBookmakerPage = (): JSX.Element => {
             </p>
           </Step>
 
-          <Step n={3} title="Tell the tool where you saved it">
+          <Step n={3} title="Tell the tool where you saved it" {...step(3)}>
             <p className="text-xs">
               It reads the recording, writes the site, runs the tests and builds. Answer its
               questions about your bookmaker as they come.
             </p>
           </Step>
 
-          <Step n={4} title="Load the build and check the figures">
+          <Step n={4} title="Load the build and check the figures" {...step(4)}>
             <Substeps
               items={[
                 <>
