@@ -164,13 +164,6 @@ const SupportedFooter = (): JSX.Element => (
         );
       })}
     </div>
-    <Link
-      to="/options/accounts/add-bookmaker"
-      className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-    >
-      Missing one? Add a bookmaker
-      <ChevronRight size={13} strokeWidth={1.75} />
-    </Link>
   </div>
 );
 
@@ -185,9 +178,19 @@ export const AccountsPage = (): JSX.Element => {
 
   return (
     <div className="flex flex-1 flex-col gap-6 pb-1">
+      <div className="flex items-center gap-3">
+        {logins.length > 0 && <SectionTitle>Connected accounts</SectionTitle>}
+        <Link
+          to="/options/accounts/add-bookmaker"
+          className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Add a bookmaker
+          <ChevronRight size={13} strokeWidth={1.75} />
+        </Link>
+      </div>
+
       {logins.length > 0 && (
         <section className="flex flex-col gap-3">
-          <SectionTitle>Connected accounts</SectionTitle>
           <div
             data-tour="accounts-list"
             className="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-3"
