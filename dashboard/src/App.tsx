@@ -5,6 +5,7 @@ import { PeriodToolbar } from '@/components/layout/period-toolbar';
 import {
   BonusExpiryToast,
   ConnectionToast,
+  NewBookmakerToast,
   SyncToast,
   Toasts,
 } from '@/components/layout/toasts';
@@ -37,6 +38,7 @@ export const App = (): JSX.Element => {
       <div className="dashboard-grid-bg flex h-full flex-col">
         <AppHeader bare={welcome} />
         <Toasts>
+          <NewBookmakerToast />
           <ConnectionToast />
           <BonusExpiryToast />
           <SyncToast />

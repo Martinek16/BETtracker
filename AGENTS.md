@@ -164,6 +164,12 @@ import mySite from './my-site/bookmaker.json';
 export const CATALOG = [betAtHome, stake, mySite];
 ```
 
+Three lines, not four. `released.ts` lists the sites that have shipped to
+everyone, and a site you add has not. The app draws it apart from the released
+ones and says so — that is accurate, not a warning, and it is how its owner
+knows nobody but them has checked its figures. Adding your site there is also a
+protected path, so CI fails the pull request.
+
 The interfaces you are implementing are `BookmakerAdapter` in
 `extension/src/bookmakers/types.ts` and `CaptureRule` in
 `extension/src/bookmakers/capture-rule.ts`. Read them; they are commented.

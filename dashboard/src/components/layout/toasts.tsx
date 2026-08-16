@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Hourglass, PlugZap, X } from 'lucide-react';
 import type { Bonus, Bookmaker, Transaction } from '@betanal/shared';
+import { CATALOG, type BookmakerMeta } from '@bookmakers/catalog';
+import { isReleased } from '@bookmakers/released';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import {
   getAllSyncMeta,
@@ -12,6 +14,8 @@ import {
 
 /** How much each account held on the last visit, so arrivals can be counted. */
 const SEEN_COUNTS_KEY = 'betanal:seen-counts';
+/** Which bookmakers the build could read on the last visit, so a new one is news. */
+const SEEN_BOOKMAKERS_KEY = 'betanal:seen-bookmakers';
 /** The day the expiry warning last fired, so a slow bonus nags once, not hourly. */
 const EXPIRY_DAY_KEY = 'betanal:expiry-day';
 /** How close to its end a bonus has to be before it is worth interrupting for. */
@@ -176,6 +180,52 @@ export const SyncToast = (): JSX.Element | null => {
           ]
             .filter((part) => part !== null)
             .join(', ')}
+        </Toast>
+      ))}
+    </>
+  );
+};
+
+/**
+ * A bookmaker this build can read and the last one could not.
+ *
+ * It arrives either with an update or with a build somebody made themselves,
+ * and in both cases the site stays invisible until its owner knows it is there
+ * and opens it once. Announced from the catalogue rather than from stored data:
+ * there is nothing stored yet, which is the whole point of saying so. It waits
+ * to be dismissed rather than timing out, because it is said once per site.
+ */
+export const NewBookmakerToast = (): JSX.Element | null => {
+  const [added, setAdded] = useState<BookmakerMeta[]>([]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(SEEN_BOOKMAKERS_KEY);
+    try {
+      localStorage.setItem(SEEN_BOOKMAKERS_KEY, JSON.stringify(CATALOG.map((meta) => meta.id)));
+    } catch {
+      /* private mode: every bookmaker reads as new again next visit */
+    }
+    // Nothing was written down before, so the whole catalogue would count as new.
+    if (raw === null) return;
+    const seen = new Set<string>(JSON.parse(raw) as string[]);
+    const fresh = CATALOG.filter((meta) => !seen.has(meta.id));
+    if (fresh.length === 0) return;
+    setAdded(fresh);
+  }, []);
+
+  if (added.length === 0) return null;
+
+  return (
+    <>
+      {added.map((meta) => (
+        <Toast
+          key={meta.id}
+          icon={<AccountIcon bookmaker={meta.id} className="h-5 w-5 rounded" />}
+          title={`${meta.name} can now be read`}
+        >
+          {isReleased(meta.id)
+            ? 'Open the site and sign in to start it.'
+            : 'Added to this copy. Open the site and sign in to start it.'}
         </Toast>
       ))}
     </>
