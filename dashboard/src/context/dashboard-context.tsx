@@ -39,6 +39,7 @@ import {
   loadPerks,
   loadTransactions,
 } from '@/data/source';
+import { collectedSince } from '@/data/claimable';
 import { subscribeToSettings } from '@/data/use-settings';
 
 /** What a row of analytics counts: a whole slip, or each pick inside it. */
@@ -380,7 +381,11 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
       // bookmaker's own USD pricing is the fallback before giving up on a figure.
       const claimable = shown(loadedPerks).flatMap((p): ClaimableReward[] => {
         const balances = p.rakeback?.balances ?? [];
+        if (!settings.showClaimable) return [];
         if (p.rakeback?.enabled !== true || balances.length === 0) return [];
+        // Claimed on the site since this reading was taken, so what it says is
+        // waiting is already in the balance.
+        if (collectedSince(loadedBonuses, p, p.readAt)) return [];
         const day = dayOf(p.readAt);
         let worth = 0;
         for (const b of balances) {

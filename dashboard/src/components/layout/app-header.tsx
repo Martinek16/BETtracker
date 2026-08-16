@@ -26,6 +26,11 @@ interface AccountBalance {
   /** null when the site has not been open since the account was connected. */
   amount: number | null;
   rows: readonly Row[];
+  /**
+   * Rakeback the site is still holding. It hangs off the account rather than
+   * joining the rows, because the rows add up to the balance and this does not.
+   */
+  waiting?: number | null;
 }
 
 /**
@@ -87,6 +92,12 @@ const AccountGroup = ({
         {account.rows.map((row) => (
           <BreakdownRow key={row.label} row={row} currency={currency} />
         ))}
+      </div>
+    )}
+    {account.waiting != null && (
+      <div className="mt-1 flex items-center justify-between gap-6 pl-[22px] text-emerald-500">
+        <span>Rakeback to claim</span>
+        <span className="tabular-nums">{formatMoney(account.waiting, currency)}</span>
       </div>
     )}
   </div>
@@ -230,6 +241,7 @@ const BalanceControl = (): JSX.Element => {
     accountBalances,
     unreadBalances,
     activeBookmakers,
+    claimable,
   } = useDashboard();
 
   const live = balanceSource === 'live' && accountBalances.length > 0;
@@ -248,10 +260,15 @@ const BalanceControl = (): JSX.Element => {
       ]
     : derivedBalances(activeBookmakers, transactions);
 
-  if (balanceLayout === 'accounts' && accounts.length > 0) {
+  const accountsWithRewards = accounts.map((account) => ({
+    ...account,
+    waiting: claimable.find((reward) => reward.key === account.key)?.worth ?? null,
+  }));
+
+  if (balanceLayout === 'accounts' && accountsWithRewards.length > 0) {
     return (
       <div className="flex items-center gap-5">
-        {accounts.map((account) => (
+        {accountsWithRewards.map((account) => (
           <BalanceReadout
             key={account.key}
             label={<AccountIcon bookmaker={account.bookmaker} className="h-5 w-5" />}
@@ -264,7 +281,7 @@ const BalanceControl = (): JSX.Element => {
     );
   }
 
-  const amount = accounts.reduce((sum, account) => sum + (account.amount ?? 0), 0);
+  const amount = accountsWithRewards.reduce((sum, account) => sum + (account.amount ?? 0), 0);
 
   return (
     <BalanceReadout
@@ -275,7 +292,7 @@ const BalanceControl = (): JSX.Element => {
       }
       amount={amount}
       currency={currency}
-      accounts={accounts}
+      accounts={accountsWithRewards}
     />
   );
 };

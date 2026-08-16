@@ -14,6 +14,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { CAPTURE_RULES } from './capture';
 import { CATALOG } from './catalog';
 import { adapters } from './registry';
+import { RELEASED } from './released';
 
 const DIR = new URL('.', import.meta.url);
 
@@ -75,4 +76,12 @@ it('registers nothing that is not a folder', () => {
   ]) {
     expect(FOLDERS).toContain(id);
   }
+});
+
+/**
+ * A released site that has left the tree would be announced to everyone who
+ * updates as a bookmaker they cannot use, and drawn as one nobody added.
+ */
+it('calls nothing released that the build does not have', () => {
+  for (const id of RELEASED) expect(FOLDERS).toContain(id);
 });

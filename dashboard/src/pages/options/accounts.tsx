@@ -20,6 +20,7 @@ import {
 import { cn, formatDateTime, formatMoney } from '@/lib/utils';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { ConnectionLabel, Stat } from '@/pages/options/parts';
+import { isReleased } from '@bookmakers/released';
 
 const AccountCard = ({
   account,
@@ -30,6 +31,7 @@ const AccountCard = ({
   transactions,
   currency,
   balance,
+  waiting,
 }: {
   account: AccountInfo;
   login: AccountRef;
@@ -40,6 +42,8 @@ const AccountCard = ({
   currency: string;
   /** null until the site has been open once with the extension connected. */
   balance: number | null;
+  /** Rakeback the site is holding. Not in the balance until it is claimed. */
+  waiting: number | null;
 }): JSX.Element => {
   const { isVisible, setVisible } = useAccountVisibility();
   const { nameFor } = useAccountNames();
@@ -91,6 +95,7 @@ const AccountCard = ({
           <Stat
             label="Balance"
             value={balance === null ? '—' : formatMoney(balance, currency)}
+            note={waiting === null ? undefined : `+${formatMoney(waiting, currency)} to claim`}
           />
           <Stat label="Bets" value={String(bets.length)} />
           <Stat label="Deposits" value={formatMoney(deposits, currency)} />
@@ -123,7 +128,13 @@ const SectionTitle = ({ children }: { children: string }): JSX.Element => (
   </h2>
 );
 
-/** Every bookmaker the extension can read. */
+/**
+ * Every bookmaker this build can read, named rather than left as a row of marks.
+ *
+ * A site added to a copy of the project is drawn apart from the released ones:
+ * it works the same, but nobody else has checked it, and whoever added it is the
+ * only person who can say whether its figures are right.
+ */
 const SupportedFooter = (): JSX.Element => (
   <div
     data-tour="supported-books"
@@ -132,12 +143,26 @@ const SupportedFooter = (): JSX.Element => (
     <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
       Supported bookmakers
     </span>
-    <div className="flex items-center gap-4">
-      {ACCOUNTS.map((account) => (
-        <span key={account.id} title={account.name} className="text-muted-foreground">
-          <AccountIcon bookmaker={account.id} className="h-5 w-5" />
-        </span>
-      ))}
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      {ACCOUNTS.map((account) => {
+        const released = isReleased(account.id);
+        return (
+          <span
+            key={account.id}
+            title={released ? account.name : `${account.name} — added to this copy, not part of a release`}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs text-muted-foreground',
+              released ? 'border-border/60' : 'border-dashed border-primary/50',
+            )}
+          >
+            <AccountIcon bookmaker={account.id} className="h-4 w-4" />
+            {account.name}
+            {!released && (
+              <span className="text-[10px] uppercase tracking-wide text-primary">Added here</span>
+            )}
+          </span>
+        );
+      })}
     </div>
   </div>
 );
@@ -146,7 +171,7 @@ export const AccountsPage = (): JSX.Element => {
   const { bets, transactions, currency } = useStoredRecords();
   // Already converted to the display currency, and keyed by the same login, so
   // the card can read the header's own figure rather than work one out again.
-  const { accountBalances } = useDashboard();
+  const { accountBalances, claimable } = useDashboard();
   const metas = useSyncMetaByAccount();
   const logins = useAllKnownAccounts();
   const origins = useSiteOrigins();
@@ -175,6 +200,9 @@ export const AccountsPage = (): JSX.Element => {
                   currency={currency}
                   balance={
                     accountBalances.find((b) => b.key === accountKey(login))?.amount ?? null
+                  }
+                  waiting={
+                    claimable.find((r) => r.key === accountKey(login))?.worth ?? null
                   }
                 />
               );

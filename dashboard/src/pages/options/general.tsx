@@ -266,6 +266,7 @@ const BalanceSection = ({ notify }: { notify: Notify }): JSX.Element => {
   const source = settings?.balanceSource ?? 'live';
   const layout = settings?.balanceLayout ?? 'total';
   const includeBonus = settings?.includeBonus ?? true;
+  const showClaimable = settings?.showClaimable ?? true;
 
   return (
     <Section title="Balance" tour="settings-balance">
@@ -303,6 +304,19 @@ const BalanceSection = ({ notify }: { notify: Notify }): JSX.Element => {
         <Switch
           checked={includeBonus}
           onCheckedChange={(next) => void patch({ includeBonus: next })}
+        />
+      </Setting>
+      <Setting
+        label="Show rewards waiting to be claimed"
+        hint={
+          showClaimable
+            ? 'Rakeback the bookmaker is holding is shown beside the balance until you claim it.'
+            : 'Only money already in the account is shown.'
+        }
+      >
+        <Switch
+          checked={showClaimable}
+          onCheckedChange={(next) => void patch({ showClaimable: next })}
         />
       </Setting>
     </Section>

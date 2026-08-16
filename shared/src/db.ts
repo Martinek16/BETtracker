@@ -93,6 +93,12 @@ export interface AppSettings {
   includeBonus: boolean;
   /** Draw bookmaker logos in grey so they sit inside the dashboard's palette. */
   monoIcons: boolean;
+  /**
+   * Show rewards the bookmaker is holding until they are claimed. They are not
+   * in the balance and no sync collects them, so the figure is a reminder rather
+   * than money in hand — and a reminder nobody acts on is just noise.
+   */
+  showClaimable: boolean;
   /** Toast when a sync brings in bets the tracker did not have. */
   syncAlerts: boolean;
   /** Toast when a granted bonus is within days of expiring unused. */
@@ -119,6 +125,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   balanceLayout: 'total',
   includeBonus: true,
   monoIcons: true,
+  showClaimable: true,
   syncAlerts: true,
   expiryAlerts: true,
   connectionAlerts: true,
