@@ -76,6 +76,15 @@ and the person's financial history.
    `corepack enable && pnpm install` inside it. Clone it where they can find it
    again — they will be loading a build out of it in step 7 and it is theirs to
    keep, not a scratch folder.
+
+   **Say at this point that they will end up with a second copy of the
+   extension.** Almost anyone asking for a new site already has BETtracker
+   installed, and a bookmaker only exists in a build that contains it, so the
+   copy they have cannot gain this one until a release ships. They will be
+   running the build from this clone alongside it, with its own separate
+   database. Their existing copy and its history are not touched, and nothing
+   they sync into the new one carries across. Better said now than discovered
+   after an evening's work.
 1. **Ask** for the recording and the logo. Do not proceed without the recording.
 2. **Read** `har/<site>.sanitized.har` and work out the six things in
    [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md#3-write-the-folder):

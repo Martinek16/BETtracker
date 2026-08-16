@@ -40,6 +40,22 @@ open the repository in a [Codespace](https://github.com/codespaces) instead. The
 final check in step 6 still has to happen on your own machine, because you
 cannot load a browser extension into a Codespace.)
 
+### You already have BETtracker installed
+
+Then you are about to have two. A bookmaker only exists in a build that contains
+it, so the copy you installed cannot read your new site until the change is
+released. What you build here is a second copy that can, and you run it
+alongside — or instead of — the one you have.
+
+They do not share anything. Your existing copy keeps its history and is not
+touched, and whatever the new one syncs while you are testing stays in the new
+one. Nothing is lost either way; it just does not carry across, so do not spend
+an evening waiting for it to.
+
+Run one at a time. Two copies both signed in to the same bookmaker sync the same
+account into two separate databases, and the figures you are checking in step 6
+then depend on which of them you happened to open.
+
 ## 1. Record your bet history
 
 The extension learns a site by watching the requests the site's own pages make.
