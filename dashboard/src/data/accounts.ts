@@ -19,6 +19,7 @@ import {
   getSettings,
   loadAllBets,
   loadBonuses,
+  loadOpenBetsSeen,
   loadTransactions,
 } from '@/data/source';
 import { useSettings } from '@/data/use-settings';
@@ -181,6 +182,12 @@ const NO_ACCOUNTS: KnownAccount[] = [];
  */
 export const useAllKnownAccounts = (): KnownAccount[] =>
   useStored(useCallback(() => getKnownAccounts(), []), NO_ACCOUNTS);
+
+const NO_BOOKMAKERS: Bookmaker[] = [];
+
+/** Bookmakers an open bet has ever been read from, however long ago. */
+export const useOpenBetsSeen = (): Bookmaker[] =>
+  useStored(useCallback(() => loadOpenBetsSeen(), []), NO_BOOKMAKERS);
 
 export interface StoredRecords {
   bets: Bet[];

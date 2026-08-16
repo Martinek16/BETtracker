@@ -34,6 +34,12 @@ export interface Records {
   bonuses: readonly Bonus[];
   /** One entry per account whose balance has actually been read off the site. */
   balances: readonly { bookmaker: Bookmaker }[];
+  /**
+   * Bookmakers an open bet has ever been read from. Recorded when it happens: a
+   * bet settles, so asking the stored bets would answer "never worked" for every
+   * account that simply has nothing running at the moment it is asked.
+   */
+  openBetsSeen: readonly Bookmaker[];
   metas: readonly { account: AccountRef; meta: SyncMeta }[];
 }
 
@@ -57,6 +63,8 @@ export const checksFor = (bookmaker: Bookmaker, all: Records): Check[] => {
   const missing = SETTLED.filter((status) => !seen.has(status));
   const multi = bets.filter((bet) => bet.betType !== 'single');
   const legless = multi.filter((bet) => bet.legs.length < 2);
+  const openNow = bets.some((bet) => bet.status === 'pending');
+  const everOpen = all.openBetsSeen.includes(bookmaker);
   const failed = metas.filter(({ meta }) => meta.lastStatus === 'error');
   const synced = metas.filter(({ meta }) => meta.lastSyncAt !== null);
 
@@ -98,10 +106,12 @@ export const checksFor = (bookmaker: Bookmaker, all: Records): Check[] => {
     },
     {
       label: 'Open bets appear while they run',
-      state: bets.some((bet) => bet.status === 'pending') ? true : null,
-      detail: bets.some((bet) => bet.status === 'pending')
+      state: openNow || everOpen ? true : null,
+      detail: openNow
         ? 'One is open now'
-        : 'None open — leave a bet running and look again',
+        : everOpen
+          ? 'Read before — none open now'
+          : 'Never seen one — leave a bet running and look again',
     },
     {
       label: 'The balance is read off the site',

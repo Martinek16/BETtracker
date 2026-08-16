@@ -30,6 +30,7 @@ const records = (over: Partial<Records> = {}): Records => ({
   transactions: [],
   bonuses: [],
   balances: [],
+  openBetsSeen: [],
   metas: [],
   ...over,
 });
@@ -53,6 +54,15 @@ describe('what a bookmaker has proved', () => {
     expect(stateOf(records({ bets: [bet()] }), 'Open bets')).toBeNull();
     expect(stateOf(records({ bets: [bet({ status: 'pending' })] }), 'Open bets')).toBe(true);
     expect(stateOf(records(), 'Deposits')).toBeNull();
+  });
+
+  it('keeps an open bet proved after it settles', () => {
+    // The slip is now won, so nothing stored is pending any more. Re-deriving the
+    // answer from the bets would call a site that works untested every time it is
+    // read outside the few hours a bet happens to be running.
+    const settled = records({ bets: [bet()], openBetsSeen: ['my-site'] });
+    expect(stateOf(settled, 'Open bets')).toBe(true);
+    expect(stateOf(records({ bets: [bet()], openBetsSeen: ['other'] }), 'Open bets')).toBeNull();
   });
 
   it('judges nothing off an empty store, except that nothing arrived', () => {

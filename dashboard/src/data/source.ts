@@ -18,6 +18,7 @@ import {
   getAllBalanceHistory,
   getAllPerks,
   getAllSyncMeta as storedSyncMeta,
+  getOpenBetsSeen,
   getRates,
   getSettings,
   log,
@@ -311,6 +312,21 @@ export const getKnownAccounts = async (bookmaker?: Bookmaker): Promise<KnownAcco
 export const getAllSyncMeta = async (): Promise<
   readonly { account: AccountRef; meta: SyncMeta }[]
 > => (isDemoData() ? demoSyncMeta() : storedSyncMeta());
+
+/**
+ * Bookmakers that have shown an open bet at least once. Read separately from the
+ * bets because the evidence itself does not survive: the slip settles, and a site
+ * whose open-bet endpoint works looks identical to one where it was never tried.
+ */
+export const loadOpenBetsSeen = async (): Promise<Bookmaker[]> => {
+  if (!isExtension()) return [];
+  try {
+    return await getOpenBetsSeen();
+  } catch (err) {
+    log('warn', 'dashboard', `failed to read open-bet history: ${(err as Error).message}`);
+    return [];
+  }
+};
 
 export {
   clearAccount,

@@ -305,7 +305,10 @@ export const syncOpenBets = async (
   account: AccountRef,
 ): Promise<OpenBetsSync> => {
   const { bets, scores } = await adapter.openBets(creds, account);
-  return { bets, added: bets.length > 0 ? await putBets(bets) : 0, scores: scores ?? {} };
+  if (bets.length === 0) return { bets, added: 0, scores: scores ?? {} };
+  const added = await putBets(bets);
+  await setBackfillState(account, { openBetsSeen: true });
+  return { bets, added, scores: scores ?? {} };
 };
 
 /**

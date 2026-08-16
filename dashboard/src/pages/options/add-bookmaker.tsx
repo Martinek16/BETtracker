@@ -7,7 +7,7 @@ import { isReleased } from '@bookmakers/released';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { Button } from '@/components/ui/button';
 import { useDashboard } from '@/context/dashboard-context';
-import { useStoredRecords, useSyncMetaByAccount } from '@/data/accounts';
+import { useOpenBetsSeen, useStoredRecords, useSyncMetaByAccount } from '@/data/accounts';
 import { cn } from '@/lib/utils';
 import { Section } from '@/pages/options/parts';
 import { checksFor, scoreOf, type Check } from '@/pages/options/readiness';
@@ -78,6 +78,7 @@ export const AddBookmakerPage = (): JSX.Element => {
   const [copied, setCopied] = useState(false);
   const records = useStoredRecords();
   const metas = useSyncMetaByAccount();
+  const openBetsSeen = useOpenBetsSeen();
   const { accountBalances } = useDashboard();
 
   const onCopy = (): void => {
@@ -91,6 +92,7 @@ export const AddBookmakerPage = (): JSX.Element => {
     transactions: records.transactions,
     bonuses: records.bonuses,
     balances: accountBalances,
+    openBetsSeen,
     metas: Object.entries(metas).flatMap(([key, meta]) => {
       const account = parseAccountKey(key);
       return account === null ? [] : [{ account, meta }];

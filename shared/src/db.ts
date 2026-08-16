@@ -747,6 +747,12 @@ export interface BackfillState {
    * full money history instead of only the recent window.
    */
   moneyComplete: boolean;
+  /**
+   * An open bet has been read off the site at least once. A bet settles, and
+   * with it the only evidence that the site's open-bet endpoint works at all —
+   * so the fact is kept rather than re-derived from what is stored today.
+   */
+  openBetsSeen: boolean;
 }
 
 const DEFAULT_BACKFILL: BackfillState = {
@@ -754,6 +760,7 @@ const DEFAULT_BACKFILL: BackfillState = {
   historyComplete: false,
   betOffset: 0,
   moneyComplete: false,
+  openBetsSeen: false,
 };
 
 export const getBackfillState = async (account: AccountRef): Promise<BackfillState> => {
@@ -860,6 +867,16 @@ export const getAllSyncMeta = async (): Promise<{ account: AccountRef; meta: Syn
       meta: await getSyncMeta(account),
     })),
   );
+
+/** Bookmakers that have had an open bet read off them at least once. */
+export const getOpenBetsSeen = async (): Promise<Bookmaker[]> => {
+  const seen = await Promise.all(
+    (await getKnownAccounts()).map(async (account) =>
+      (await getBackfillState(account)).openBetsSeen ? account.bookmaker : null,
+    ),
+  );
+  return [...new Set(seen.filter((b): b is Bookmaker => b !== null))];
+};
 
 /** Accounts whose bet history is stored back to its very first bet. */
 export const getCompleteHistories = async (): Promise<string[]> => {

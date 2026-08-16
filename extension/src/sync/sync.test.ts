@@ -51,6 +51,7 @@ describe('runCursorSync account scope', () => {
         historyComplete: false,
         betOffset: 0,
         moneyComplete: false,
+        openBetsSeen: false,
       },
     };
     const key = (a: { bookmaker: string; accountId: string }): string =>
@@ -62,6 +63,7 @@ describe('runCursorSync account scope', () => {
           historyComplete: false,
           betOffset: 0,
           moneyComplete: false,
+          openBetsSeen: false,
         },
     );
     vi.mocked(shared.getLatestPlacedAt).mockResolvedValue(null);
