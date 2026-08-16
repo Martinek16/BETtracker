@@ -650,9 +650,8 @@ const rememberMoneyCheck = async (account: AccountRef): Promise<void> => {
  * Deposits, withdrawals and bonuses. Some sites need a second session that is
  * only seen once the user opens their account pages, so this is always
  * best-effort: money failing must never fail the bet sync that already
- * succeeded. The deep walk runs once per account and can be hundreds of
- * sequential requests; afterwards only the recent window can still change, and
- * re-imports upsert anyway.
+ * succeeded. The deep walk runs once per account; afterwards only the recent
+ * window can still change, and re-imports upsert anyway.
  */
 const importMoney = async ({ adapter, connection }: Live, full = false): Promise<string | null> => {
   if (adapter.syncMoney === undefined) return null;

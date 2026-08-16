@@ -85,47 +85,57 @@ describe('runCursorSync account scope', () => {
   });
 });
 
-describe('syncTransactions month walk', () => {
+describe('syncTransactions window walk', () => {
   beforeEach(() => vi.restoreAllMocks());
 
-  const stubFetch = (): ReturnType<typeof vi.fn> => {
+  const row = {
+    transIdStr: '1',
+    completed: '2026-08-01T00:00:00.000Z',
+    status: 'Success',
+    type: 0,
+    currency: 'EUR',
+    realAmount: 10,
+  };
+
+  const stubFetch = (transactions: unknown[] = []): ReturnType<typeof vi.fn> => {
     const fetchMock = vi.fn(() =>
       Promise.resolve({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ transactions: [], pagination: { next: null } }),
+        json: () => Promise.resolve({ transactions, pagination: { next: null } }),
       } as unknown as Response),
     );
     vi.stubGlobal('fetch', fetchMock);
     return fetchMock;
   };
 
-  it('requests exactly one month per call, never a wide window', async () => {
+  it('asks for a year at a time, as the site itself does', async () => {
     const fetchMock = stubFetch();
-    await syncTransactions(creds, account, 2);
+    await syncTransactions(creds, account, 12);
 
     const url = new URL(String(fetchMock.mock.calls[0]?.[0]));
     const from = new Date(url.searchParams.get('startDate') ?? '');
     const to = new Date(url.searchParams.get('endDate') ?? '');
-    // One calendar month back, and covering today (the current month is partial).
-    expect(to.getTime() - from.getTime()).toBeLessThan(32 * 86_400_000);
+    // A month at a time made a first import hundreds of sequential requests,
+    // which outlived both the worker and the session.
+    expect(to.getTime() - from.getTime()).toBeGreaterThan(360 * 86_400_000);
     expect(to.getTime()).toBeGreaterThan(Date.now());
   });
 
   it('walks both deposits and withdrawals, bounded by maxMonths', async () => {
-    const fetchMock = stubFetch();
-    await syncTransactions(creds, account, 3);
+    const fetchMock = stubFetch([row]);
+    await syncTransactions(creds, account, 24);
 
     const types = fetchMock.mock.calls.map((c) => new URL(String(c[0])).searchParams.get('types'));
-    expect(types).toEqual(['0', '0', '0', '1', '1', '1']);
+    expect(types).toEqual(['0', '0', '1', '1']);
   });
 
-  it('stops a walk early after a run of empty months', async () => {
+  it('stops a walk early after an empty year', async () => {
     const fetchMock = stubFetch();
     await syncTransactions(creds, account, 240);
 
-    // 12 empty months per type, then give up — not a grind back to 2005.
-    expect(fetchMock.mock.calls.length).toBe(24);
+    // One empty year per type, then give up — not a grind back to 2005.
+    expect(fetchMock.mock.calls.length).toBe(2);
   });
 });
 

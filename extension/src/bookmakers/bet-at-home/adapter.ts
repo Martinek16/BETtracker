@@ -587,10 +587,13 @@ export const parseSettled = (json: unknown, accountId: AccountId): SettledPage =
 const BANKING_EPOCH = Date.UTC(2005, 0, 1);
 const BANKING_MAX_PAGES = 200;
 /**
- * The account page only ever asks for one month at a time, and a wider window is
- * silently truncated — so history has to be walked month by month, not requested
- * in one go. Stop after a year of empty months rather than grinding to 2005.
+ * Months per request. The site's own account page asks for a nine-month window
+ * and pages through it with `pagination.next`, so a wide window is honoured —
+ * walking a month at a time instead turned a first import into hundreds of
+ * sequential requests, which the worker or the session outlived.
  */
+const BANKING_WINDOW_MONTHS = 12;
+/** Stop after a year of nothing rather than grinding back to 2005. */
 const BANKING_EMPTY_MONTHS_STOP = 12;
 
 /**
@@ -658,12 +661,16 @@ export const syncTransactions = async (
         complete = false;
         break;
       }
-      months += 1;
+      months += BANKING_WINDOW_MONTHS;
       const endDate = new Date(end);
-      const start = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth() - 1, 1);
+      const start = Date.UTC(
+        endDate.getUTCFullYear(),
+        endDate.getUTCMonth() - BANKING_WINDOW_MONTHS,
+        1,
+      );
       const found = await fetchWindow(type, new Date(start), new Date(end - 1));
       imported += found;
-      emptyMonths = found === 0 ? emptyMonths + 1 : 0;
+      emptyMonths = found === 0 ? emptyMonths + BANKING_WINDOW_MONTHS : 0;
       end = start;
     }
   }
@@ -790,15 +797,13 @@ export const betAtHome: BookmakerAdapter = {
 
   async syncMoney(_creds, banking, account, depth) {
     if (banking === null) return 0;
-    // Bonuses first, and deliberately so: the banking walk below can be hundreds
-    // of sequential requests, long enough for the MV3 worker to be killed or the
-    // ~30 min session to expire, and anything queued behind it never runs.
+    // Bonuses first: the banking walk below is the longer of the two, and
+    // anything queued behind a session that expires mid-walk never runs.
     const deep = depth === 'full';
     await importBonuses(banking, account, deep);
     if (depth === 'bonuses') return 0;
-    // The account API only answers one month per request, so full history is a
-    // month-by-month walk. Worth it once; after that only the recent months can
-    // still change, and re-imports upsert anyway.
+    // Full history is a walk back through year-wide windows. Worth it once;
+    // after that only the recent months can still change, and re-imports upsert.
     const { oldestFetchedAt } = await getBackfillState(account);
     const floor = deep && oldestFetchedAt !== null ? Date.parse(oldestFetchedAt) : 0;
     const { imported, complete } = await syncTransactions(banking, account, deep ? 240 : 3, floor);
