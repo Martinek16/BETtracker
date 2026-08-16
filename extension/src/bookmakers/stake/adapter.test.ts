@@ -3,7 +3,14 @@ import fixture from './__fixtures__/bets.json';
 import walletFixture from './__fixtures__/wallet.json';
 import { RateLimitedError } from '../../sync/sync';
 import { sampleRef } from '../samples';
-import { couponBonus, normalizeBet, parseBalance, parseWagered, stake } from './adapter';
+import {
+  couponBonus,
+  fetchBaseRates,
+  normalizeBet,
+  parseBalance,
+  parseWagered,
+  stake,
+} from './adapter';
 
 /** Real `sportBetList` entries, lifted out of a recorded stake.com page load. */
 const raw = fixture.data.user.sportBetList.map((entry) => entry.bet);
@@ -225,6 +232,17 @@ describe('stake balance', () => {
     expect(parseBalance(walletFixture, new Map(), sampleRef('stake'))).toBeNull();
     expect(parseBalance(null, rates, sampleRef('stake'))).toBeNull();
   });
+
+  it('reports a single-coin wallet unpriced rather than not at all', () => {
+    // Nothing to add up, so no price list is needed to state it — and the app's
+    // own rate table prices it afterwards. A refused price list used to blank
+    // such a wallet, which in turn told the money walk nothing had moved.
+    const one = [{ available: { amount: 12.5, currency: 'ltc' }, vault: { amount: 0 } }];
+    const balance = parseBalance(one, new Map(), sampleRef('stake'));
+    expect(balance?.amount).toBe(12.5);
+    expect(balance?.currency).toBe('LTC');
+    expect(balance?.holdings).toEqual([{ currency: 'LTC', amount: 12.5 }]);
+  });
 });
 
 describe('stake GraphQL failures', () => {
@@ -323,5 +341,21 @@ describe('stake GraphQL failures', () => {
       (e: unknown) => e as Error,
     );
     expect(err?.message).toBe('Stake UserId: This action is not available.');
+  });
+
+  it('keeps the last price list when a later read is refused', async () => {
+    // Prices an hour old value a wallet to within a fraction of a percent; no
+    // prices value it not at all. Dropping them blanked the balance outright.
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+    answers({
+      data: { currencyConfiguration: { baseRates: [{ currency: 'ltc', baseRate: 110 }] } },
+    });
+    expect((await fetchBaseRates(creds)).get('LTC')).toBe(110);
+
+    // Past the ten minutes the list is held for, so it is asked for again.
+    clock.mockReturnValue(1_000 + 11 * 60_000);
+    answers({ data: null, errors: [{ message: 'Cannot query field baseRate.' }] });
+    expect((await fetchBaseRates(creds)).get('LTC')).toBe(110);
+    clock.mockRestore();
   });
 });

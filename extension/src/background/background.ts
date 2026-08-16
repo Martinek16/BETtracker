@@ -294,7 +294,11 @@ const identify = async (
     return await adapter.accountId(creds);
   } catch (err) {
     if (err instanceof SessionExpiredError) throw err;
-    log('warn', adapter.id, `identity unreadable: ${(err as Error).message}`);
+    // Nowhere to ask from is not an unreadable identity — it is one that was
+    // never asked for. The next visit answers it, and warning about it on every
+    // poll only buried the failures that were real.
+    if (!(err instanceof RelayUnavailableError))
+      log('warn', adapter.id, `identity unreadable: ${(err as Error).message}`);
     return null;
   }
 };
@@ -621,13 +625,24 @@ const moneyMoved = async (account: AccountRef): Promise<boolean> => {
   const stored = (await chrome.storage.local.get(key))[key] as MoneyCheck | undefined;
   if (stored === undefined) return true;
   if (Date.now() - stored.at > MONEY_MAX_AGE_MS) return true;
-  return stored.reading !== (lastBalance.get(accountKey(account)) ?? '');
+  // `lastBalance` only lives as long as the worker, so a run whose balance read
+  // failed — or has not happened yet — knows nothing about whether the money
+  // moved. "Nothing" must not read as "unchanged": once both sides were the
+  // empty string the walk was skipped for good and the deposits stopped
+  // importing, with the history already marked complete so nothing retried it.
+  const reading = lastBalance.get(accountKey(account));
+  if (reading === undefined) return true;
+  return stored.reading !== reading;
 };
 
 const rememberMoneyCheck = async (account: AccountRef): Promise<void> => {
+  const reading = lastBalance.get(accountKey(account));
+  // Nothing to compare against next time. Writing a stand-in would make the next
+  // run believe the balance had held still, which is the trap above.
+  if (reading === undefined) return;
   const key = `${MONEY_CHECK_KEY}:${accountKey(account)}`;
   await chrome.storage.local.set({
-    [key]: { at: Date.now(), reading: lastBalance.get(accountKey(account)) ?? '' } satisfies MoneyCheck,
+    [key]: { at: Date.now(), reading } satisfies MoneyCheck,
   });
 };
 
@@ -772,6 +787,9 @@ const storeBalance = async (
  */
 const apiBalances = new Set<string>();
 
+/** Bookmakers already told about, so "no tab open" is said once and not per poll. */
+const saidNoTab = new Set<Bookmaker>();
+
 /**
  * How often the API balance is worth asking for. The panel polls the open bets
  * every eight seconds while a match is in play and used to re-read the balance
@@ -790,21 +808,32 @@ const importBalance = async ({ adapter, connection }: Live, force = false): Prom
   if (adapter.balance === undefined) return;
   if (cooling(adapter.id)) return;
   if (!force && Date.now() - (lastBalanceReadAt.get(connection.key) ?? 0) < BALANCE_TTL_MS) return;
+  // Before the account is named, not after: naming it is itself a request, and
+  // one that fails on every poll used to warn on every poll as well.
+  lastBalanceReadAt.set(connection.key, Date.now());
   const account = await ensureAccount(adapter, connection);
   if (account === null) {
     log('warn', adapter.id, 'balance not read: account not identified');
     return;
   }
   try {
-    lastBalanceReadAt.set(connection.key, Date.now());
     const balance = await adapter.balance(connection.creds, account, connection.banking);
     if (balance === null) return;
     apiBalances.add(connection.key);
+    saidNoTab.delete(adapter.id);
     await storeBalance(balance, connection);
   } catch (err) {
     // The panel polls this every twenty seconds, so a site with no tab open would
-    // otherwise write the same line three times a minute.
-    if (err instanceof RelayUnavailableError) return;
+    // otherwise write the same line three times a minute. Said once all the same:
+    // a balance that silently stops refreshing looks exactly like a broken one,
+    // and the reader has no way to learn that opening the site is what fixes it.
+    if (err instanceof RelayUnavailableError) {
+      if (!saidNoTab.has(adapter.id)) {
+        saidNoTab.add(adapter.id);
+        log('info', adapter.id, `balance not refreshed: ${(err as Error).message}`);
+      }
+      return;
+    }
     if (err instanceof RateLimitedError) {
       startCooldown(adapter.id, err.retryAfterMs, err.message);
       return;

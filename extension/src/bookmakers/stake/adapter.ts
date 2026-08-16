@@ -1459,21 +1459,39 @@ let cachedRates: { at: number; rates: Map<string, number> } | null = null;
 
 /** USD per one unit of each currency Stake deals in, as Stake prices them. */
 export const fetchBaseRates = async (creds: Credentials): Promise<Map<string, number>> => {
-  if (cachedRates !== null && Date.now() - cachedRates.at < SLOW_FIELD_TTL_MS)
-    return cachedRates.rates;
-  const data = await gql(creds, CURRENCY_CONFIG, { isAcp: false });
-  const raw = (data?.currencyConfiguration as { baseRates?: unknown } | undefined)?.baseRates;
+  const held = cachedRates;
+  if (held !== null && Date.now() - held.at < SLOW_FIELD_TTL_MS) return held.rates;
   const rates = new Map<string, number>();
-  if (!Array.isArray(raw)) return rates;
-  for (const entry of raw) {
-    const { currency, baseRate } = (entry ?? {}) as { currency?: unknown; baseRate?: unknown };
-    const code = toStringOrNull(currency);
-    const rate = toNumber(baseRate, 0);
-    if (code !== null && rate > 0) rates.set(code.toUpperCase(), rate);
+  try {
+    const data = await gql(creds, CURRENCY_CONFIG, { isAcp: false });
+    const raw = (data?.currencyConfiguration as { baseRates?: unknown } | undefined)?.baseRates;
+    for (const entry of Array.isArray(raw) ? raw : []) {
+      const { currency, baseRate } = (entry ?? {}) as { currency?: unknown; baseRate?: unknown };
+      const code = toStringOrNull(currency);
+      const rate = toNumber(baseRate, 0);
+      if (code !== null && rate > 0) rates.set(code.toUpperCase(), rate);
+    }
+  } catch (err) {
+    // A dead session and a throttle are the caller's to act on. Anything else is
+    // this one list being unreadable, and the wallet beside it still is.
+    if (
+      err instanceof SessionExpiredError ||
+      err instanceof RelayUnavailableError ||
+      err instanceof RateLimitedError
+    )
+      throw err;
+    log('warn', BOOKMAKER, `price list unreadable: ${(err as Error).message}`);
   }
   // An empty list prices nothing, so it is not worth remembering for ten minutes.
-  if (rates.size > 0) cachedRates = { at: Date.now(), rates };
-  return rates;
+  if (rates.size > 0) {
+    cachedRates = { at: Date.now(), rates };
+    return rates;
+  }
+  // Prices an hour old value a wallet to within a fraction of a percent; no
+  // prices value it not at all. One refused price list used to blank the balance
+  // outright — and a blank balance then told the money walk nothing had moved,
+  // which is how a refused list also stopped the deposits importing.
+  return held?.rates ?? rates;
 };
 
 /**
@@ -1514,37 +1532,60 @@ export const parseBalance = (
   account: AccountRef,
 ): BalanceInfo | null => {
   if (!Array.isArray(list)) return null;
-  // No price list at all means we cannot value anything; one coin missing from a
-  // price list Stake filled means Stake itself does not price it.
-  if (rates.size === 0) return null;
 
-  let total = 0;
-  let vault = 0;
-  const held: { currency: string; amount: number; worth: number }[] = [];
+  const held: { currency: string; amount: number }[] = [];
+  const vaulted: { currency: string; amount: number }[] = [];
   for (const entry of list as RawBalance[]) {
     const pot = entry?.available;
     const amount = toNumber(pot?.amount, 0);
     const put = toNumber(entry?.vault?.amount, 0);
     if (amount === 0 && put === 0) continue;
     const currency = normalizeCurrency(pot?.currency ?? entry?.vault?.currency);
-    const rate = rates.get(currency);
-    // Every coin the account can hold is in the price list, so an unpriced one
-    // would blank the whole balance over dust. Counted when priced, skipped
-    // when not — the balance stays a number instead of disappearing.
-    if (rate === undefined) continue;
-    vault += put * rate;
-    if (amount === 0) continue;
-    total += amount * rate;
-    held.push({ currency, amount, worth: amount * rate });
+    if (amount > 0) held.push({ currency, amount });
+    if (put > 0) vaulted.push({ currency, amount: put });
   }
-  held.sort((a, b) => b.worth - a.worth);
+
+  // No price list at all: nothing can be added up, and inventing a rate would be
+  // worse than saying nothing. A wallet holding one coin has nothing to add up
+  // though — it is reported as it stands and the app's own rate table prices it,
+  // which is the difference between a balance and a blank one.
+  if (rates.size === 0) {
+    const only = held.length === 1 ? held[0] : undefined;
+    if (only === undefined) return null;
+    return {
+      bookmaker: BOOKMAKER,
+      accountId: account.accountId,
+      amount: only.amount,
+      currency: only.currency,
+      capturedAt: new Date().toISOString(),
+      holdings: [only],
+    } satisfies BalanceInfo;
+  }
+
+  let total = 0;
+  let vault = 0;
+  const priced: { currency: string; amount: number; worth: number }[] = [];
+  // Every coin the account can hold is in the price list, so an unpriced one
+  // would blank the whole balance over dust. Counted when priced, skipped when
+  // not — the balance stays a number instead of disappearing.
+  for (const { currency, amount } of held) {
+    const rate = rates.get(currency);
+    if (rate === undefined) continue;
+    total += amount * rate;
+    priced.push({ currency, amount, worth: amount * rate });
+  }
+  for (const { currency, amount } of vaulted) {
+    const rate = rates.get(currency);
+    if (rate !== undefined) vault += amount * rate;
+  }
+  priced.sort((a, b) => b.worth - a.worth);
   return {
     bookmaker: BOOKMAKER,
     accountId: account.accountId,
     amount: total,
     currency: 'USD',
     capturedAt: new Date().toISOString(),
-    holdings: held.map(({ currency, amount }) => ({ currency, amount })),
+    holdings: priced.map(({ currency, amount }) => ({ currency, amount })),
     ...(vault > 0 ? { vault } : {}),
   } satisfies BalanceInfo;
 };
