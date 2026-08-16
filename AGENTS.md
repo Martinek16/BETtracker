@@ -44,10 +44,26 @@ scaffolding:
 
 | You need | Why you cannot get it | What to ask for |
 |:--|:--|:--|
-| `har/<site>.sanitized.har` | It comes from their signed-in account | "Follow steps 1 and 2 of docs/ADD_A_BOOKMAKER.md and tell me the filename" |
+| `har/<site>.sanitized.har` | It comes from their signed-in account | The recipe below, verbatim |
 | `logo.png` | You cannot verify the licence of an image you scrape | "A PNG of the site's mark, ~128px square, background removed" |
 
 Everything else in this list you can do yourself.
+
+Ask for the recording like this, in these words, because every extra
+instruction is a chance to lose somebody:
+
+> Sign in to the bookmaker in your browser. Press **F12**, open the **Network**
+> tab, tick **Preserve log**. Now click slowly through your settled bet history —
+> page back several pages — then your open bets, your balance, and your deposits
+> and withdrawals. Right-click the list of requests, choose **Save all as HAR
+> with content**, and save it wherever your browser normally saves.
+>
+> Then run `pnpm sanitize-har` in the project. No filename: it finds the
+> recording, strips your cookies, tokens and name out of it, and puts the clean
+> copy in `har/`. Tell me when it has printed a filename.
+
+Adapt only the site-specific part — where *that* bookmaker keeps its bet
+history, if you know. Never adapt the sanitising step.
 
 If there is no sanitised recording in `har/`, say so and stop. Do not read a raw
 `.har` into context and never write one anywhere: it holds live session tokens
@@ -55,6 +71,11 @@ and the person's financial history.
 
 ## Order of work
 
+0. **Get the project onto their machine**, if somebody handed you a URL rather
+   than a checkout. `git clone https://github.com/Martinek16/BETtracker`, then
+   `corepack enable && pnpm install` inside it. Clone it where they can find it
+   again — they will be loading a build out of it in step 7 and it is theirs to
+   keep, not a scratch folder.
 1. **Ask** for the recording and the logo. Do not proceed without the recording.
 2. **Read** `har/<site>.sanitized.har` and work out the six things in
    [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md#3-write-the-folder):
@@ -67,7 +88,14 @@ and the person's financial history.
 5. **Register** it in the three collectors.
 6. **Run the checks** below until they pass. Never edit a test to make it pass —
    the shared tests are protected paths and CI rejects a diff that touches one.
-7. **Hand back** honestly: what you proved against the recording, and what is
+7. **Hand it back to them to load.** `pnpm build`, then tell them:
+   `chrome://extensions` → Developer mode → **Load unpacked** →
+   `extension/dist`, and to switch off the Microsoft Edge Add-ons copy first if
+   they have one, because two copies sync the same accounts into two databases.
+   A new bookmaker only exists in a build that contains it; the store copy gets
+   it when a release ships. The checklist they should work through is step 6 of
+   [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md).
+8. **Report** honestly: what you proved against the recording, and what is
    still unverified. You have never seen this run against a live account.
 
 ## The folder
