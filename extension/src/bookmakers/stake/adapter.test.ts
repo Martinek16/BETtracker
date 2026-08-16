@@ -76,7 +76,10 @@ describe('stake bet products other than SportBet', () => {
     id: 'f1',
     name: 'Chelsea - Arsenal',
     data: { startTime: '2026-02-01T20:00:00Z' },
-    tournament: { name: 'Premier League', category: { name: 'England', sport: { name: 'Soccer' } } },
+    tournament: {
+      name: 'Premier League',
+      category: { name: 'England', sport: { name: 'Soccer' } },
+    },
   };
 
   it('reads a player prop off the stat, the competitor and the line', () => {
@@ -255,6 +258,23 @@ describe('stake GraphQL failures', () => {
   it('backs off instead of retrying when the site asks it to wait', async () => {
     answers({ data: null, errors: [{ message: 'Please try again in a few minutes.' }] });
     await expect(stake.accountId(creds)).rejects.toBeInstanceOf(RateLimitedError);
+  });
+
+  it('asks the tab again when a refusal is the wallet guard rather than a dead session', async () => {
+    // Stake says "You are not allowed to do that" both when the session is gone
+    // and when it will only serve an operation to its own page. With a token in
+    // hand the session is plainly alive, so the second reading is the one to act
+    // on — which is why deposits stayed empty while bets kept importing.
+    answers({ data: null, errors: [{ message: 'You are not allowed to do that.' }] });
+    const sendMessage = vi.fn().mockResolvedValue({
+      status: 200,
+      body: JSON.stringify({ data: { user: { id: 'acc-1' } } }),
+    });
+    vi.stubGlobal('chrome', {
+      tabs: { query: vi.fn().mockResolvedValue([{ id: 7 }]), sendMessage },
+    });
+    await expect(stake.accountId(creds)).resolves.toBe('acc-1');
+    expect(sendMessage).toHaveBeenCalledOnce();
   });
 
   it('says a repeated refusal once rather than once per field', async () => {

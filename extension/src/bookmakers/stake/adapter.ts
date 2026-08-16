@@ -86,7 +86,8 @@ const SESSION_REFUSED =
  * Backing off is the right answer to every one of those reasons — retrying at
  * poll speed is the wrong answer to all of them.
  */
-const THROTTLED = /try again in a few minutes|too many requests|rate limit|action is not available/i;
+const THROTTLED =
+  /try again in a few minutes|too many requests|rate limit|action is not available/i;
 
 const gql = async (
   creds: Credentials,
@@ -95,31 +96,44 @@ const gql = async (
 ): Promise<Record<string, unknown> | null> => {
   const accessToken = creds.fields.accessToken;
   const operationName = /query\s+(\w+)/.exec(query)?.[1];
-  const json = await authedJson(
-    field(creds, 'apiBase') + GRAPHQL_PATH,
-    {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        // Present only when Stake's own client sent one; the browser page does not.
-        ...(accessToken === undefined ? {} : { 'x-access-token': accessToken }),
-        // Named in the headers as well as in the body, because that is what the
-        // site's own page does on every one of these calls, and what stands in
-        // front of the endpoint reads the request before the schema does.
-        ...(operationName === undefined
-          ? {}
-          : { 'x-operation-name': operationName, 'x-operation-type': 'query' }),
-        'x-language': 'en',
+  const ask = (viaPage: boolean): Promise<unknown> =>
+    authedJson(
+      field(creds, 'apiBase') + GRAPHQL_PATH,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          // Present only when Stake's own client sent one; the browser page does not.
+          ...(accessToken === undefined ? {} : { 'x-access-token': accessToken }),
+          // Named in the headers as well as in the body, because that is what the
+          // site's own page does on every one of these calls, and what stands in
+          // front of the endpoint reads the request before the schema does.
+          ...(operationName === undefined
+            ? {}
+            : { 'x-operation-name': operationName, 'x-operation-type': 'query' }),
+          'x-language': 'en',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ query, variables }),
       },
-      credentials: 'include',
-      body: JSON.stringify({ query, variables }),
-    },
-    // Without a token of our own the session is the site's cookie, and a request
-    // from the service worker never carries it — Stake then answers "You are not
-    // allowed to do that" to every query, including the one asking who we are.
-    // Such calls are made from the site's own tab instead.
-    accessToken === undefined,
-  );
+      viaPage,
+    );
+
+  const refusedIn = (answer: unknown): boolean => {
+    const errors = (answer as { errors?: { message?: string }[] } | null)?.errors;
+    return Array.isArray(errors) && errors.some((e) => SESSION_REFUSED.test(e?.message ?? ''));
+  };
+
+  // Without a token of our own the session is the site's cookie, and a request
+  // from the service worker never carries it — Stake then answers "You are not
+  // allowed to do that" to every query, including the one asking who we are.
+  // Such calls are made from the site's own tab instead.
+  let json = await ask(accessToken === undefined);
+  // A token is enough for the bet list but not for the wallet: Stake guards the
+  // deposit and withdrawal history behind headers its own scripts attach inside
+  // the page, and refuses everything else with the same "not allowed" it uses
+  // for a dead session. Asked again from the page, the request carries them.
+  if (accessToken !== undefined && refusedIn(json)) json = await ask(true);
 
   // GraphQL answers 200 even when it refuses, so a dead session has to be read
   // out of the error text. Only wording that can mean nothing else counts: a
@@ -469,7 +483,11 @@ interface RawSwishOutcome {
 interface RawXOutcome {
   result?: { status?: string | null } | null;
   prices?:
-    | { marketName?: string | null; odds?: number | null; outcome?: { name?: string | null } | null }[]
+    | {
+        marketName?: string | null;
+        odds?: number | null;
+        outcome?: { name?: string | null } | null;
+      }[]
     | null;
   /** Either the match itself, or a player-prop game wrapped around one. */
   fixture?: (RawFixture & { fixture?: RawFixture | null }) | null;
@@ -531,10 +549,7 @@ const statusOf = (raw: RawBet): string =>
   '';
 
 const multiplierOf = (raw: RawBet): number =>
-  toNumber(
-    raw.potentialMultiplier ?? raw.xPotentialMultiplier ?? raw.swishPotentialMultiplier,
-    0,
-  );
+  toNumber(raw.potentialMultiplier ?? raw.xPotentialMultiplier ?? raw.swishPotentialMultiplier, 0);
 
 /**
  * Stake reports what happened to the bet, not whether it won — for that, the
@@ -1135,7 +1150,8 @@ export const depositBonusGrant = (
   const required = rollover === null ? 0 : toNumber(rollover.expectedAmount, 0);
   // `progress` is the share already turned over, so the turnover itself has to
   // be counted back out of it — the payload never states it outright.
-  const done = rollover === null ? 0 : required * Math.min(1, Math.max(0, toNumber(rollover.progress, 0)));
+  const done =
+    rollover === null ? 0 : required * Math.min(1, Math.max(0, toNumber(rollover.progress, 0)));
   const status = DEPOSIT_BONUS_STATUS[toStringOrNull(raw.status) ?? ''] ?? 'closed';
   const expireAt = rollover === null ? null : toStringOrNull(rollover.expireAt);
 
@@ -1277,7 +1293,8 @@ const importLedger = async (
  * list to this region at all. Retrying it every sync only fills the log with the
  * same line, so the ledger is remembered as closed and left alone.
  */
-const PERMANENTLY_REFUSED = /unavailable in your country or region|not available in your (country|region)/i;
+const PERMANENTLY_REFUSED =
+  /unavailable in your country or region|not available in your (country|region)/i;
 
 const CLOSED_LEDGERS_KEY = 'stake:closedLedgers';
 
@@ -1342,7 +1359,10 @@ const importRewards = async (
       'deposit bonuses',
       DEPOSIT_BONUS_LEDGER,
       (data) => {
-        const user = (data?.user ?? {}) as { depositBonusList?: unknown; activeRollovers?: unknown };
+        const user = (data?.user ?? {}) as {
+          depositBonusList?: unknown;
+          activeRollovers?: unknown;
+        };
         const rollovers = Array.isArray(user.activeRollovers)
           ? (user.activeRollovers as RawRollover[])
           : [];
