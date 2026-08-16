@@ -89,6 +89,8 @@ const SESSION_REFUSED =
 const THROTTLED =
   /try again in a few minutes|too many requests|rate limit|action is not available/i;
 
+let saidTokenOnly = false;
+
 const gql = async (
   creds: Credentials,
   query: string,
@@ -119,38 +121,28 @@ const gql = async (
       viaPage,
     );
 
-  const refusedIn = (answer: unknown): boolean => {
-    const errors = (answer as { errors?: { message?: string }[] } | null)?.errors;
-    return Array.isArray(errors) && errors.some((e) => SESSION_REFUSED.test(e?.message ?? ''));
-  };
-
-  // Without a token of our own the session is the site's cookie, and a request
-  // from the service worker never carries it — Stake then answers "You are not
-  // allowed to do that" to every query, including the one asking who we are.
-  // Such calls are made from the site's own tab instead.
+  // From the site's own tab whenever one is open, which is how the site asks in
+  // the first place. Stake authenticates two ways at once — the captured token
+  // and the session cookie — and a request from the service worker carries only
+  // the token: the browser treats the worker as a stranger to stake.com and
+  // leaves the cookie off. The bet list is content with the token alone, the
+  // wallet is not, which is why bets kept importing while every deposit read
+  // came back refused.
   //
-  // A token is enough for the bet list but not for the wallet: Stake guards the
-  // deposit and withdrawal history behind headers its own scripts attach inside
-  // the page, and turns anything else away — sometimes as a flat 401, sometimes
-  // as the same "not allowed" it uses for a dead session. Either way the request
-  // is made again from the tab, where the site's own fetch decorates it. A
-  // session that really is dead is refused there too.
-  const opName = operationName ?? 'GraphQL';
+  // With no tab open there is nowhere to ask from, and the token by itself is
+  // better than nothing: it still answers for bets, so a background run is not
+  // lost. Without a token it is not, and the run waits for the next visit.
   let json: unknown;
   try {
-    json = await ask(accessToken === undefined);
-    if (accessToken !== undefined && refusedIn(json)) {
-      log('info', BOOKMAKER, `${opName} refused with a token; asking the tab instead`);
-      json = await ask(true);
-    }
-  } catch (err) {
-    if (accessToken === undefined || !(err instanceof SessionExpiredError)) throw err;
-    log(
-      'info',
-      BOOKMAKER,
-      `${opName} refused with a token (${err.message}); asking the tab instead`,
-    );
     json = await ask(true);
+  } catch (err) {
+    if (accessToken === undefined || !(err instanceof RelayUnavailableError)) throw err;
+    // Once, not once per query: a run makes dozens and they all take this turn.
+    if (!saidTokenOnly) {
+      saidTokenOnly = true;
+      log('info', BOOKMAKER, 'no stake.com tab open; asking with the token alone');
+    }
+    json = await ask(false);
   }
 
   // GraphQL answers 200 even when it refuses, so a dead session has to be read

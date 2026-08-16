@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import fixture from './__fixtures__/bets.json';
 import walletFixture from './__fixtures__/wallet.json';
 import { RateLimitedError } from '../../sync/sync';
@@ -228,8 +228,6 @@ describe('stake balance', () => {
 });
 
 describe('stake GraphQL failures', () => {
-  // An access token keeps the request in the worker, so a mocked fetch is the
-  // whole transport; without one the call is relayed through a tab instead.
   const creds = {
     bookmaker: 'stake',
     fields: { apiBase: 'https://stake.com', accessToken: 't' },
@@ -241,6 +239,12 @@ describe('stake GraphQL failures', () => {
       vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => body }),
     );
   };
+
+  // No tab of the site is open, so these calls fall back to the token and a
+  // mocked fetch is the whole transport.
+  beforeEach(() => {
+    vi.stubGlobal('chrome', { tabs: { query: vi.fn().mockResolvedValue([]) } });
+  });
 
   afterEach(() => vi.unstubAllGlobals());
 
@@ -260,12 +264,12 @@ describe('stake GraphQL failures', () => {
     await expect(stake.accountId(creds)).rejects.toBeInstanceOf(RateLimitedError);
   });
 
-  it('asks the tab again when a refusal is the wallet guard rather than a dead session', async () => {
-    // Stake says "You are not allowed to do that" both when the session is gone
-    // and when it will only serve an operation to its own page. With a token in
-    // hand the session is plainly alive, so the second reading is the one to act
-    // on — which is why deposits stayed empty while bets kept importing.
-    answers({ data: null, errors: [{ message: 'You are not allowed to do that.' }] });
+  it('asks the open tab rather than the worker, whose request carries no cookie', async () => {
+    // Stake authenticates with the token and the session cookie at once, and the
+    // worker's request never carries the cookie: the wallet was refused while the
+    // bet list, content with the token alone, kept importing.
+    const worker = vi.fn();
+    vi.stubGlobal('fetch', worker);
     const sendMessage = vi.fn().mockResolvedValue({
       status: 200,
       body: JSON.stringify({ data: { user: { id: 'acc-1' } } }),
@@ -275,24 +279,7 @@ describe('stake GraphQL failures', () => {
     });
     await expect(stake.accountId(creds)).resolves.toBe('acc-1');
     expect(sendMessage).toHaveBeenCalledOnce();
-  });
-
-  it('asks the tab again when the refusal is a bare 401 with no wording at all', async () => {
-    // The same guard also answers with a flat 401 and an empty body, which read
-    // as an expired session and stopped the whole transaction run.
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: false, status: 401, text: async () => '' }),
-    );
-    const sendMessage = vi.fn().mockResolvedValue({
-      status: 200,
-      body: JSON.stringify({ data: { user: { id: 'acc-1' } } }),
-    });
-    vi.stubGlobal('chrome', {
-      tabs: { query: vi.fn().mockResolvedValue([{ id: 7 }]), sendMessage },
-    });
-    await expect(stake.accountId(creds)).resolves.toBe('acc-1');
-    expect(sendMessage).toHaveBeenCalledOnce();
+    expect(worker).not.toHaveBeenCalled();
   });
 
   it('says a repeated refusal once rather than once per field', async () => {
