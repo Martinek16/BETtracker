@@ -1,10 +1,35 @@
 import * as esbuild from 'esbuild';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { expandSites } from './sites.mjs';
+
+/**
+ * A folder is only half of a bookmaker: it also has to be named in the capture
+ * rules, the adapter registry and the catalogue. Miss one and nothing complains
+ * — the manifest still lets the content script load, so the site opens, the page
+ * is read, and absolutely nothing happens. That is indistinguishable from a
+ * broken adapter, and it is where an evening goes. Said here rather than only in
+ * the test suite because a build is what you run before loading the extension.
+ */
+const COLLECTORS = ['src/bookmakers/capture.ts', 'src/bookmakers/registry.ts', 'src/bookmakers/catalog.ts'];
+
+const checkRegistered = () => {
+  const folders = readdirSync('src/bookmakers', { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && existsSync(`src/bookmakers/${entry.name}/bookmaker.json`))
+    .map((entry) => entry.name);
+  const missing = COLLECTORS.flatMap((file) => {
+    const source = readFileSync(file, 'utf8');
+    return folders.filter((id) => !source.includes(`./${id}/`)).map((id) => `${id} → ${file}`);
+  });
+  if (missing.length === 0) return;
+  console.error(`[build] bookmaker folders not registered:\n  ${missing.join('\n  ')}`);
+  process.exit(1);
+};
 
 const watch = process.argv.includes('--watch');
 const outdir = 'dist';
+
+checkRegistered();
 
 await rm(outdir, { recursive: true, force: true });
 await mkdir(outdir, { recursive: true });
