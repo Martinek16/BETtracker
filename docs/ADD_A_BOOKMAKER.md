@@ -161,12 +161,20 @@ git status
 git diff
 ```
 
-Two things to confirm with your own eyes:
+What you are publishing is **how the site answers**, so that anyone with their
+own account there can read their own history. It is not your history. Three
+things to confirm with your own eyes:
 
 - **No `.har` file.** Not the raw one, not the sanitised one.
 - **Nothing personal left in the fixtures.** Open each JSON file under
   `__fixtures__/` and read it. Your name, your email, your account number, your
   address — none of it should be there.
+- **No real bets either.** The stakes, odds, returns, balances and dates in the
+  fixtures should be invented ones. They exist to show the shape of a response —
+  which fields the site sends and in what format — and that works just as well
+  with made-up figures. The site's own wording stays: its sport names, market
+  names and status strings are the part the code is written against. Your actual
+  numbers get checked in step 6, on your own machine, and stay there.
 
 CI checks both, and CI will miss things. This step is the one that matters.
 

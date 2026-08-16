@@ -48,6 +48,13 @@ anywhere, and CI rejects a `.har` or an added line shaped like a token. All
 three can be defeated. **Read the fixtures you are committing** — no tool knows
 that `"nickname": "YourNickname87"` is you.
 
+A sanitised recording is not a thing to commit as it stands either. What a
+bookmaker's folder publishes is **how that site answers**, so the next person can
+read their own account there. So the stakes, odds, returns, balances and dates in
+the fixtures should be invented, while the site's own field names, sport names
+and status strings should be exact. Your real figures belong in step 4, on your
+own machine, where they stay.
+
 ## Getting set up
 
 ```bash

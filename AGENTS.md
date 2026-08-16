@@ -83,7 +83,7 @@ fails if any of them disagree.
 | `adapter.ts` | `export const <camelCaseId>: BookmakerAdapter`, with `id: '<id>'` |
 | `samples.ts` | `export const samples: Samples`, built from the fixtures through your own adapter |
 | `adapter.test.ts` | Parses the fixtures and asserts the normalised output |
-| `__fixtures__/*.json` | Response bodies lifted from the sanitised HAR, trimmed to a few representative records |
+| `__fixtures__/*.json` | The shape of the site's answers, not the contributor's history — see below |
 | `logo.png` | From the contributor, not from the site |
 | `README.md` | This site's quirks, and how to refresh the fixtures |
 
@@ -108,6 +108,43 @@ The interfaces you are implementing are `BookmakerAdapter` in
 `extension/src/bookmakers/capture-rule.ts`. Read them; they are commented.
 Reusable paging and dedup helpers are in `extension/src/sync/sync.ts` — use
 them rather than reimplementing them in the adapter.
+
+## The fixtures describe the site, not the person
+
+The recording is the contributor's own betting history. What gets committed must
+be the site's **answer shape** — which keys it sends, in what types, in what
+formats, with which values a field can take — and none of what that particular
+account did.
+
+So when you lift a record out of the recording, rewrite its content:
+
+- **Replace every amount, odd, return and balance** with a made-up figure. Keep
+  the same type and the same number of decimals, and keep the arithmetic
+  consistent: if the site sends `stake * odds === potentialReturn`, your invented
+  numbers must satisfy it too, or `adapter.test.ts` asserts a lie.
+- **Replace every date** with a date in a fixed, obviously artificial range.
+- **Replace every id** with a short sequential one. Keep two records pointing at
+  the same account pointing at the same stand-in, because that link is a thing
+  the adapter reads.
+- **Keep the site's own vocabulary exactly** — its sport names, market names,
+  status strings, currency codes, error codes. That is the part an adapter is
+  written against, and changing it breaks the fixture's whole purpose.
+- **Cut the volume.** Three or four records per endpoint, chosen to cover the
+  cases that differ: a single and an accumulator, a win and a loss, a void, a
+  cash-out, a pending bet, the last page of a paged response.
+
+The sanitiser is not enough on its own. It strips credentials and identity, and
+it deliberately keeps amounts, because a parser has to be proven against real
+figures. That is right for the file on the contributor's disk and wrong for a
+file in a public repository, and closing that gap is your job, not the tool's.
+
+This costs nothing in proof. A fixture proves the parser walks the right paths
+and reads the right types; whether the stake was 12.50 or 4.20 is not what it
+tests. The real figures are checked in step 6, by the contributor, against their
+own live account, and never leave their machine.
+
+The same goes for the folder's `README.md`: it says how the site answers and how
+to refresh the fixtures. It does not say what the contributor bet on.
 
 ## What every normalised bet must satisfy
 
