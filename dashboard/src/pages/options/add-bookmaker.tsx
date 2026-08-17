@@ -35,6 +35,19 @@ const canAddBookmaker = (): boolean =>
   chrome.runtime.getManifest().update_url === undefined;
 
 /**
+ * Whether this page is being read from a build loaded out of a folder.
+ *
+ * If it is, that build is the one the project writes to, and every site after
+ * the first is a rebuild of it - the same entry in the browser, refreshed. It is
+ * the difference between loading a second extension and reloading this one, and
+ * it decides what step 5 asks for.
+ */
+const isUnpacked = (): boolean =>
+  typeof chrome !== 'undefined' &&
+  Boolean(chrome.runtime?.id) &&
+  chrome.runtime.getManifest().update_url === undefined;
+
+/**
  * The project, its packages, and the folder the recording goes in.
  *
  * One command to a line, and no `&&`: Windows PowerShell rejects that as a parse
@@ -265,6 +278,7 @@ export const AddBookmakerPage = (): JSX.Element => {
   const openBetsSeen = useOpenBetsSeen();
   const { accountBalances } = useDashboard();
   const canAdd = canAddBookmaker();
+  const unpacked = isUnpacked();
   const added = CATALOG.filter((meta) => !isReleased(meta.id));
   /**
    * How far the reader says they have got, for this sitting only. Deliberately
@@ -453,21 +467,45 @@ export const AddBookmakerPage = (): JSX.Element => {
             </p>
           </Step>
 
-          <Step n={5} title="Load the build" {...step(5)}>
+          <Step n={5} title={unpacked ? 'Reload this copy' : 'Load the build'} {...step(5)}>
             <Substeps
-              items={[
-                <>
-                  Open <Key>edge://extensions</Key> or <Key>chrome://extensions</Key>, and turn on
-                  Developer mode.
-                </>,
-                <>
-                  <Key>Load unpacked</Key> → the project&apos;s <Key>extension/dist</Key> folder.
-                </>,
-                <>Sign in at the bookmaker, say yes when asked, and let it sync.</>,
-              ]}
+              items={
+                unpacked
+                  ? [
+                      <>
+                        Open <Key>edge://extensions</Key> or <Key>chrome://extensions</Key>.
+                      </>,
+                      <>
+                        Press <Key>Reload</Key> on this copy. The build you just made is already in
+                        the folder it reads.
+                      </>,
+                      <>Sign in at the bookmaker, say yes when asked, and let it sync.</>,
+                    ]
+                  : [
+                      <>
+                        Open <Key>edge://extensions</Key> or <Key>chrome://extensions</Key>, and
+                        turn on Developer mode.
+                      </>,
+                      <>
+                        <Key>Load unpacked</Key> → the project&apos;s <Key>extension/dist</Key>{' '}
+                        folder.
+                      </>,
+                      <>Sign in at the bookmaker, say yes when asked, and let it sync.</>,
+                    ]
+              }
             />
             <p className="mt-2 text-xs">
-              Switch the store copy off first - two copies read one account into two histories.
+              {unpacked ? (
+                <>
+                  This is that copy - you are reading it. Every site after the first is a rebuild of
+                  it, never a second extension.
+                </>
+              ) : (
+                <>
+                  Switch the store copy off first - two copies read one account into two histories.
+                  You do this once: from then on the project rebuilds this same copy.
+                </>
+              )}
             </p>
           </Step>
 

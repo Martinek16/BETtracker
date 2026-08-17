@@ -151,11 +151,12 @@ than not opening it.
    machine, and the build refuses outright if the folder was never registered.
    Then open `extension/dist` in their file manager and tell them:
    `chrome://extensions` → Developer mode → **Load unpacked** → pick the folder
-   you just opened. Tell them to switch off
-   the Microsoft Edge Add-ons copy first if
-   they have one, because two copies sync the same accounts into two databases.
-   A new bookmaker only exists in a build that contains it; the store copy gets
-   it when a release ships.
+   you just opened. If they have loaded this project's build before, that entry
+   is already there and the word is **Reload**, not Load unpacked - the build
+   just rewrote the folder behind it. Tell them to switch off the Microsoft Edge
+   Add-ons copy first if they have one, because two copies sync the same accounts
+   into two databases. A new bookmaker only exists in a build that contains it;
+   the store copy gets it when a release ships.
 7. **Send them to the report.** In the extension: **Options → Accounts → Add a
    bookmaker**. A site added to a copy of the project is listed there with one
    line per thing it has to have proved - bets read, every bet naming a sport,

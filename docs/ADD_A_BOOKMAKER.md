@@ -47,10 +47,16 @@ cannot load a browser extension into a Codespace.)
 
 ### You already have BETtracker installed
 
-Then you are about to have two. A bookmaker only exists in a build that contains
-it, so the copy you installed cannot read your new site until the change is
-released. What you build here is a second copy that can, and you run it
-alongside - or instead of - the one you have.
+Then you are about to have two, once. A bookmaker only exists in a build that
+contains it, so the copy you installed cannot read your new site until the change
+is released - a browser will not let an extension change its own code, which is
+exactly what stops a bad one rewriting itself after you trusted it. What you
+build here is a second copy that can, and you run it alongside - or instead of -
+the one you have.
+
+Two, and not three: from here on the project rebuilds that same copy. A third
+bookmaker is another `pnpm build` and the **Reload** button on the entry you
+already added, never another extension.
 
 They do not share anything. Your existing copy keeps its history and is not
 touched, and whatever the new one syncs while you are testing stays in the new
@@ -243,7 +249,9 @@ pnpm build
 ```
 
 Then `chrome://extensions` → Developer mode → **Load unpacked** →
-`extension/dist`. Open the bookmaker, sign in, and say yes when the extension
+`extension/dist`. If you have loaded this project's build before, it is already
+listed: press **Reload** on it instead, because `pnpm build` has just rewritten
+the folder it reads. Open the bookmaker, sign in, and say yes when the extension
 asks. Wait for the sync to finish.
 
 **Read the report first.** In the extension: **Options → Accounts → Add a
