@@ -21,9 +21,9 @@
  */
 
 import { createHash } from 'node:crypto';
-import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -248,6 +248,9 @@ export const makeHarDir = () => {
   writeFileSync(
     join(HAR_DIR, 'README.txt'),
     'Save your browser recording (.har) here, then run: pnpm sanitize-har\n\n' +
+      'One folder per bookmaker, named after the site: har/stake/, har/bet365/.\n' +
+      'Recordings of two sites in one heap read as one site with a strange mix of\n' +
+      'pages, and the answer to "which of these is bet365" is the folder name.\n\n' +
       'A raw recording holds your live session. This folder is ignored by git and\n' +
       'CI rejects a pull request carrying one, but nothing stops you sending it by\n' +
       'hand - so share only the .sanitized.har that the command writes beside it.\n',
@@ -260,10 +263,30 @@ export const makeHarDir = () => {
  * Looked through so that nobody has to find the file, move it into the project
  * or type a path. Pressing save is the whole of the contributor's side of this
  * step, and every instruction after it was a chance to get lost.
+ *
+ * `site` narrows it to that bookmaker's own folder, which is the difference
+ * between reading the site being added and reading whichever one was recorded
+ * most recently.
  */
-export const findRecording = () => {
+export const findRecording = (site) => {
   const home = homedir();
-  return [HAR_DIR, join(home, 'Downloads'), join(home, 'OneDrive', 'Downloads')]
+  const inside = (folder) => {
+    try {
+      return readdirSync(folder, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => join(folder, entry.name));
+    } catch {
+      return [];
+    }
+  };
+
+  const own = site === undefined ? undefined : join(HAR_DIR, site);
+  const roots =
+    own !== undefined && existsSync(own)
+      ? [own]
+      : [HAR_DIR, ...inside(HAR_DIR), join(home, 'Downloads'), join(home, 'OneDrive', 'Downloads')];
+
+  return roots
     .flatMap((folder) => {
       try {
         return readdirSync(folder)
@@ -298,8 +321,12 @@ const main = () => {
     if (output === undefined) {
       // Into the project, not back into Downloads: this is the copy the rest of
       // the work reads, and it belongs where git is already told to ignore it.
-      mkdirSync(HAR_DIR, { recursive: true });
-      return join(HAR_DIR, `${basename(input, '.har')}.sanitized.har`);
+      // Beside the recording when that is already one of the site's folders, so
+      // the pair stays together and neither has to be told which site it is.
+      const beside = dirname(input);
+      const folder = beside.startsWith(HAR_DIR) ? beside : HAR_DIR;
+      mkdirSync(folder, { recursive: true });
+      return join(folder, `${basename(input, '.har')}.sanitized.har`);
     }
     try {
       if (statSync(output).isDirectory())

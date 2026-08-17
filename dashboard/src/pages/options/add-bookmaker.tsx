@@ -41,8 +41,12 @@ const canAddBookmaker = (): boolean =>
  * error before it runs a thing. `npx` ships with Node and fetches pnpm for the
  * one command, so nothing has to be installed first and nothing depends on a
  * PATH the open terminal has not picked up yet.
+ *
+ * `--depth 1` takes the current state and not the history behind it. A site is
+ * added by building the project, so the project is what has to come down; every
+ * commit that led to it is not.
  */
-const CLONE = `git clone ${REPO}.git
+const CLONE = `git clone --depth 1 ${REPO}.git
 cd BETtracker
 npx -y pnpm install`;
 
@@ -52,7 +56,7 @@ const ZIP = `${REPO}/archive/refs/heads/main.zip`;
 /** What to paste into a coding tool. The address is the only part to change. */
 const PROMPT = `Add the bookmaker https://www.yourbookmaker.com to BETtracker.
 
-Read AGENTS.md in this project and follow it. My recording is in har/. Ask me for whatever you cannot get yourself.`;
+Read AGENTS.md in this project and follow it. My recording is in har/, in that site's own folder. Ask me for whatever you cannot get yourself.`;
 
 /** What proves the site is in the build the browser will load, not only on disk. */
 const CHECK = `npx -y pnpm test
@@ -414,7 +418,9 @@ export const AddBookmakerPage = (): JSX.Element => {
                   </Key>
                 </>,
                 <>
-                  Save it into the project&apos;s <Key>har/</Key> folder.
+                  Save it into <Key>har/</Key> in the project, in a folder named after the site:{' '}
+                  <Key>har/bet365/</Key>. One folder per bookmaker, so a second site is a second
+                  folder and neither reads the other&apos;s pages.
                 </>,
               ]}
             />

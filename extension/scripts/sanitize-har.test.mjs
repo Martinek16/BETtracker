@@ -43,9 +43,7 @@ const har = {
               email: 'miha@example.com',
               iban: 'SI56191000000123438',
               accessToken: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abcdefghijklmnop',
-              bets: [
-                { id: 1, userId: 99887766, stake: 12.5, odds: 2.35, sport: 'Football' },
-              ],
+              bets: [{ id: 1, userId: 99887766, stake: 12.5, odds: 2.35, sport: 'Football' }],
             }),
           },
         },
@@ -53,7 +51,12 @@ const har = {
       {
         startedDateTime: '2026-01-01T00:00:01.000Z',
         time: 3,
-        request: { method: 'GET', url: 'https://cdn.example.com/logo.png', headers: [], queryString: [] },
+        request: {
+          method: 'GET',
+          url: 'https://cdn.example.com/logo.png',
+          headers: [],
+          queryString: [],
+        },
         response: {
           status: 200,
           headers: [],
@@ -139,11 +142,19 @@ describe('sanitizeHar', () => {
     const page = {
       startedDateTime: '2026-01-01T00:00:02.000Z',
       time: 8,
-      request: { method: 'GET', url: 'https://www.example.com/history', headers: [], queryString: [] },
+      request: {
+        method: 'GET',
+        url: 'https://www.example.com/history',
+        headers: [],
+        queryString: [],
+      },
       response: {
         status: 200,
         headers: [],
-        content: { mimeType: 'text/html; charset=utf-8', text: '<table><tr><td>12.50</td></tr></table>' },
+        content: {
+          mimeType: 'text/html; charset=utf-8',
+          text: '<table><tr><td>12.50</td></tr></table>',
+        },
       },
     };
     const onlyPages = { log: { entries: [page] } };

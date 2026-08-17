@@ -40,8 +40,8 @@ failure this project exists to prevent.
 
 There is exactly **one** thing you must get from the person you are working with,
 and you should ask for it at the very start rather than after an hour of
-scaffolding: `har/<site>.sanitized.har`. It comes out of their signed-in account
-and there is no other way to it.
+scaffolding: `har/<id>/<name>.sanitized.har`, in that site's own folder. It comes
+out of their signed-in account and there is no other way to it.
 
 Everything else, including the logo, you do yourself. Do not hand them a list of
 chores. `pnpm new-bookmaker` already lifts the site's name, its brand colour and
@@ -58,23 +58,24 @@ instruction is a chance to lose somebody:
 > tab, tick **Preserve log**. Now click slowly through your settled bet history -
 > page back several pages - then your open bets, your balance, and your deposits
 > and withdrawals. Right-click the list of requests, choose **Save all as HAR
-> with content**, and save it into the project's `har/` folder. Tell me when it
-> is saved - I do the rest.
+> with content**, and save it into `har/` in the project, in a folder named after
+> the site - `har/bet365/`. Tell me when it is saved - I do the rest.
 
-`har/` is made by `pnpm install`, so it is already there; open it for them.
-Downloads works too - the sanitiser looks in both - but a recording in `har/` is
-also where the scaffold reads the site's name, colour and icon from.
+`har/` is made by `pnpm install`, so it is already there; make the site's folder
+inside it and open that for them. Downloads works too - the sanitiser looks in
+both - but only a recording in the site's own folder is read as that site's, and
+that folder is where the scaffold takes the name, colour and icon from.
 
-Adapt only the site-specific part - where *that* bookmaker keeps its bet
+Adapt only the site-specific part - where _that_ bookmaker keeps its bet
 history, if you know. Then run the sanitiser yourself:
 
 ```bash
 pnpm sanitize-har
 ```
 
-No filename: it takes the newest recording out of their Downloads folder,
-strips the cookies, tokens and name out of it, and writes the clean copy into
-`har/`. Asking them to run it is one more command to mistype for nothing.
+No filename: it takes the newest recording out of `har/` or their Downloads
+folder, strips the cookies, tokens and name out of it, and writes the clean copy
+beside it. Asking them to run it is one more command to mistype for nothing.
 
 Read only that clean copy. Never read a raw `.har` into context and never write
 one anywhere: it holds live session tokens and the person's financial history.
@@ -105,8 +106,9 @@ than not opening it.
 ## Order of work
 
 0. **Get the project onto their machine**, if somebody handed you a URL rather
-   than a checkout. `git clone https://github.com/Martinek16/BETtracker`, then
-   `corepack enable && pnpm install` inside it. Clone it where they can find it
+   than a checkout. `git clone --depth 1 https://github.com/Martinek16/BETtracker`,
+   then `corepack enable && pnpm install` inside it. The history behind the
+   current state is not needed to build one. Clone it where they can find it
    again - they will be loading a build out of it in step 7 and it is theirs to
    keep, not a scratch folder.
 
@@ -119,9 +121,10 @@ than not opening it.
    they sync into the new one carries across. Better said now than discovered
    after an evening's work. Open the clone in their file manager when it is
    ready, so they can see where it went.
+
 1. **Ask** for the recording, in the words above, then run `pnpm sanitize-har`
    yourself. Do not proceed without it. Get the logo yourself while you wait.
-2. **Read** `har/<site>.sanitized.har` and work out the six things in
+2. **Read** `har/<id>/*.sanitized.har` and work out the six things in
    [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md#3-write-the-folder):
    hosts, authentication, fingerprint, endpoints, paging, bet shape.
 3. **Read** `extension/src/bookmakers/stake/` end to end - one endpoint, one
@@ -135,10 +138,12 @@ than not opening it.
 
    It writes `extension/src/bookmakers/<id>/` as a copy of `stake/` renamed to
    its own id, writes a fresh `bookmaker.json`, and adds the three collector
-   lines. Name, brand colour and `logo.png` come out of the recording in `har/`
-   - the front page the browser stored carries all three - and it says which of
-   them it found. Then rewrite the folder against the recording: the endpoints,
-   the paging, the bet shape, the host patterns and the `stake-` id prefix.
+   lines. Name, brand colour and `logo.png` come out of the recording in
+   `har/<id>/` - the front page the browser stored carries all three - and it
+   says which of them it found. Then rewrite the folder against the recording:
+   the endpoints, the paging, the bet shape, the host patterns and the `stake-`
+   id prefix.
+
 5. **Run the checks** below until they pass. Never edit a test to make it pass -
    the shared tests are protected paths and CI rejects a diff that touches one.
 6. **Hand it back to them to load.** Have them run `pnpm test && pnpm build`
@@ -156,7 +161,7 @@ than not opening it.
    line per thing it has to have proved - bets read, every bet naming a sport,
    a match and a selection, won/lost/void all seen, accumulators carrying their
    legs, open bets, balance, money in and out, bonuses, and a sync without an
-   error. A line reading *untested* means their account has never had one of
+   error. A line reading _untested_ means their account has never had one of
    those, not that it failed. Ask them for the lines that are wrong or
    untested, and fix what they name.
 8. **Report** honestly: what you proved against the recording, and what is
@@ -168,16 +173,16 @@ than not opening it.
 `bookmaker.json`, the storage key and the logo filename, and `plugin.test.ts`
 fails if any of them disagree.
 
-| File | Must |
-|:--|:--|
-| `bookmaker.json` | `id` identical to the folder name, plus `name`, `site`, `brand`, `color`, and `sites`/`siteRanges`/`apiHosts` for every host the adapter talks to |
-| `capture.ts` | `export const rule: CaptureRule`, with `rule.bookmaker === '<id>'` |
-| `adapter.ts` | `export const <camelCaseId>: BookmakerAdapter`, with `id: '<id>'` |
-| `samples.ts` | `export const samples: Samples`, built from the fixtures through your own adapter |
-| `adapter.test.ts` | Parses the fixtures and asserts the normalised output |
-| `__fixtures__/*.json` | The shape of the site's answers, not the contributor's history - see below |
-| `logo.png` | The site's mark, ~128px square, transparent background. Yours to find |
-| `README.md` | This site's quirks, and how to refresh the fixtures |
+| File                  | Must                                                                                                                                              |
+| :-------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bookmaker.json`      | `id` identical to the folder name, plus `name`, `site`, `brand`, `color`, and `sites`/`siteRanges`/`apiHosts` for every host the adapter talks to |
+| `capture.ts`          | `export const rule: CaptureRule`, with `rule.bookmaker === '<id>'`                                                                                |
+| `adapter.ts`          | `export const <camelCaseId>: BookmakerAdapter`, with `id: '<id>'`                                                                                 |
+| `samples.ts`          | `export const samples: Samples`, built from the fixtures through your own adapter                                                                 |
+| `adapter.test.ts`     | Parses the fixtures and asserts the normalised output                                                                                             |
+| `__fixtures__/*.json` | The shape of the site's answers, not the contributor's history - see below                                                                        |
+| `logo.png`            | The site's mark, ~128px square, transparent background. Yours to find                                                                             |
+| `README.md`           | This site's quirks, and how to refresh the fixtures                                                                                               |
 
 The three collector lines, which `pnpm new-bookmaker` writes for you and which
 you should recognise when you read the diff:
@@ -189,7 +194,11 @@ export const CAPTURE_RULES = [betAtHome, stake, mySite];
 
 // registry.ts
 import { mySite } from './my-site/adapter';
-const ADAPTERS: Record<Bookmaker, BookmakerAdapter> = { 'bet-at-home': betAtHome, stake, 'my-site': mySite };
+const ADAPTERS: Record<Bookmaker, BookmakerAdapter> = {
+  'bet-at-home': betAtHome,
+  stake,
+  'my-site': mySite,
+};
 
 // catalog.ts
 import mySite from './my-site/bookmaker.json';

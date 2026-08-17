@@ -158,8 +158,8 @@ export const pickIcon = (entries) =>
  * already holds the front page, the colour in its head and the icon a phone
  * would put on a home screen.
  */
-const fromRecording = (host, folder) => {
-  const path = findRecording();
+const fromRecording = (id, host, folder) => {
+  const path = findRecording(id);
   if (path === undefined) return {};
   const entries = JSON.parse(readFileSync(path, 'utf8')).log?.entries ?? [];
   const site = entries.filter((entry) => (entry.request?.url ?? '').includes(host));
@@ -208,8 +208,8 @@ const fromSite = async (host, folder) => {
 };
 
 /** The recording first, the live site for whatever it did not hold. */
-const identify = async (host, folder) => {
-  const har = fromRecording(host, folder);
+const identify = async (id, host, folder) => {
+  const har = fromRecording(id, host, folder);
   const live =
     har.name !== undefined && har.brand !== undefined && har.logo
       ? {}
@@ -258,7 +258,7 @@ const main = async () => {
     const source = readFileSync(join(BOOKMAKERS, from, file.name), 'utf8');
     writeFileSync(join(folder, file.name), retarget(source, from, id));
   }
-  const found = await identify(host, folder);
+  const found = await identify(id, host, folder);
   writeFileSync(
     join(folder, 'bookmaker.json'),
     `${JSON.stringify(
@@ -291,7 +291,7 @@ const main = async () => {
           .join(', ') || 'nothing - it answered neither the recording nor a request'
       }.\n` +
       'What it still needs, none of which can be guessed:\n' +
-      `  __fixtures__/*.json  the site's own answers, from har/<site>.sanitized.har\n` +
+      `  __fixtures__/*.json  the site's own answers, from har/${id}/*.sanitized.har\n` +
       (found.logo ? '' : "  logo.png             the site's mark, ~128px square, transparent\n") +
       `  bookmaker.json       its real hosts - sites, siteRanges, apiHosts\n` +
       `  capture.ts           the host and fingerprint patterns, and where the session lives\n` +

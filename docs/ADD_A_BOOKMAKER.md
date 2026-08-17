@@ -29,12 +29,16 @@ there is no way to fake one.
 Skip this if you pasted the prompt above; the tool does it for you.
 
 ```bash
-git clone https://github.com/Martinek16/BETtracker
+git clone --depth 1 https://github.com/Martinek16/BETtracker
 cd BETtracker
 corepack enable
 pnpm install
 pnpm build
 ```
+
+`--depth 1` fetches the project as it stands and not the history behind it. You
+are building it, not working on its past. (Drop the flag if you mean to send the
+work back as a pull request.)
 
 If `pnpm build` finishes without errors, you are set up. (No local setup at all:
 open the repository in a [Codespace](https://github.com/codespaces) instead. The
@@ -75,9 +79,11 @@ So you make those requests yourself, with the browser writing them down.
    - deposits and withdrawals
    - bonuses or free bets, if the site has them
 5. Right-click anywhere in the request list → **Save all as HAR with content**,
-   and save it into the project's `har/` folder, which `pnpm install` made for
-   you. (Downloads works too, but the folder is where the next steps look
-   first - and where the site's own name, colour and icon are read from.)
+   and save it into `har/` in the project, which `pnpm install` made for you, in
+   a folder named after the site: `har/bet365/`. One folder per bookmaker, so
+   adding a second site never mixes its pages with the first one's. (Downloads
+   works too, but the site's own folder is where the next steps look first - and
+   where its name, colour and icon are read from.)
 
 > **The file you just saved is dangerous.** It contains your live session
 > cookies, your name, your account number and every deposit you have made.
@@ -90,13 +96,13 @@ So you make those requests yourself, with the browser writing them down.
 pnpm sanitize-har
 ```
 
-No filename. It takes the most recent recording out of your Downloads folder,
-cleans it, and puts the clean copy in the project's `har/` folder, which git is
-already told to ignore:
+No filename. It takes the most recent recording out of `har/` or your Downloads
+folder, cleans it, and writes the clean copy beside it, where git is already told
+to ignore it:
 
 ```
-reading C:\Users\you\Downloads\yoursite.har
-har/yoursite.sanitized.har
+reading har/bet365/bet365.har
+har/bet365/bet365.sanitized.har
   kept 47 API calls, dropped 312 others, redacted 68 values
 ```
 
@@ -249,7 +255,7 @@ reads that off what was actually stored, so it finds in a second the failure
 that otherwise costs a day: the sync says done, the total looks right, and
 every breakdown is blank because `sport` came through null.
 
-A line reading *untested* is not a failure. It means your account has never had
+A line reading _untested_ is not a failure. It means your account has never had
 one of those - no accumulator, no bonus - so nothing has been proved either
 way. Send the wrong and untested lines to the tool; that is the whole of the
 bug report it needs.
