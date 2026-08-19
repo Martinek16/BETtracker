@@ -135,7 +135,9 @@ const SectionTitle = ({ children }: { children: string }): JSX.Element => (
 );
 
 /**
- * Every bookmaker this build can read, named rather than left as a row of marks.
+ * Every bookmaker this build can read, as a row of marks. The name is on the
+ * mark itself and again in the tooltip, so spelling it out beside every icon
+ * only widened the row as the list grew.
  *
  * A site added to a copy of the project is drawn apart from the released ones:
  * it works the same, but nobody else has checked it, and whoever added it is the
@@ -149,12 +151,12 @@ const SupportedFooter = (): JSX.Element => {
         released ? account.name : `${account.name} - added to this copy, not part of a release`
       }
       className={cn(
-        'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs text-muted-foreground',
+        'flex items-center rounded-full border p-1.5 text-muted-foreground',
         released ? 'border-border/60' : 'border-dashed border-primary/50 text-primary',
       )}
     >
       <AccountIcon bookmaker={account.id} className="h-4 w-4" />
-      {account.name}
+      <span className="sr-only">{account.name}</span>
     </span>
   );
 
