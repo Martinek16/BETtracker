@@ -76,9 +76,20 @@ export const registerCatalog = (source, id) =>
 export const retarget = (source, from, to) =>
   source
     .replaceAll(`export const ${camelId(from)}:`, `export const ${camelId(to)}:`)
+    .replaceAll(`import { ${camelId(from)} }`, `import { ${camelId(to)} }`)
     .replaceAll(`const BOOKMAKER: Bookmaker = '${from}'`, `const BOOKMAKER: Bookmaker = '${to}'`)
     .replaceAll(`id: '${from}'`, `id: '${to}'`)
     .replaceAll(`bookmaker: '${from}'`, `bookmaker: '${to}'`);
+
+/**
+ * The one line of the copied capture rule that cannot be left pointing at the
+ * example. `manifest.test.ts` asks every site the manifest injects into to be
+ * recognised by a rule, so a rule still matching stake's hosts fails a shared
+ * test with the new folder's name on it - which reads as the scaffold being
+ * broken rather than as a line to fill in.
+ */
+export const retargetHost = (source, host) =>
+  source.replace(/^(\s*)host: \/.*\/,$/m, `$1host: /(^|\\.)${host.replaceAll('.', '\\.')}$/,`);
 
 /** The declaration the manifest and `privacy.test.ts` both read. Hosts are the contributor's to fill. */
 const meta = (id, site, name, brand, color) => ({
@@ -225,6 +236,36 @@ const identify = async (id, host, folder) => {
   };
 };
 
+/**
+ * What the folder owes the shared suite, empty until there is a recording to
+ * fill it from. It compiles as it stands, which is the point: `samples.ts` is
+ * imported by a shared test, and one that does not compile silences that test
+ * for every bookmaker at once.
+ */
+const SAMPLES = `import type { Samples } from '../samples';
+
+/**
+ * Put the recorded payload through this folder's own parser here, the way
+ * stake/samples.ts does. Nothing is written by hand: a sample invented to
+ * satisfy the parser proves only that the parser agrees with itself.
+ */
+export const samples: Samples = { settled: [], open: [] };
+`;
+
+/** The folder's own tests: what is odd about this site, not what every site owes. */
+const adapterTest = (id) => `import { describe, it } from 'vitest';
+
+/**
+ * The shared suites already hold this folder to what every bookmaker owes.
+ * What belongs here is what is peculiar to ${id}: how it pages, which figures
+ * it reports in which currency, and the statuses it invents.
+ */
+describe('${id}', () => {
+  it.todo('parses the settled bets out of __fixtures__');
+  it.todo('reads the balance the site reports');
+});
+`;
+
 const title = (id) =>
   id
     .split('-')
@@ -251,13 +292,22 @@ const main = async () => {
   const host = (site ?? `${id}.com`).replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/.*$/, '');
 
   mkdirSync(folder);
+  // The fixtures are the recording, the logo is the site's own mark, and the
+  // example's tests and samples read fixtures that do not exist yet: copied,
+  // they do not compile, and `conformance.test.ts` then fails to load at all -
+  // taking every other bookmaker's coverage down with a folder nobody has
+  // written yet. So those two are written fresh below instead.
+  const SKIP = ['logo.png', 'bookmaker.json', 'samples.ts', 'adapter.test.ts'];
   for (const file of readdirSync(join(BOOKMAKERS, from), { withFileTypes: true })) {
-    // The fixtures are the recording and the logo is the site's own mark:
-    // neither can be copied off another bookmaker without saying something false.
-    if (!file.isFile() || file.name === 'logo.png' || file.name === 'bookmaker.json') continue;
-    const source = readFileSync(join(BOOKMAKERS, from, file.name), 'utf8');
-    writeFileSync(join(folder, file.name), retarget(source, from, id));
+    if (!file.isFile() || SKIP.includes(file.name)) continue;
+    const source = retarget(readFileSync(join(BOOKMAKERS, from, file.name), 'utf8'), from, id);
+    writeFileSync(
+      join(folder, file.name),
+      file.name === 'capture.ts' ? retargetHost(source, host) : source,
+    );
   }
+  writeFileSync(join(folder, 'samples.ts'), SAMPLES);
+  writeFileSync(join(folder, 'adapter.test.ts'), adapterTest(id));
   const found = await identify(id, host, folder);
   writeFileSync(
     join(folder, 'bookmaker.json'),
@@ -280,7 +330,9 @@ const main = async () => {
 
   console.log(
     `extension/src/bookmakers/${id}/ - registered in capture.ts, registry.ts and catalog.ts.\n` +
-      `It is a copy of ${from}/ answering to its own name, so it compiles and does the wrong thing.\n` +
+      `The adapter is a copy of ${from}/ answering to its own name: it compiles, and it\n` +
+      `reads ${from}'s API rather than this site's. The tests that fail from here name\n` +
+      `what is missing, one file at a time.\n` +
       `Taken from the site itself: ${
         [
           found.name && 'its name',
@@ -294,10 +346,13 @@ const main = async () => {
       `  __fixtures__/*.json  the site's own answers, from har/${id}/*.sanitized.har\n` +
       (found.logo ? '' : "  logo.png             the site's mark, ~128px square, transparent\n") +
       `  bookmaker.json       its real hosts - sites, siteRanges, apiHosts\n` +
-      `  capture.ts           the host and fingerprint patterns, and where the session lives\n` +
+      `  capture.ts           the fingerprint, and where the session lives (the host\n` +
+      `                       pattern is already ${host})\n` +
       `  adapter.ts           the endpoints, the paging and the bet shape - and the '${from}-' id prefix\n` +
+      `  samples.ts           the fixture put through this folder's parser\n` +
+      `  adapter.test.ts      what is peculiar to this site\n` +
       '  README.md            what is odd about this site\n' +
-      'Then: pnpm lint && pnpm test && pnpm build',
+      'Then: pnpm check',
   );
 };
 

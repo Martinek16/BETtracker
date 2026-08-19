@@ -75,6 +75,103 @@ export const useSiteOrigins = (): Record<string, string> => {
   return origins;
 };
 
+export interface AddingSite {
+  /** The site as the browser knows it, `www.` and all. */
+  host: string;
+  /** The folder and the id the project will know it by. */
+  id: string;
+}
+
+/**
+ * The id a host becomes: the name without `www.` and without the suffix, which
+ * is what the folder, the adapter and the three collector lines all answer to.
+ * `www.e-stave.com` is `e-stave`, and `bet-at-home.co.uk` is `bet-at-home`.
+ */
+export const idFromHost = (host: string): string =>
+  host
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/[/?#].*$/, '')
+    .replace(/^www\./, '')
+    .replace(/\.[a-z]{2,}(\.[a-z]{2,})*$/, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+/** The host on its own, from whatever the reader pasted in. */
+export const hostFromInput = (input: string): string =>
+  input
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/[/?#].*$/, '');
+
+/**
+ * Which site the reader said they are adding, kept so every step after can name
+ * it. Nothing is read from the site itself: this is the reader's own answer, and
+ * the only thing it changes is what the page writes on screen.
+ */
+export const useAddingSite = (): [AddingSite | null, (host: string) => void] => {
+  const [site, setSite] = useState<AddingSite | null>(null);
+
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || chrome.storage?.local === undefined) return;
+    void chrome.storage.local
+      .get('addingSite')
+      .then((stored) => setSite((stored['addingSite'] as AddingSite | undefined) ?? null));
+  }, []);
+
+  const choose = (input: string): void => {
+    const host = hostFromInput(input);
+    const next = host === '' ? null : { host, id: idFromHost(host) };
+    setSite(next);
+    if (typeof chrome === 'undefined' || chrome.storage?.local === undefined) return;
+    void (next === null
+      ? chrome.storage.local.remove('addingSite')
+      : chrome.storage.local.set({ addingSite: next }));
+  };
+
+  return [site, choose];
+};
+
+export interface RecordingState {
+  /** The site being recorded right now, if one is. */
+  running: string | null;
+  /** The site of the last recording that was saved, if there was one. */
+  saved: string | null;
+}
+
+/**
+ * What the popup's recorder has done, so the page walking a reader through
+ * adding a site can say where they are rather than ask.
+ *
+ * Polled rather than subscribed: the popup writes this at most twice per site,
+ * and a listener that outlives the tab is more moving parts than the answer is
+ * worth.
+ */
+export const useRecordingState = (): RecordingState => {
+  const [state, setState] = useState<RecordingState>({ running: null, saved: null });
+
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || chrome.storage?.local === undefined) return;
+    const read = (): void => {
+      void Promise.all([
+        chrome.storage.session.get('recording'),
+        chrome.storage.local.get('recordingSaved'),
+      ]).then(([session, local]) => {
+        const running = (session['recording'] as { host?: string } | undefined)?.host ?? null;
+        const saved = (local['recordingSaved'] as { host?: string } | undefined)?.host ?? null;
+        setState({ running, saved });
+      });
+    };
+    read();
+    const timer = window.setInterval(read, 2000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return state;
+};
+
 export interface SiteLink {
   /** What to write on screen: the mirror's host, without the scheme. */
   host: string;

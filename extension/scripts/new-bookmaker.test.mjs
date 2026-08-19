@@ -14,6 +14,7 @@ import {
   registerCatalog,
   registerRegistry,
   retarget,
+  retargetHost,
 } from './new-bookmaker.mjs';
 
 const collector = (name) =>
@@ -74,6 +75,18 @@ describe('renaming the copied example', () => {
   it('keeps nothing it cannot use', () => {
     const out = readIdentity('<head><meta name="theme-color" content="rgb(1,2,3)"></head>');
     expect(out).toEqual({ name: undefined, brand: undefined, icon: undefined });
+  });
+
+  /**
+   * The copied rule matching the example's hosts fails `manifest.test.ts` under
+   * the new folder's name, which reads as the scaffold being broken rather than
+   * as a pattern to fill in.
+   */
+  it('points the copied capture rule at the new site', () => {
+    const out = retargetHost(collector('stake/capture.ts'), 'bet365.com');
+    expect(out).toContain('host: /(^|\\.)bet365\\.com$/,');
+    expect(out).not.toContain('stake\\d*\\.com');
+    expect(out).toContain('fingerprint:');
   });
 
   it('reads a hyphenated id as the code would name it', () => {

@@ -1,6 +1,35 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
 import { connectionOf, type ConnectionTone, type SyncMeta } from '@betanal/shared';
 import { cn } from '@/lib/utils';
+
+/**
+ * Where you are and the way back out, on the one line. A subpage is opened from
+ * a tab and returns to it, so the parent is the title's own first half rather
+ * than a separate link stacked above it eating a line of the page.
+ */
+export const Crumbs = ({
+  to,
+  parent,
+  title,
+  children,
+}: {
+  to: string;
+  parent: string;
+  title: string;
+  /** Anything that belongs on the same line, such as a note about the page. */
+  children?: ReactNode;
+}): JSX.Element => (
+  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 px-1 text-sm">
+    <Link to={to} className="text-muted-foreground transition-colors hover:text-foreground">
+      {parent}
+    </Link>
+    <ChevronRight size={13} strokeWidth={1.75} className="shrink-0 text-muted-foreground/50" />
+    <h2 className="min-w-0 truncate font-semibold text-foreground">{title}</h2>
+    {children}
+  </div>
+);
 
 /** The four signs, in the same inks the popup uses so both read as one app. */
 const TONE: Record<ConnectionTone, string> = {

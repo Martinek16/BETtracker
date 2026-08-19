@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ExternalLink, Unlink } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ExternalLink, Unlink } from 'lucide-react';
 import { accountKey, type AccountRef } from '@betanal/shared';
 import { DashboardCard } from '@/components/dashboard/dashboard-card';
 import { Button } from '@/components/ui/button';
@@ -30,17 +30,7 @@ import { clearAccount, forgetSite, getKnownAccounts } from '@/data/source';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { AccountStats } from '@/pages/options/account-stats';
-import { ConnectionLabel, Row } from '@/pages/options/parts';
-
-const BackLink = (): JSX.Element => (
-  <Link
-    to="/options/accounts"
-    className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-  >
-    <ChevronLeft size={13} strokeWidth={1.75} />
-    All accounts
-  </Link>
-);
+import { ConnectionLabel, Crumbs, Row } from '@/pages/options/parts';
 
 /** Cuts this login loose: everything read from it goes with it, the other logins stay. */
 const DisconnectAccount = ({
@@ -179,7 +169,7 @@ export const AccountDetailPage = (): JSX.Element => {
   if (account === undefined || accountId === undefined) {
     return (
       <div className="flex flex-col gap-4">
-        <BackLink />
+        <Crumbs to="/options/accounts" parent="Accounts" title="Unknown account" />
         <p className="text-sm text-muted-foreground">That account does not exist.</p>
       </div>
     );
@@ -200,7 +190,7 @@ export const AccountDetailPage = (): JSX.Element => {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      <BackLink />
+      <Crumbs to="/options/accounts" parent="Accounts" title={nameFor(key) || account.name} />
       {/* Both cards fill whatever is left of the page, the way every other page's
           cards do, so neither carries a scrollbar of its own. */}
       <div className="grid min-h-0 flex-1 gap-4 pb-12 lg:grid-cols-[300px_minmax(0,1fr)]">

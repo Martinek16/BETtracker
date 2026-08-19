@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { sanitizeHar, findLeaks } from './sanitize-har.mjs';
+import { coverage, findLeaks, recordingReport, sanitizeHar, tooThin } from './sanitize-har.mjs';
 
 const har = {
   log: {
@@ -134,6 +134,89 @@ describe('sanitizeHar', () => {
   });
 
   /**
+   * The sanitiser destroying an ordinary field is not a smaller failure than
+   * leaking one: paging and dates are two of the things the recording exists to
+   * show, and a card-shaped timestamp used to stop the file being written at
+   * all. So the ordinary record is asserted as loudly as the dangerous one.
+   */
+  it('leaves an ordinary bet record alone and still takes the name off it', () => {
+    const ordinary = {
+      log: {
+        entries: [
+          {
+            startedDateTime: '2026-01-01T00:00:00.000Z',
+            time: 5,
+            request: {
+              method: 'GET',
+              url: 'https://api.example.com/bets',
+              headers: [{ name: 'x-access-token', value: 'abcdef0123456789abcdef0123456789' }],
+              queryString: [{ name: 'pageNumber', value: '2' }],
+            },
+            response: {
+              status: 200,
+              headers: [{ name: 'content-type', value: 'application/json' }],
+              content: {
+                mimeType: 'application/json',
+                text: JSON.stringify({
+                  pageNumber: 1,
+                  nextPageNo: 2,
+                  design: 'classic',
+                  spin: 0,
+                  name: 'Miha Martinek',
+                  card: '4111 1111 1111 1111',
+                  bets: [
+                    {
+                      id: 774411,
+                      settledAt: 1723952800000,
+                      placedAt: '1723852800000',
+                      sport: 'Football',
+                      stake: 12.5,
+                    },
+                  ],
+                }),
+              },
+            },
+          },
+        ],
+      },
+    };
+
+    const result = sanitizeHar(structuredClone(ordinary));
+    const entry = result.har.log.entries[0];
+    const body = JSON.parse(entry.response.content.text);
+
+    // What the adapter is written against survives.
+    expect(body.pageNumber).toBe(1);
+    expect(body.nextPageNo).toBe(2);
+    expect(body.design).toBe('classic');
+    expect(body.spin).toBe(0);
+    expect(body.bets[0].id).toBe(774411);
+    expect(body.bets[0].settledAt).toBe(1723952800000);
+    expect(body.bets[0].placedAt).toBe('1723852800000');
+    expect(entry.request.queryString[0].value).toBe('2');
+
+    // What is the contributor's own does not.
+    expect(body.name).not.toBe('Miha Martinek');
+    expect(body.card).not.toContain('4111');
+    expect(entry.request.headers[0].value).toBe('REDACTED');
+
+    // And a file this ordinary is one the command will actually write.
+    expect(findLeaks(JSON.stringify(result.har, null, 2))).toEqual([]);
+  });
+
+  /**
+   * The refusal is the last line of defence and the one path nothing else
+   * exercises: what it prints ends up in a terminal, and often in a screenshot
+   * attached to an issue. So it says where, and never what.
+   */
+  it('reports a leak by position, not by value', () => {
+    const found = findLeaks(JSON.stringify({ iban: 'SI56191000000123438' }, null, 2));
+    expect(found).toHaveLength(1);
+    expect(found[0]).toContain('key "iban"');
+    expect(found[0]).not.toContain('SI56191000000123438');
+  });
+
+  /**
    * A server-rendered site sanitises down to nothing, and the count of what
    * survived cannot say why. Counting the pages separately is what lets the
    * command tell a contributor the site is the obstacle, not their capture.
@@ -162,5 +245,87 @@ describe('sanitizeHar', () => {
     expect(sanitizeHar(structuredClone(onlyPages))).toMatchObject({ kept: 0, rendered: 1 });
     // The image is not a rendered page, so a normal recording reports none.
     expect(run().rendered).toBe(0);
+  });
+});
+
+const call = (url) => ({ request: { url } });
+
+/**
+ * The check exists because of a real attempt that got as far as a written
+ * folder before anyone noticed the recording behind it held one page. So the
+ * cases asserted here are that failure and the two ways it disguises itself:
+ * one page fetched under many numbers, and a site that names nothing in
+ * English.
+ */
+describe('coverage', () => {
+  const thorough = [
+    call('https://api.example.com/bets/history?page=1'),
+    call('https://api.example.com/bets/history?page=2'),
+    call('https://api.example.com/bets/history?page=3'),
+    call('https://api.example.com/bets/open'),
+    call('https://api.example.com/account/balance'),
+    call('https://api.example.com/transactions?page=1'),
+    call('https://api.example.com/bonuses'),
+  ];
+
+  it('counts one endpoint fetched many ways as one endpoint', () => {
+    const found = coverage([
+      call('https://api.example.com/bets/1'),
+      call('https://api.example.com/bets/2'),
+      call('https://api.example.com/bets/3'),
+    ]);
+    expect(found.endpoints).toHaveLength(1);
+    expect(found.endpoints[0].calls).toBe(3);
+    expect(tooThin(found)).toBe(true);
+  });
+
+  it('reads paging off the same endpoint asked three different ways', () => {
+    expect(coverage(thorough).paged).toEqual(['api.example.com/bets/history']);
+  });
+
+  it('names what it could not recognise, and where the contributor gets it', () => {
+    const found = coverage([
+      call('https://api.example.com/bets/history?page=1'),
+      call('https://api.example.com/bets/history?page=2'),
+      call('https://api.example.com/bets/history?page=3'),
+      call('https://api.example.com/account/balance'),
+    ]);
+    expect(found.recognised).toContain('Bet history');
+    expect(found.unrecognised.map((need) => need.name)).toContain('Money in and out');
+    expect(recordingReport(found).join('\n')).toContain('deposits and withdrawals');
+  });
+
+  /**
+   * A Slovenian site names none of this in English, and telling its contributor
+   * that their history was "not recorded" would send them back to record pages
+   * they already had.
+   */
+  it('does not call a site that names nothing in English a thin recording', () => {
+    const found = coverage([
+      call('https://api.e-stave.com/zgodovina?stran=1'),
+      call('https://api.e-stave.com/zgodovina?stran=2'),
+      call('https://api.e-stave.com/zgodovina?stran=3'),
+      call('https://api.e-stave.com/stanje'),
+      call('https://api.e-stave.com/vplacila'),
+    ]);
+    expect(tooThin(found)).toBe(false);
+    const report = recordingReport(found).join('\n');
+    expect(report).toContain('does not name it in English');
+    expect(report).not.toContain('cannot be written from it');
+  });
+
+  it('says to page back when nothing in the recording pages', () => {
+    const report = recordingReport(
+      coverage([
+        call('https://api.example.com/bets/history'),
+        call('https://api.example.com/bets/open'),
+        call('https://api.example.com/account/balance'),
+      ]),
+    ).join('\n');
+    expect(report).toContain('page back through your bet history');
+  });
+
+  it('says nothing about paging when the recording has it', () => {
+    expect(recordingReport(coverage(thorough)).join('\n')).not.toContain('page back through');
   });
 });

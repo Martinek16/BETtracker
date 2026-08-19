@@ -27,6 +27,14 @@ const checkRegistered = () => {
 };
 
 const watch = process.argv.includes('--watch');
+/**
+ * The copy uploaded to a web store. Recording is a contributor's tool: it needs
+ * an unpacked checkout, a terminal and pnpm to be worth anything, so a store
+ * reader can never reach it. Shipping the code anyway leaves a network recorder
+ * in a package that has no use for one, which is a reviewer's question we do
+ * not need to answer.
+ */
+const store = process.argv.includes('--store');
 const outdir = 'dist';
 
 checkRegistered();
@@ -40,7 +48,7 @@ const common = {
   target: ['chrome111', 'firefox121'],
   platform: 'browser',
   logLevel: 'info',
-  define: { 'process.env.NODE_ENV': '"production"' },
+  define: { 'process.env.NODE_ENV': '"production"', __STORE_BUILD__: String(store) },
 };
 
 /** Each extension entry must be bundled separately with the right module format. */
@@ -48,8 +56,11 @@ const targets = [
   { in: 'src/background/background.ts', out: 'dist/background.js', format: 'esm' },
   { in: 'src/content/content.ts', out: 'dist/content.js', format: 'iife' },
   { in: 'src/inject/inject.ts', out: 'dist/inject.js', format: 'iife' },
+  // Not in the manifest: it is registered from the popup, for one site, while
+  // the user is recording it, and unregistered again when they stop.
+  { in: 'src/inject/recorder.ts', out: 'dist/recorder.js', format: 'iife', store: false },
   { in: 'src/popup/popup.ts', out: 'dist/popup.js', format: 'esm' },
-];
+].filter((t) => !store || t.store !== false);
 
 const dashboardDist = '../dashboard/dist';
 
@@ -84,5 +95,5 @@ if (watch) {
     ),
   );
   await copyStatic();
-  console.log('[build] extension built → dist/');
+  console.log(`[build] extension built → dist/${store ? ' (store copy, no recorder)' : ''}`);
 }

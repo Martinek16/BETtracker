@@ -40,7 +40,7 @@ else.
 
 | Browser | What to do | Worth knowing |
 |:--|:--|:--|
-| **Edge** | [Get it from Microsoft&nbsp;Edge&nbsp;Add&#8209;ons](https://microsoftedge.microsoft.com/addons/detail/bettracker/dofgloogkcigmpnkmoaefnejeffdbcmi). One click. | Updates itself. |
+| **Edge** | [Get it from Microsoft&nbsp;Edge&nbsp;Add&#8209;ons](https://microsoftedge.microsoft.com/addons/detail/bettracker/dofgloogkcigmpnkmoaefnejeffdbcmi). One click. | Updates itself, and gains each new bookmaker as it lands. Adding one yourself is the download below. |
 | **Chrome, Brave, Opera** | [Download `bettracker.zip`](https://github.com/Martinek16/BETtracker/releases/latest/download/bettracker.zip), then unzip it into a folder you intend to keep. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick that folder. | Unzip it properly, rather than loading it straight out of the archive viewer. Deleting the folder uninstalls the extension. |
 
 > [!NOTE]
@@ -118,20 +118,27 @@ just follow the steps.
 **What you need:** an account at that bookmaker, and an AI coding tool -
 Claude Code, Cursor or similar.
 
-**Where to start:** paste this into the tool, with your bookmaker's address
-instead of the example.
+**Where to start:** one terminal, five lines. Nothing to fill in - the last one
+asks which bookmaker you are adding.
 
+```bash
+git clone --depth 1 https://github.com/Martinek16/BETtracker
+cd BETtracker
+corepack enable
+pnpm install
+pnpm add-bookmaker
 ```
-Add the bookmaker https://www.yourbookmaker.com to BETtracker.
 
-The project is https://github.com/Martinek16/BETtracker - clone it,
-read AGENTS.md, and follow it.
-```
+That last line runs the rest: it waits for your recording - leave it wherever
+your browser saves it, the command goes looking - strips your tokens out of it,
+writes the instructions to a file and starts your assistant on that file. No
+assistant, or not Claude Code? The command prints that file's path; open yours
+in the project folder and give it the same file. The whole of it:
 
-It sets everything up and tells you what to do next. The whole of it:
-
-1. **You** record your bet history. Press F12, open the Network tab, click
-   through your account, save the file. A few minutes.
+1. **You** record your bet history. If you have BETtracker installed, its popup
+   does the recording: **Record this site**, click through your account, **Save
+   recording**. Otherwise DevTools does it - F12, Network tab, export the log
+   with sensitive data. A few minutes either way.
 2. **The tool** strips your tokens and your name out of that file, writes the
    folder, runs the tests and builds.
 3. **You** load the extension and check the figures. The extension itself lists

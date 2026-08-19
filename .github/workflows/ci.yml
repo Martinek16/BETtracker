@@ -41,9 +41,21 @@ jobs:
 
       - run: pnpm build
 
-      # Proof the extension still loads, not just that it compiled.
-      - name: manifest survived the build
-        run: node -e "JSON.parse(require('fs').readFileSync('extension/dist/manifest.json','utf8'))"
+      # Proof the extension still loads, not just that it compiled. The version
+      # is checked with it: a store rejects an upload whose version has not
+      # moved, and the number a reader reports a bug against is this one.
+      - name: manifest survived the build, and says the same version
+        run: |
+          node -e '
+            const read = (p) => JSON.parse(require("fs").readFileSync(p, "utf8"));
+            const built = read("extension/dist/manifest.json").version;
+            const pkg = read("package.json").version;
+            if (built !== pkg) {
+              console.error("::error::manifest.json says " + built + ", package.json says " + pkg);
+              process.exit(1);
+            }
+            console.log("manifest ok, version " + built);
+          '
 
       - uses: actions/upload-artifact@v7
         with:

@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { Section } from '@/pages/options/parts';
+import { Crumbs, Section } from '@/pages/options/parts';
 
 /** One paragraph of the policy, in the same measure the About page reads at. */
 const Prose = ({ children }: { children: string }): JSX.Element => (
@@ -40,13 +38,7 @@ const Pair = ({ children }: { children: ReactNode }): JSX.Element => (
  */
 export const PrivacyPage = (): JSX.Element => (
   <div className="flex flex-1 flex-col gap-4 pb-4">
-    <Link
-      to="/options/about"
-      className="inline-flex w-fit items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-    >
-      <ArrowLeft size={13} strokeWidth={1.75} />
-      Back to About
-    </Link>
+    <Crumbs to="/options/about" parent="About" title="Privacy" />
 
     <div className="grid items-start gap-4 lg:grid-cols-[1.85fr_1fr]">
       <div className="flex flex-col gap-4">

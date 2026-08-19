@@ -14,13 +14,18 @@
     "dev:dashboard": "pnpm --filter @betanal/dashboard dev",
     "package": "pnpm build:shared && pnpm build:extension",
     "zip": "pnpm package && node extension/scripts/zip.mjs",
+    "_comment_zip_store": "The upload for a web store, which is not the release download: it leaves the recorder out, because the rest of adding a bookmaker needs a checkout a store reader does not have.",
+    "zip:store": "pnpm build:shared && pnpm build:dashboard && pnpm --filter @betanal/extension build:store && node extension/scripts/zip.mjs",
     "_comment_postinstall": "Makes har/, which git cannot carry: the folder is ignored because of what gets dropped in it, so a fresh checkout would have nowhere to save the recording.",
     "postinstall": "node extension/scripts/sanitize-har.mjs --make-folder",
+    "_comment_add_bookmaker": "The whole flow in one command, so a contributor never has to hold the order of the steps in their head. It calls the two below rather than repeating them.",
+    "add-bookmaker": "node extension/scripts/add-bookmaker.mjs",
     "sanitize-har": "node extension/scripts/sanitize-har.mjs",
     "new-bookmaker": "node extension/scripts/new-bookmaker.mjs",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\"",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "check": "pnpm lint && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.18.0",

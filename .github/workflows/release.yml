@@ -1,9 +1,17 @@
 name: Release
 
 # Edge has a store listing; Chrome cannot have one, since Google removes
-# gambling-related extensions. So a Release is how everyone else installs it,
-# and the zip here is what gets uploaded to Edge as well. Tagging is the whole
-# publishing process.
+# gambling-related extensions. So a Release is how everyone else installs it.
+# Tagging is the whole publishing process, and it produces two archives that
+# are not interchangeable:
+#
+#   bettracker.zip        the download on this page - the whole project,
+#                         recorder included, so a reader can add their own
+#                         bookmaker and run everything the code can do.
+#   bettracker-store.zip  the file uploaded to Edge by hand. A store copy
+#                         leaves the recorder out, because adding a bookmaker
+#                         needs a checkout and a terminal a store reader
+#                         does not have.
 
 on:
   push:
@@ -38,8 +46,15 @@ jobs:
       - name: zip
         run: cd extension/dist && zip -qr ../bettracker.zip .
 
-      - name: checksum
-        run: cd extension && sha256sum bettracker.zip > bettracker.zip.sha256
+      # Second build over the same dist/, so it has to come after the first zip.
+      - name: build the store copy
+        run: pnpm --filter @betanal/extension build:store
+
+      - name: zip the store copy
+        run: cd extension/dist && zip -qr ../bettracker-store.zip .
+
+      - name: checksums
+        run: cd extension && sha256sum bettracker.zip bettracker-store.zip > SHA256SUMS
 
       # Pinned by commit rather than by tag: this is the only job that can write
       # to the repository, and a tag can be moved under it by whoever owns it.
@@ -48,13 +63,16 @@ jobs:
         with:
           files: |
             extension/bettracker.zip
-            extension/bettracker.zip.sha256
+            extension/bettracker-store.zip
+            extension/SHA256SUMS
           generate_release_notes: true
           body: |
             ## Install
 
             **Edge** — one click, from
             [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/bettracker/dofgloogkcigmpnkmoaefnejeffdbcmi).
+            The listing carries the bookmakers this project already supports,
+            and gains the ones added here as they land.
 
             **Chrome, Brave, Opera, Vivaldi** — Google does not allow
             gambling-related extensions, so add it by hand:
@@ -66,8 +84,19 @@ jobs:
             3. Open `chrome://extensions`, turn on **Developer mode**.
             4. **Load unpacked**, and pick the unzipped folder.
 
-            Verify the download if you like:
-            `sha256sum -c bettracker.zip.sha256`
+            Verify the download if you like: `sha256sum -c SHA256SUMS`
+
+            ## Adding your own bookmaker
+
+            `bettracker.zip` is the complete build: it can record a site of
+            your own so the project can learn to read it. The store copy
+            leaves that out, since the rest of the work needs a checkout and
+            a terminal. Either way the steps are under
+            **Options → Accounts → Add a bookmaker**.
+
+            `bettracker-store.zip` is the file uploaded to Edge. It is here so
+            the two are built from the same tag — there is no reason to
+            download it.
 
             ---
 

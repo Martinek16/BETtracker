@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { CAPTURE_RULES } from './capture';
 import { CATALOG } from './catalog';
 import { adapters } from './registry';
@@ -41,9 +41,17 @@ describe.each(FOLDERS)('%s', (folder) => {
   });
 
   it('ships a logo, a capture rule and an adapter', () => {
-    expect(() => readFileSync(new URL(`${folder}/logo.png`, DIR))).not.toThrow();
-    expect(() => read(folder, 'capture.ts')).not.toThrow();
-    expect(() => read(folder, 'adapter.ts')).not.toThrow();
+    // Named rather than left to a raw ENOENT: this is the failure a contributor
+    // hits halfway through adding a site, and the file that is missing is the
+    // whole of what they have to do next.
+    const has = (file: string): boolean => existsSync(new URL(`${folder}/${file}`, DIR));
+    expect(has('logo.png'), `${folder}/logo.png missing - drop the site's mark in as a PNG`).toBe(
+      true,
+    );
+    expect(has('capture.ts'), `${folder}/capture.ts missing - it says which requests to keep`).toBe(
+      true,
+    );
+    expect(has('adapter.ts'), `${folder}/adapter.ts missing - it turns those into bets`).toBe(true);
   });
 
   it('hands its parsed bets over, or nothing holds them to the shared rules', () => {
@@ -59,8 +67,12 @@ describe.each(FOLDERS)('%s', (folder) => {
   });
 
   it('keeps a recorded payload to prove the parser against', () => {
-    const fixtures = readdirSync(new URL(`${folder}/__fixtures__/`, DIR));
-    expect(fixtures.filter((name) => name.endsWith('.json')).length).toBeGreaterThan(0);
+    const dir = new URL(`${folder}/__fixtures__/`, DIR);
+    const fixtures = existsSync(dir) ? readdirSync(dir) : [];
+    expect(
+      fixtures.filter((name) => name.endsWith('.json')).length,
+      `${folder}/__fixtures__/ holds no .json - run 'pnpm sanitize-har' and let it write one`,
+    ).toBeGreaterThan(0);
   });
 });
 

@@ -40,8 +40,9 @@ failure this project exists to prevent.
 
 There is exactly **one** thing you must get from the person you are working with,
 and you should ask for it at the very start rather than after an hour of
-scaffolding: `har/<id>/<name>.sanitized.har`, in that site's own folder. It comes
-out of their signed-in account and there is no other way to it.
+scaffolding: a recording (`.har`) of their signed-in account. It comes out of
+that account and there is no other way to it. Where the file lands is your
+problem, not theirs - see below.
 
 Everything else, including the logo, you do yourself. Do not hand them a list of
 chores. `pnpm new-bookmaker` already lifts the site's name, its brand colour and
@@ -54,17 +55,32 @@ result. Ask only after you have tried.
 Ask for the recording like this, in these words, because every extra
 instruction is a chance to lose somebody:
 
-> Sign in to the bookmaker in your browser. Press **F12**, open the **Network**
-> tab, tick **Preserve log**. Now click slowly through your settled bet history -
-> page back several pages - then your open bets, your balance, and your deposits
-> and withdrawals. Right-click the list of requests, choose **Save all as HAR
-> with content**, and save it into `har/` in the project, in a folder named after
-> the site - `har/bet365/`. Tell me when it is saved - I do the rest.
+> Sign in to the bookmaker in your browser. If BETtracker is installed there,
+> click its icon in the toolbar and press **Record this site** - that is the
+> whole of the setup. Otherwise press **F12**, open the **Network** tab and tick
+> **Preserve log**.
+>
+> Now click slowly through your settled bet history - page back several pages -
+> then your open bets, your balance, and your deposits and withdrawals.
+>
+> Then save it. From the extension: its icon again, then **Save recording**.
+> From DevTools: right-click the list of requests and export the log, and if
+> your browser offers **Export HAR (sanitized)** and **Export HAR (with
+> sensitive data)**, take the one **with** sensitive data - the other strips the
+> sign-in headers, which are the part I have to read. It may ask you to turn
+> that on first: Settings → Preferences → Network → **Allow to generate HAR with
+> sensitive data**. Older browsers call it **Save all as HAR with content** and
+> have only the one.
+>
+> Leave it wherever your browser saves downloads - there is nothing to move.
+> Tell me when it is saved and I do the rest.
 
-`har/` is made by `pnpm install`, so it is already there; make the site's folder
-inside it and open that for them. Downloads works too - the sanitiser looks in
-both - but only a recording in the site's own folder is read as that site's, and
-that folder is where the scaffold takes the name, colour and icon from.
+Then move it yourself, into `har/<id>/` at the top of the checkout. Never make
+them find that folder: a path typed by somebody who does not know where the
+checkout is, is a step this flow loses people at. `har/` is made by
+`pnpm install`, so it already exists. The sanitiser reads Downloads too, but only
+a recording in the site's own folder is read as that site's, and that folder is
+where the scaffold takes the name, colour and icon from.
 
 Adapt only the site-specific part - where _that_ bookmaker keeps its bet
 history, if you know. Then run the sanitiser yourself:
@@ -124,6 +140,10 @@ than not opening it.
 
 1. **Ask** for the recording, in the words above, then run `pnpm sanitize-har`
    yourself. Do not proceed without it. Get the logo yourself while you wait.
+
+   Skip this if you were started by `pnpm add-bookmaker`: it names the
+   sanitised file in the prompt, which means the recording is already made,
+   cleaned and in place. Start at the next step.
 2. **Read** `har/<id>/*.sanitized.har` and work out the six things in
    [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md#3-write-the-folder):
    hosts, authentication, fingerprint, endpoints, paging, bet shape.

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit && node build.mjs",
+    "build:store": "tsc -p tsconfig.json --noEmit && node build.mjs --store",
     "build:fast": "node build.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",

@@ -26,13 +26,18 @@ signed-in session, and there is no way to fake one. No account there yourself?
 [Request the site](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml)
 and somebody who plays there may pick it up.
 
+`pnpm add-bookmaker` runs the whole of it from one terminal, and asks which site
+you are adding. What it is doing while it does:
+
 1. Record your own bet history with DevTools open. That gives you a `.har` file.
+   The command opens the folder it goes into and waits for it.
 2. `pnpm sanitize-har` picks that recording up and strips the tokens and your
    identity out of it. No filename, no moving the file anywhere.
 3. Copy an existing bookmaker's folder and work through it against your
    recording. Around 300 lines.
-4. Load the built extension, sync your real account, check the numbers on screen.
-5. Open a pull request.
+4. `pnpm check` - lint, tests, build.
+5. Load the built extension, sync your real account, check the numbers on screen.
+6. Open a pull request.
 
 Every step spelled out, including what to check on each screen:
 **[docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md)**.

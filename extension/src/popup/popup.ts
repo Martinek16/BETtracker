@@ -1,5 +1,7 @@
 import type { Bookmaker, ConnectionTone } from '@betanal/shared';
 import { bookmakerForHost, bookmakerForRequests, PANEL_MESSAGE } from '../messaging';
+import { recordOffer, type AddingSite } from './record-offer';
+import type { SaveResult } from '../inject/recorder';
 import type {
   AccountStatus,
   FromBackground,
@@ -7,6 +9,9 @@ import type {
   SyncProgress,
   ToBackground,
 } from '../messaging';
+
+/** Substituted by the bundler; see the `--store` flag in `build.mjs`. */
+declare const __STORE_BUILD__: boolean;
 
 /**
  * The same document serves the toolbar popup and the panel drawn inside the
@@ -494,6 +499,207 @@ const comingSoonHere = async (): Promise<string | null> => {
   }
 };
 
+/**
+ * A site nobody has written an adapter for yet, and the one thing that can be
+ * done about it from here: record it.
+ *
+ * The recording is the whole of the contributor's side of adding a bookmaker,
+ * and the DevTools route to it - F12, Network, Preserve log, an export menu
+ * whose default quietly strips the sign-in headers - is where most people stop.
+ * This is a click, the browsing they were going to do anyway, and a click.
+ */
+const RECORDER_ID = 'bettracker-recorder';
+const RECORDING_KEY = 'recording';
+/**
+ * Which site was last recorded, kept past the browser being closed. The
+ * recording itself is not: this is one host and one date, so that the step the
+ * dashboard shows next can be the step the reader is actually on.
+ */
+const RECORDED_KEY = 'recordingSaved';
+/** The site the dashboard was told is being added, written by that page. */
+const ADDING_KEY = 'addingSite';
+
+interface Recording {
+  origin: string;
+  host: string;
+}
+
+const addingSite = async (): Promise<AddingSite | null> =>
+  ((await chrome.storage.local.get(ADDING_KEY))[ADDING_KEY] as AddingSite | undefined) ?? null;
+
+const activeTab = async (): Promise<chrome.tabs.Tab | undefined> =>
+  (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+
+const recordingNow = async (): Promise<Recording | null> =>
+  ((await chrome.storage.session.get(RECORDING_KEY))[RECORDING_KEY] as Recording | undefined) ??
+  null;
+
+/**
+ * Registered rather than injected once: a bet history is browsed, and every
+ * page the user opens is a fresh JS context with no hooks in it. The script
+ * itself carries what it has recorded across those loads.
+ */
+const startRecording = async (origin: string, host: string): Promise<void> => {
+  await chrome.scripting.unregisterContentScripts({ ids: [RECORDER_ID] }).catch(() => {
+    /* nothing was registered */
+  });
+  await chrome.scripting.registerContentScripts([
+    {
+      id: RECORDER_ID,
+      js: ['recorder.js'],
+      matches: [`${origin}/*`],
+      world: 'MAIN',
+      runAt: 'document_start',
+      // A recording nobody saved is dropped by closing the browser, in step
+      // with `storage.session`. Otherwise an abandoned one would keep hooking
+      // that site for good, with nothing on screen saying so.
+      persistAcrossSessions: false,
+    },
+  ]);
+  const tab = await activeTab();
+  if (tab?.id !== undefined) {
+    // The page in front of the user is already loaded, so the registration
+    // above will not reach it until it navigates.
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['recorder.js'],
+      world: 'MAIN',
+    });
+  }
+  await chrome.storage.session.set({ [RECORDING_KEY]: { origin, host } });
+};
+
+/** The page writes the file, and the access it was given is handed straight back. */
+const stopRecording = async (recording: Recording): Promise<SaveResult | null> => {
+  const tab = await activeTab();
+  let saved: SaveResult | null = null;
+  if (tab?.id !== undefined) {
+    const done = await chrome.scripting
+      .executeScript({
+        target: { tabId: tab.id },
+        world: 'MAIN',
+        func: () => window.__betTrackerSaveRecording?.() ?? null,
+      })
+      .catch(() => {
+        /* the tab moved on; what it had recorded went with it */
+        return [];
+      });
+    saved = (done[0]?.result as SaveResult | null | undefined) ?? null;
+  }
+  await chrome.scripting.unregisterContentScripts({ ids: [RECORDER_ID] }).catch(() => {
+    /* already gone */
+  });
+  await chrome.storage.session.remove(RECORDING_KEY);
+  await chrome.storage.local.set({
+    [RECORDED_KEY]: { host: recording.host, at: new Date().toISOString() },
+  });
+  await chrome.permissions.remove({ origins: [`${recording.origin}/*`] });
+  return saved;
+};
+
+const actionButton = (label: string, onClick: () => void): HTMLButtonElement => {
+  const el = document.createElement('button');
+  el.className = 'primary';
+  el.textContent = label;
+  el.addEventListener('click', onClick);
+  return el;
+};
+
+const renderUnsupported = async (): Promise<void> => {
+  const tab = await activeTab();
+  let origin = '';
+  let host = '';
+  try {
+    ({ origin, host } = new URL(tab?.url ?? ''));
+  } catch {
+    /* a browser page, not a site */
+  }
+  const soon = await comingSoonHere();
+  if (!origin.startsWith('https://')) {
+    renderNote(
+      soon === null
+        ? 'This site is not one we can read bets from.'
+        : `${soon} is not supported yet. Coming later.`,
+    );
+    return;
+  }
+  const recording = await recordingNow();
+
+  const site = document.createElement('div');
+  site.className = 'site';
+  const state = document.createElement('div');
+  state.className = 'state';
+  const choices = document.createElement('div');
+  choices.className = 'choices';
+  site.append(state, choices);
+  $('accounts').replaceChildren(site);
+
+  if (recording !== null && recording.origin !== origin) {
+    state.textContent = `Recording ${recording.host}. Open that site again to save it.`;
+    return;
+  }
+
+  if (recording !== null) {
+    state.textContent = 'Recording. Click through your bet history, then save.';
+    choices.append(
+      actionButton('Save recording', () => {
+        state.textContent = 'Saving…';
+        choices.remove();
+        // Said here rather than five steps later: a recording of the wrong site
+        // costs a clone, a coding tool and a build before anything says so.
+        void stopRecording(recording).then((saved) => {
+          state.textContent =
+            saved === null || saved.calls === 0
+              ? 'Saved, but nothing was recorded. Browse your bet history while it records.'
+              : saved.betting
+                ? 'Saved to your downloads. Next: pnpm add-bookmaker.'
+                : `Saved, but nothing in it looks like a betting account. Is ${recording.host} where your bets are, and were you signed in?`;
+        });
+      }),
+    );
+    return;
+  }
+
+  const adding = await addingSite();
+  const offer = recordOffer(host, adding, __STORE_BUILD__);
+  if (!offer.offer) {
+    state.textContent =
+      offer.because === 'store-copy'
+        ? `${soon ?? host} is not one we read. Adding one takes the project.`
+        : offer.because === 'another-site'
+          ? `${soon ?? host} is not one we read. You are adding ${adding?.host}.`
+          : `${soon ?? host} is not one we read.`;
+    // A button rather than directions to a page: the popup is two lines wide,
+    // and the page it would spell out the way to is one click from here.
+    if (offer.because === 'nothing-named')
+      choices.append(
+        actionButton('Add this bookmaker', () => {
+          void chrome.tabs.create({
+            url: chrome.runtime.getURL('index.html#/options/accounts/add-bookmaker'),
+          });
+        }),
+      );
+    return;
+  }
+
+  state.textContent = `${soon ?? host} is the site you are adding.`;
+  choices.append(
+    actionButton('Record this site', () => {
+      // Answered by the click itself: Chrome refuses an origin request that does
+      // not come from a user gesture, so nothing may be awaited before it.
+      void chrome.permissions.request({ origins: [`${origin}/*`] }).then(async (granted) => {
+        if (!granted) {
+          state.textContent = 'Not recorded. Nothing on this page is read.';
+          choices.remove();
+          return;
+        }
+        await startRecording(origin, host);
+        await renderUnsupported();
+      });
+    }),
+  );
+};
+
 /** The offer to watch a mirror we recognised but were never given access to. */
 const renderMirrorOffer = (bookmaker: Bookmaker, name: string, origin: string): void => {
   const site = document.createElement('div');
@@ -550,12 +756,7 @@ const refresh = async (): Promise<void> => {
   if (here === null) {
     const found = await mirrorHere();
     if (found === null) {
-      const soon = await comingSoonHere();
-      renderNote(
-        soon === null
-          ? 'This site is not one we can read bets from.'
-          : `${soon} is not supported yet. Coming later.`,
-      );
+      await renderUnsupported();
       return;
     }
     const name = res.accounts.find((a) => a.bookmaker === found.bookmaker)?.name ?? found.bookmaker;

@@ -49,7 +49,10 @@ describe.each(CASES)('$name records', ({ name, settled, open }) => {
   const all = [...settled, ...open];
 
   it('parses bets out of the recorded payload at all', () => {
-    expect(settled.length).toBeGreaterThan(0);
+    expect(
+      settled.length,
+      `${name}: samples.ts yielded no settled bet. Either the fixture holds none, or adapter.ts is reading the wrong field out of it`,
+    ).toBeGreaterThan(0);
   });
 
   it('stamps every bet with its own site and account', () => {

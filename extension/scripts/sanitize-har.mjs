@@ -27,32 +27,74 @@ import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Header and query names whose value is dropped outright. Matched loosely: a
- * site inventing `x-punter-session` should be covered without an edit here.
+ * A key name read as words, so that `accessToken` and `x-access-token` are the
+ * same name. Matching a bare substring instead is what made `design` a
+ * signature and `spin` a PIN.
+ */
+const words = (name) =>
+  String(name)
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase();
+
+/** The same name with the separators gone: `account_id` and `accountId` alike. */
+const flat = (name) => words(name).replace(/[-_.]/g, '');
+
+/**
+ * Header and query names whose value is dropped outright. Matched on word
+ * boundaries, but still loosely: a site inventing `x-punter-session` is covered
+ * without an edit here.
  */
 const SECRET_NAME =
-  /(cookie|auth|token|session|secret|password|passwd|signature|sig|key|bearer|csrf|xsrf|jwt|otp|pin|credential)/i;
+  /(^|[-_.])(cookie|auth|authorization|token|session|secret|password|passwd|signature|sig|apikey|key|bearer|csrf|xsrf|jwt|otp|pin|credential)s?([-_.]|$)/;
+
+const isSecretName = (name) => SECRET_NAME.test(words(name));
 
 /**
  * Keys naming a person or an account. Replaced with a stable stand-in rather
  * than removed: an adapter often matches a bet's owner against the account it
  * was fetched for, and a fixture with the link cut would not exercise that.
+ *
+ * `id`, `no`, `ref` and `number` count only behind a person or an account.
+ * On their own they are how a site numbers its pages, its bets and its
+ * markets - the paging and the shape of a bet are two of the things the
+ * recording exists to show, and pseudonymising them hides both.
  */
 const IDENTITY_KEY =
-  /^(.*(user|player|customer|account|profile|member|punter|owner|client)?(id|uuid|guid|ref|number|no)|.*(first|last|full|display|nick|screen|login|user|real)name|username|nickname|login|email|mail|phone|mobile|msisdn|iban|bic|swift|address|street|city|zip|zipcode|postcode|postalcode|ssn|taxid|passport|dob|birthdate|dateofbirth|documentnumber)$/i;
+  /^(.*(user|player|customer|account|profile|member|punter|owner|client)(id|ref|number|no)|.*(uuid|guid)|.*(first|last|full|display|nick|screen|login|user|real)name|name|surname|username|nickname|login|email|mail|phone|mobile|msisdn|iban|bic|swift|address|street|city|zip|zipcode|postcode|postalcode|ssn|taxid|passport|dob|birthdate|dateofbirth|documentnumber|holder|beneficiary)$/;
 
-/** Keys that are a secret wherever they turn up, including inside a body. */
-const SECRET_KEY = SECRET_NAME;
+const isIdentityKey = (name) => IDENTITY_KEY.test(flat(name));
+
+/**
+ * A card number passes Luhn. A timestamp does not, thirteen digits though it
+ * is - and every recording is full of timestamps, which is what used to make
+ * the leak check refuse to write a perfectly clean file.
+ */
+const luhn = (digits) => {
+  let sum = 0;
+  let double = false;
+  for (let i = digits.length - 1; i >= 0; i -= 1) {
+    let digit = digits.charCodeAt(i) - 48;
+    if (double) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    double = !double;
+  }
+  return sum % 10 === 0;
+};
 
 /** Shapes that are a credential or an identity no matter what key holds them. */
 const SECRET_VALUE = [
-  /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+/g, // JWT
-  /\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/g, // IBAN
-  /\b(?:\d[ -]?){13,19}\b/g, // card number
-  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, // email
-  /\b[0-9a-f]{32,}\b/gi, // hex token
-  /\b[A-Za-z0-9_-]{40,}\b/g, // opaque token
+  { pattern: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+/g }, // JWT
+  { pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/g }, // IBAN
+  { pattern: /\b(?:\d[ -]?){13,19}\b/g, valid: (m) => luhn(m.replace(/[ -]/g, '')) }, // card
+  { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g }, // email
+  { pattern: /\b[0-9a-f]{32,}\b/gi }, // hex token
+  { pattern: /\b[A-Za-z0-9_-]{40,}\b/g }, // opaque token
 ];
+
+const isSecretValue = ({ valid }, match) => valid === undefined || valid(match);
 
 /** Response types worth keeping. Everything else is noise or a binary. */
 const KEEP_TYPE = /(json|javascript|text\/plain|graphql)/i;
@@ -79,7 +121,10 @@ const redact = (replacement) => {
 /** Scrubs the shapes that are dangerous wherever they appear in a string. */
 const scrubText = (text) =>
   SECRET_VALUE.reduce(
-    (acc, pattern) => acc.replace(pattern, (match) => redact(`x-${pseudonym(match)}`)),
+    (acc, shape) =>
+      acc.replace(shape.pattern, (match) =>
+        isSecretValue(shape, match) ? redact(`x-${pseudonym(match)}`) : match,
+      ),
     text,
   );
 
@@ -103,8 +148,8 @@ const scrubValue = (value, key = '') => {
     return Object.fromEntries(
       Object.entries(value).map(([childKey, child]) => [childKey, scrubValue(child, childKey)]),
     );
-  if (SECRET_KEY.test(key)) return value === null ? null : redact(REDACTED);
-  if (IDENTITY_KEY.test(key) && value !== null) return redact(standIn(key, value));
+  if (isSecretName(key)) return value === null ? null : redact(REDACTED);
+  if (isIdentityKey(key) && value !== null) return redact(standIn(key, value));
   return typeof value === 'string' ? scrubText(value) : value;
 };
 
@@ -129,17 +174,15 @@ const scrubHeaders = (headers = []) =>
       name: header.name,
       // The name is the part an adapter is written against - which header
       // carries the session is exactly what a contributor needs to see.
-      value: SECRET_NAME.test(header.name)
-        ? redact(REDACTED)
-        : scrubText(String(header.value ?? '')),
+      value: isSecretName(header.name) ? redact(REDACTED) : scrubText(String(header.value ?? '')),
     }));
 
 const scrubQuery = (query = []) =>
   query.map(({ name, value }) => ({
     name,
-    value: SECRET_NAME.test(name)
+    value: isSecretName(name)
       ? redact(REDACTED)
-      : IDENTITY_KEY.test(name)
+      : isIdentityKey(name)
         ? redact(standIn(name, value))
         : scrubText(String(value ?? '')),
   }));
@@ -228,10 +271,181 @@ export const sanitizeHar = (har) => {
   };
 };
 
+/**
+ * One endpoint, with the numbers a site puts in a path taken out, so that
+ * `/bets/1`, `/bets/2` and `/bets/3` read as the one page fetched three times
+ * rather than as three endpoints. Counting them apart is what let a recording
+ * of a single page look like a thorough one.
+ */
+const endpointOf = (url) => {
+  try {
+    const { host, pathname } = new URL(url);
+    return (
+      host +
+      pathname
+        .replace(/\/\d+(?=\/|$)/g, '/:n')
+        .replace(/\/[0-9a-f-]{8,}(?=\/|$)/gi, '/:id')
+        .replace(/\/$/, '')
+    );
+  } catch {
+    return url;
+  }
+};
+
+const queryOf = (url) => {
+  try {
+    return new URL(url).search;
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * What a bookmaker folder has to be written from, and the page each one is
+ * found on.
+ *
+ * Recognised by the name the site gives its own endpoint, which means a site
+ * that does not name things in English matches nothing here. So a miss is
+ * reported as "not recognised" and never as "not recorded" - the difference
+ * matters, because the first is a shrug and the second would send a
+ * contributor back to record pages they already have.
+ */
+const NEEDS = [
+  {
+    name: 'Bet history',
+    pattern: /bet|wager|ticket|coupon|slip|histor/i,
+    where: 'your settled bets, paging back to the oldest one you have',
+  },
+  {
+    name: 'Open bets',
+    pattern: /open|pending|unsettled|active|inplay|in-play|live/i,
+    where: 'your open bets - unsettled, pending, in play',
+  },
+  {
+    name: 'Balance',
+    pattern: /balance|wallet|fund|cash(?!out)/i,
+    where: 'your balance, wherever the site shows it',
+  },
+  {
+    name: 'Money in and out',
+    pattern: /transaction|deposit|withdraw|payment|cashier|banking|finance/i,
+    where: 'deposits and withdrawals',
+  },
+  {
+    name: 'Bonuses',
+    pattern: /bonus|freebet|free-bet|promo|reward|rakeback|voucher/i,
+    where: 'bonuses and free bets, if the site has them',
+  },
+];
+
+/**
+ * What a recording actually holds, endpoint by endpoint.
+ *
+ * This is the check that was missing. Between saving a recording and finding
+ * out it was not enough there used to be an evening of writing a parser: the
+ * count of surviving calls says nothing about whether any of them is a bet
+ * history, and a recording of one page sanitises just as cleanly as a thorough
+ * one.
+ *
+ * `paged` is the reliable half: one endpoint asked three different ways is
+ * paging, in any language, and a folder written from a recording without it can
+ * only ever read the first page.
+ */
+export const coverage = (entries) => {
+  const byEndpoint = new Map();
+  for (const entry of entries) {
+    const url = entry.request?.url ?? '';
+    const seen = byEndpoint.get(endpointOf(url)) ?? { calls: 0, queries: new Set() };
+    seen.calls += 1;
+    seen.queries.add(queryOf(url));
+    byEndpoint.set(endpointOf(url), seen);
+  }
+  const endpoints = [...byEndpoint]
+    .map(([path, seen]) => ({ path, calls: seen.calls, paged: seen.queries.size > 2 }))
+    .sort((a, b) => b.calls - a.calls);
+  return {
+    endpoints,
+    paged: endpoints.filter((endpoint) => endpoint.paged).map((endpoint) => endpoint.path),
+    recognised: NEEDS.filter((need) => endpoints.some((e) => need.pattern.test(e.path))).map(
+      (need) => need.name,
+    ),
+    unrecognised: NEEDS.filter((need) => !endpoints.some((e) => need.pattern.test(e.path))),
+  };
+};
+
+/** How many endpoints a recording of a single page tends to come out at. */
+const TOO_FEW = 3;
+
+/**
+ * The verdict, in the words a contributor needs rather than as counts they have
+ * to interpret. Returned as lines rather than printed, so the same text serves
+ * the sanitiser and `add-bookmaker`, and so it can be tested.
+ */
+export const recordingReport = (found) => {
+  const lines = [];
+  const endpoints = found.endpoints.length;
+
+  lines.push(
+    '',
+    `  The recording holds ${endpoints} endpoint${endpoints === 1 ? '' : 's'}:`,
+    ...found.endpoints
+      .slice(0, 12)
+      .map(
+        (endpoint) =>
+          `    ${endpoint.path}  (${endpoint.calls} call${endpoint.calls === 1 ? '' : 's'}${endpoint.paged ? ', paged' : ''})`,
+      ),
+  );
+  if (found.endpoints.length > 12) lines.push(`    ... and ${endpoints - 12} more`);
+
+  if (found.recognised.length > 0)
+    lines.push('', `  Recognised by name: ${found.recognised.join(', ')}.`);
+
+  if (found.unrecognised.length > 0)
+    lines.push(
+      '',
+      '  Not recognised by name. Either the page was never opened, or the site',
+      '  simply does not name it in English - check the list above yourself:',
+      ...found.unrecognised.map((need) => `    ${need.name} - ${need.where}`),
+    );
+
+  if (endpoints < TOO_FEW)
+    lines.push(
+      '',
+      '  That is about one page of a site. A folder cannot be written from it.',
+      '  Record again, and this time open every page in the list above, waiting',
+      '  for each to finish before moving on.',
+    );
+  else if (found.paged.length === 0)
+    lines.push(
+      '',
+      '  No endpoint was asked twice for different pages, so nothing here shows',
+      '  how the site pages. Record again and page back through your bet history:',
+      '  without it the folder can only ever read your most recent bets.',
+    );
+
+  return lines;
+};
+
+/** A recording too thin to write anything from, whatever the site is called. */
+export const tooThin = (found) => found.endpoints.length < TOO_FEW;
+
+/**
+ * Where a leak sits, never what it says. Printing the value would put the
+ * credential in a terminal and a screenshot of it in the next bug report.
+ */
+const where = (text, index) => {
+  const before = text.slice(0, index);
+  const line = before.split('\n').length;
+  const key = /"([^"]+)"\s*:/.exec(before.slice(before.lastIndexOf('\n') + 1))?.[1];
+  return key === undefined ? `line ${line}` : `line ${line}, key "${key}"`;
+};
+
 /** The check that matters: nothing recognisably secret survives a round trip. */
 export const findLeaks = (text) =>
-  SECRET_VALUE.flatMap((pattern) => [...text.matchAll(pattern)].map((m) => m[0])).filter(
-    (found) => !found.startsWith('x-'),
+  SECRET_VALUE.flatMap((shape) =>
+    [...text.matchAll(shape.pattern)]
+      .filter((m) => !m[0].startsWith('x-') && isSecretValue(shape, m[0]))
+      .map((m) => where(text, m.index)),
   );
 
 /** `har/` at the top of the checkout, wherever the command was run from. */
@@ -247,7 +461,17 @@ export const makeHarDir = () => {
   mkdirSync(HAR_DIR, { recursive: true });
   writeFileSync(
     join(HAR_DIR, 'README.txt'),
-    'Save your browser recording (.har) here, then run: pnpm sanitize-har\n\n' +
+    'Browser recordings (.har) live here. You do not have to put one here\n' +
+      'yourself - `pnpm add-bookmaker` looks in your Downloads folder and files\n' +
+      'it for you.\n\n' +
+      'BETtracker can make the recording too: open the bookmaker, click the\n' +
+      'extension icon, press "Record this site", click through your history and\n' +
+      'press "Save recording". DevTools is only needed where that cannot see the\n' +
+      'calls.\n\n' +
+      'If you started with `pnpm add-bookmaker`, it is watching this folder as\n' +
+      'well and carries on by itself the moment a file appears - and if one is\n' +
+      'already here, it offers you that instead of waiting. On your own, the next\n' +
+      'command is `pnpm sanitize-har`.\n\n' +
       'One folder per bookmaker, named after the site: har/stake/, har/bet365/.\n' +
       'Recordings of two sites in one heap read as one site with a strange mix of\n' +
       'pages, and the answer to "which of these is bet365" is the folder name.\n\n' +
@@ -310,8 +534,13 @@ const main = () => {
   if (input === undefined) {
     console.error(
       'No .har file found in har/ or your Downloads folder.\n' +
-        'Record your bet history first: F12, Network tab, tick Preserve log, click\n' +
-        'through your account, then right-click the list and Save all as HAR with content.',
+        'Record your bet history first. With BETtracker installed in the browser you\n' +
+        'are signed in with, its toolbar icon offers "Record this site", and then\n' +
+        '"Save recording" - no DevTools in it at all.\n' +
+        'Without it: F12, Network tab, tick Preserve log, click through your account,\n' +
+        'then right-click the list and export the log. Take the export WITH sensitive\n' +
+        'data where your browser offers both: the sanitized one has the sign-in\n' +
+        'headers stripped, and those are what an adapter is written to.',
     );
     process.exit(1);
   }
@@ -342,7 +571,14 @@ const main = () => {
 
   const leaks = findLeaks(text);
   if (leaks.length > 0) {
-    console.error(`refusing to write: ${leaks.length} value(s) still look like credentials`);
+    console.error(
+      `refusing to write: ${leaks.length} value(s) still look like credentials.\n` +
+        `Nothing was written and your recording is untouched. In the file that\n` +
+        `would have been written, they sit at:\n  ` +
+        `${leaks.join('\n  ')}\n` +
+        'The key names say what was missed. If the tool is wrong about them, that\n' +
+        'is worth an issue - the values are deliberately not printed here.',
+    );
     process.exit(1);
   }
 
@@ -357,8 +593,10 @@ const main = () => {
         '  read it from, and an adapter cannot be written the way the existing ones\n' +
         '  are. Worth raising in a Discussion before you spend an evening on it.',
     );
+  } else {
+    console.log(recordingReport(coverage(result.har.log.entries)).join('\n'));
   }
-  console.log('  Read it before sharing it. This tool is a net, not a guarantee.');
+  console.log('\n  Read it before sharing it. This tool is a net, not a guarantee.');
 };
 
 if (process.argv[1]?.endsWith('sanitize-har.mjs')) main();

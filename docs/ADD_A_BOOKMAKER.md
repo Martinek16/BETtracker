@@ -7,40 +7,39 @@ You do not need to know how the extension works. You do need an account at the
 bookmaker - support is written from a recording of a real signed-in session, and
 there is no way to fake one.
 
-> [!TIP]
-> **Working with an AI tool?** Paste this into it, with your bookmaker's address
-> in place of the example, and it will take you through the rest:
->
-> ```
-> Add the bookmaker https://www.yourbookmaker.com to BETtracker.
->
-> The project is https://github.com/Martinek16/BETtracker - clone it,
-> read AGENTS.md, and follow it. Ask me for whatever you cannot get
-> yourself.
-> ```
->
-> It will set the project up and then stop and ask you to record your history,
-> because only you can sign in. Steps 1, 2 and 6 below stay yours; it does the
-> rest. Read them anyway - knowing what it is doing is what lets you tell when
-> it has got something wrong.
-
-## Before you start
-
-Skip this if you pasted the prompt above; the tool does it for you.
+## The whole thing, in one terminal
 
 ```bash
 git clone --depth 1 https://github.com/Martinek16/BETtracker
 cd BETtracker
 corepack enable
 pnpm install
-pnpm build
+pnpm add-bookmaker
 ```
+
+That last command is the rest of this document. It asks which bookmaker you are
+adding - type its address, `www.yourbookmaker.com` - and everything after that
+is named after what you typed. Then it opens the folder your recording goes
+into, waits while you record - however long that takes - cleans the file the
+moment it lands, and starts your assistant on it with the prompt already
+written.
+
+What stays yours is step 1 and step 6: only you can sign in to the bookmaker,
+and only you can tell whether the figures on the screen are the right ones.
+Read the steps anyway. Knowing what the tool is doing is what lets you tell
+when it has got something wrong.
+
+The prompt is written to a file before anything is started, and the command runs
+`claude` on it from the project folder. No `claude`, or a different assistant?
+The command prints that file's full path - open yours **in this project folder**
+(Cursor, Copilot, whatever you use) and tell it to follow that file. Steps 3 to
+5 are written out below to do by hand instead.
 
 `--depth 1` fetches the project as it stands and not the history behind it. You
 are building it, not working on its past. (Drop the flag if you mean to send the
 work back as a pull request.)
 
-If `pnpm build` finishes without errors, you are set up. (No local setup at all:
+(No local setup at all:
 open the repository in a [Codespace](https://github.com/codespaces) instead. The
 final check in step 6 still has to happen on your own machine, because you
 cannot load a browser extension into a Codespace.)
@@ -72,31 +71,79 @@ then depend on which of them you happened to open.
 The extension learns a site by watching the requests the site's own pages make.
 So you make those requests yourself, with the browser writing them down.
 
-1. Open your browser and **sign in to the bookmaker** as you normally do.
-2. Press **F12** to open DevTools, and go to the **Network** tab.
-3. Tick **Preserve log**. Without it, every page navigation wipes what you have
-   recorded so far.
-4. Now **click through your account**, slowly, giving each page a second to
-   finish loading:
-   - your settled bet history - and **page back several pages**, this is how
-     paging is discovered
-   - your open bets
-   - your balance, wherever it is shown
-   - deposits and withdrawals
-   - bonuses or free bets, if the site has them
-5. Right-click anywhere in the request list → **Save all as HAR with content**,
-   and save it into `har/` in the project, which `pnpm install` made for you, in
-   a folder named after the site: `har/bet365/`. One folder per bookmaker, so
-   adding a second site never mixes its pages with the first one's. (Downloads
-   works too, but the site's own folder is where the next steps look first - and
-   where its name, colour and icon are read from.)
+`pnpm add-bookmaker` has opened the folder the recording goes into and is
+waiting for it. Leave that window open.
 
-> **The file you just saved is dangerous.** It contains your live session
-> cookies, your name, your account number and every deposit you have made.
-> Anyone who gets it can sign in as you. Do not email it, do not attach it to an
-> issue, and do not put it in a chat.
+**Sign in to the bookmaker** as you normally do, then record it one of two ways.
+
+### The extension records it
+
+If BETtracker is installed in the browser you are signed in with - the copy from
+the store counts, and so does the one you are about to build - it can do this
+itself, and none of DevTools comes into it.
+
+1. On the bookmaker's page, click the **BETtracker** icon in the toolbar. It
+   says the site is not one it reads yet, and offers **Record this site**.
+2. Click that, and allow the access the browser then asks for. It is for that
+   one site, and it is handed back the moment you save.
+3. Click through your account - the list below.
+4. Click the icon again and press **Save recording**. The file lands in your
+   downloads, named after the site.
+
+It never writes down the value of a single header, only which headers the site
+sent, so what it saves is far less dangerous than a DevTools export. It sees
+what the page's own scripts ask for, which is exactly what every adapter here is
+written against. A site that draws your history inside an iframe, or fetches it
+over a WebSocket, is one for the route below.
+
+### Or DevTools records it
+
+Any browser, any site, nothing installed.
+
+1. Press **F12** to open DevTools, and go to the **Network** tab.
+2. Tick **Preserve log**. Without it, every page navigation wipes what you have
+   recorded so far.
+3. Click through your account - the list below.
+4. Right-click anywhere in the request list and export the log. Recent Chrome
+   and Edge offer two: **Export HAR (sanitized)** and **Export HAR (with
+   sensitive data)**. Take the one **with** sensitive data - the sanitized
+   export strips the `Cookie` and `Authorization` headers, and which header
+   carries your session is one of the six things the folder is written from.
+   The first time, the browser asks you to turn it on:
+   Settings (⚙) → Preferences → Network → **Allow to generate HAR with
+   sensitive data**. Older browsers say **Save all as HAR with content** and
+   have only the one.
+
+### What to click through, either way
+
+Slowly, giving each page a second to finish loading:
+
+- your settled bet history - and **page back several pages**, this is how paging
+  is discovered
+- your open bets
+- your balance, wherever it is shown
+- deposits and withdrawals
+- bonuses or free bets, if the site has them
+
+### Where the file goes
+
+**Nowhere - leave it in Downloads.** There is no folder to find and no path to
+type. The command goes looking there, copies it into the project itself and
+keeps each bookmaker apart from the next. (Your copy stays in Downloads. It may
+still hold your live session, so delete it when you are done.)
+
+That is the end of your part. The terminal carries on by itself as soon as the
+file appears.
+
+> **The file you just saved is dangerous.** It contains your name, your account
+> number and every deposit you have made - and, if DevTools wrote it, your live
+> session cookies, which are enough for anyone who gets them to sign in as you.
+> Do not email it, do not attach it to an issue, and do not put it in a chat.
 
 ## 2. Strip it
+
+`pnpm add-bookmaker` has already done this - it is the next thing it prints.
+By hand, if you are not using it:
 
 ```bash
 pnpm sanitize-har
@@ -110,7 +157,40 @@ to ignore it:
 reading har/bet365/bet365.har
 har/bet365/bet365.sanitized.har
   kept 47 API calls, dropped 312 others, redacted 68 values
+
+  The recording holds 6 endpoints:
+    api.bet365.com/bets/settled  (5 calls, paged)
+    api.bet365.com/bets/open  (1 call)
+    api.bet365.com/account/balance  (2 calls)
+    ...
+
+  Recognised by name: Bet history, Open bets, Balance.
+
+  Not recognised by name. Either the page was never opened, or the site
+  simply does not name it in English - check the list above yourself:
+    Money in and out - deposits and withdrawals
+    Bonuses - bonuses and free bets, if the site has them
 ```
+
+**Read that second half before going on.** It is the only point in the whole
+process where a page you forgot to open is cheap to fix - after this you are
+looking at a written folder, wondering why nothing parses.
+
+Two things it says, and what to do about each:
+
+- **"Not recognised by name."** A guess, and only ever a guess: it goes by what
+  the site calls its own endpoints, so a site that does not name things in
+  English matches none of them. Look at the endpoint list above it. If you can
+  see the missing page in there under the site's own word for it, carry on. If
+  you cannot, that page was never opened - go back and record again.
+- **"No endpoint was asked twice for different pages."** Not a guess. It means
+  the recording never shows how the site pages, and a folder written from it
+  reads your most recent bets and stops. Record again and page back through your
+  bet history.
+
+And if it says the recording is about one page of a site, it is: `pnpm
+add-bookmaker` offers to wait for another rather than hand that one to a coding
+tool that has nothing to work from.
 
 (Recorded more than one site in a sitting, or keep your downloads somewhere
 unusual? `pnpm sanitize-har path/to/that.har` instead.)
@@ -121,7 +201,7 @@ odds stay - they are what the code has to be tested against, and on their own
 they identify nobody.
 
 It refuses to write the file at all if something in it still looks like a
-credential.
+credential, and names the line and the key it found rather than the value.
 
 **Open the sanitised file and look at it anyway.** The tool is a net, not a
 guarantee. It does not know that `"nickname": "YourNickname87"` is you.
@@ -190,12 +270,10 @@ real conversation to have, just not one to have inside a pull request.
 ## 4. Check it
 
 ```bash
-pnpm lint
-pnpm test
-pnpm build
+pnpm check
 ```
 
-All three, all green. Four tests exist specifically to catch what is easy to get
+Lint, tests and build, in that order. All three, all green. Four tests exist specifically to catch what is easy to get
 wrong here:
 
 - **`plugin.test.ts`** - your folder is complete, and registered in all three

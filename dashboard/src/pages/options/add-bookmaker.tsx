@@ -1,23 +1,21 @@
-import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import {
-  Check as CheckMark,
-  ChevronLeft,
-  CircleDashed,
-  Copy,
-  Download,
-  ShieldAlert,
-  X,
-} from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Check as CheckMark, CircleDashed, Copy, Download, ShieldAlert, X } from 'lucide-react';
 import { parseAccountKey } from '@betanal/shared';
 import { CATALOG } from '@bookmakers/catalog';
 import { isReleased } from '@bookmakers/released';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { Button } from '@/components/ui/button';
 import { useDashboard } from '@/context/dashboard-context';
-import { useOpenBetsSeen, useStoredRecords, useSyncMetaByAccount } from '@/data/accounts';
+import {
+  useAddingSite,
+  useOpenBetsSeen,
+  useRecordingState,
+  useStoredRecords,
+  useSyncMetaByAccount,
+  type AddingSite,
+} from '@/data/accounts';
 import { cn } from '@/lib/utils';
-import { Section } from '@/pages/options/parts';
+import { Crumbs } from '@/pages/options/parts';
 import { checksFor, scoreOf, type Check } from '@/pages/options/readiness';
 
 const REPO = 'https://github.com/Martinek16/BETtracker';
@@ -66,10 +64,21 @@ npx -y pnpm install`;
 /** The same thing for anyone without git: a folder, unzipped, then one command. */
 const ZIP = `${REPO}/archive/refs/heads/main.zip`;
 
-/** What to paste into a coding tool. The address is the only part to change. */
-const PROMPT = `Add the bookmaker https://www.yourbookmaker.com to BETtracker.
+/**
+ * What to paste into a coding tool. The address is the only part to change.
+ *
+ * The repository is named as well as the file, because the likeliest way this
+ * goes wrong is an assistant opened somewhere other than the project: with only
+ * "read AGENTS.md" it finds nothing and starts guessing at an adapter, which is
+ * the one failure that reports someone's money wrongly. With the address it can
+ * fetch the file, or say plainly that it is in the wrong folder.
+ */
+const promptFor = (site: AddingSite | null): string =>
+  `Add the bookmaker https://${site?.host ?? 'www.yourbookmaker.com'} to BETtracker.
 
-Read AGENTS.md in this project and follow it. My recording is in har/, in that site's own folder. Ask me for whatever you cannot get yourself.`;
+Follow AGENTS.md in this project - ${REPO}/blob/main/AGENTS.md if you cannot see it here, in which case say so before you write anything. My recording is in my Downloads folder - find it yourself and put it where it belongs. Ask me for whatever you cannot get yourself.${
+    site === null ? '' : `\n\nStart with: npx -y pnpm new-bookmaker ${site.id} ${site.host}`
+  }`;
 
 /** What proves the site is in the build the browser will load, not only on disk. */
 const CHECK = `npx -y pnpm test
@@ -80,6 +89,66 @@ npx -y pnpm build`;
  * the ones behind you are finished, and the ones ahead read as instructions for
  * a screen you have not reached yet, which is how a step gets skipped.
  */
+/**
+ * Which site this is all for, asked before the steps rather than inside one.
+ *
+ * It is not a step: nothing is done here and nothing can be verified. It is the
+ * subject the steps are about, and once it is answered every one of them can say
+ * the site's own name instead of "the bookmaker" - including the prompt, which
+ * stops asking a coding tool to guess what the folder should be called.
+ */
+const SiteAsked = ({
+  site,
+  onChoose,
+}: {
+  site: AddingSite | null;
+  onChoose: (host: string) => void;
+}): JSX.Element => {
+  const [typed, setTyped] = useState('');
+  const shell = 'flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-1.5';
+
+  if (site !== null)
+    return (
+      <div className={shell}>
+        <span className="min-w-0 flex-1 truncate text-xs">
+          Adding <span className="font-medium text-foreground">{site.host}</span>
+          <span className="ml-1.5 text-muted-foreground">as {site.id}</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => onChoose('')}
+          className="shrink-0 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Change
+        </button>
+      </div>
+    );
+
+  return (
+    <form
+      className={shell}
+      onSubmit={(event) => {
+        event.preventDefault();
+        onChoose(typed);
+      }}
+    >
+      <label htmlFor="adding-site" className="shrink-0 text-xs text-muted-foreground">
+        Which site?
+      </label>
+      <input
+        id="adding-site"
+        value={typed}
+        onChange={(event) => setTyped(event.target.value)}
+        placeholder="www.yourbookmaker.com"
+        className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+      />
+      <Button type="submit" size="sm" variant="secondary" disabled={typed.trim() === ''}>
+        Set
+      </Button>
+    </form>
+  );
+};
+
 const Step = ({
   n,
   title,
@@ -96,62 +165,74 @@ const Step = ({
   onReopen: () => void;
   onDone: () => void;
   children: ReactNode;
-}): JSX.Element => (
-  <section
-    className={cn(
-      'rounded-xl border bg-card transition-colors',
-      done ? 'border-profit/40' : 'border-border',
-    )}
-  >
-    <div className="flex w-full items-center gap-2.5 px-3.5 py-2">
-      <button
-        type="button"
-        onClick={onReopen}
-        disabled={!done}
-        title={done ? 'Open it again' : undefined}
-        className="flex min-w-0 flex-1 items-center gap-2.5 text-left disabled:cursor-default"
-      >
-        <span
-          className={cn(
-            'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
-            done
-              ? 'bg-profit text-background'
-              : open
-                ? 'bg-muted text-foreground'
-                : 'bg-muted/40 text-muted-foreground',
-          )}
-        >
-          {done ? <CheckMark size={12} strokeWidth={3} /> : n}
-        </span>
-        <p
-          className={cn(
-            'min-w-0 flex-1 truncate text-sm font-medium',
-            open ? 'text-foreground' : 'text-muted-foreground',
-          )}
-        >
-          {title}
-        </p>
-      </button>
-      {/* Its own button, not the whole row: a step is finished by saying so,
-          and a row that ticks itself when read is a step nobody did. */}
-      {open && (
+}): JSX.Element => {
+  const here = useRef<HTMLElement>(null);
+
+  // The step you are on is brought to the top of the list, on opening the page
+  // as well as on ticking one off: with five of them ticked, the only one left
+  // to do would otherwise start below the fold of a list that never scrolled.
+  useEffect(() => {
+    if (open) here.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [open]);
+
+  return (
+    <section
+      ref={here}
+      className={cn(
+        'rounded-xl border bg-card transition-colors',
+        done ? 'border-profit/40' : 'border-border',
+      )}
+    >
+      <div className="flex w-full items-center gap-2.5 px-3.5 py-2">
         <button
           type="button"
-          onClick={onDone}
-          className="shrink-0 rounded-md border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-profit/50 hover:text-foreground"
+          onClick={onReopen}
+          disabled={!done}
+          title={done ? 'Open it again' : undefined}
+          className="flex min-w-0 flex-1 items-center gap-2.5 text-left disabled:cursor-default"
         >
-          Mark done
+          <span
+            className={cn(
+              'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
+              done
+                ? 'bg-profit text-background'
+                : open
+                  ? 'bg-muted text-foreground'
+                  : 'bg-muted/40 text-muted-foreground',
+            )}
+          >
+            {done ? <CheckMark size={12} strokeWidth={3} /> : n}
+          </span>
+          <p
+            className={cn(
+              'min-w-0 flex-1 truncate text-sm font-medium',
+              open ? 'text-foreground' : 'text-muted-foreground',
+            )}
+          >
+            {title}
+          </p>
         </button>
-      )}
-      {done && <span className="shrink-0 text-[11px] text-muted-foreground">Done</span>}
-    </div>
-    {open && (
-      <div className="border-t border-border/60 px-3.5 py-2.5 text-muted-foreground">
-        {children}
+        {/* Its own button, not the whole row: a step is finished by saying so,
+          and a row that ticks itself when read is a step nobody did. */}
+        {open && (
+          <button
+            type="button"
+            onClick={onDone}
+            className="shrink-0 rounded-md border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-profit/50 hover:text-foreground"
+          >
+            Mark done
+          </button>
+        )}
+        {done && <span className="shrink-0 text-[11px] text-muted-foreground">Done</span>}
       </div>
-    )}
-  </section>
-);
+      {open && (
+        <div className="border-t border-border/60 px-3.5 py-2.5 text-muted-foreground">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+};
 
 /** What the reader types or clicks, set apart from the prose around it. */
 const Key = ({ children }: { children: ReactNode }): JSX.Element => (
@@ -249,10 +330,11 @@ const SiteReport = ({
 }): JSX.Element => {
   const { passed, failed, open } = scoreOf(checks);
   return (
-    <Section title={name}>
+    <section className="rounded-xl border border-border bg-card px-4">
       <div className="flex items-center gap-2 border-b border-border/60 py-2.5 text-xs">
         <AccountIcon bookmaker={id} className="h-4 w-4" />
-        <span className="text-primary">Added to this copy - nobody else has checked it</span>
+        <span className="font-medium text-foreground">{name}</span>
+        <span className="text-primary">- added here, nobody else has checked it</span>
         <span className="ml-auto tabular-nums text-muted-foreground">
           {passed} proved · {failed} wrong · {open} untested
         </span>
@@ -260,7 +342,7 @@ const SiteReport = ({
       {checks.map((check) => (
         <CheckRow key={check.label} check={check} />
       ))}
-    </Section>
+    </section>
   );
 };
 
@@ -276,6 +358,8 @@ export const AddBookmakerPage = (): JSX.Element => {
   const records = useStoredRecords();
   const metas = useSyncMetaByAccount();
   const openBetsSeen = useOpenBetsSeen();
+  const recording = useRecordingState();
+  const [site, chooseSite] = useAddingSite();
   const { accountBalances } = useDashboard();
   const canAdd = canAddBookmaker();
   const unpacked = isUnpacked();
@@ -321,9 +405,20 @@ export const AddBookmakerPage = (): JSX.Element => {
       : reports.every((report) => report.score.failed === 0 && report.score.passed > 0)
         ? 6
         : 5;
+  /**
+   * A saved recording is the one step before the build that the app can see for
+   * itself, and it is the step people most often think they have not finished.
+   *
+   * A recording of some other site does not count. Recording the wrong tab is
+   * easy to do and reads exactly like success until a coding tool opens the file.
+   */
+  // By id rather than by host: a bookmaker is browsed on whichever mirror the
+  // browser was sent to, and `m.e-stave.com` is still e-stave.
+  const rightSite = site === null || recording.saved === null || recording.saved.includes(site.id);
+  const recorded = recording.saved !== null && rightSite ? 2 : 0;
   // Starting on a second site means going back to the top: what the first one
   // proved is still true, and says nothing about this one.
-  const at = again ? said : Math.max(said, seen);
+  const at = again ? said : Math.max(said, seen, recorded);
 
   const step = (
     n: number,
@@ -335,260 +430,321 @@ export const AddBookmakerPage = (): JSX.Element => {
   });
 
   return (
-    <div className="flex flex-1 flex-col gap-3 pb-1">
-      <div className="flex flex-col gap-1 px-1">
-        <Link
-          to="/options/accounts"
-          className="inline-flex items-center gap-1 self-start text-xs text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ChevronLeft size={13} strokeWidth={1.75} />
-          All accounts
-        </Link>
-        <h2 className="text-sm font-semibold text-foreground">
-          {canAdd ? 'Add a bookmaker' : 'Adding a bookmaker needs the project'}
-        </h2>
-        {!canAdd && (
-          <p className="text-xs text-muted-foreground">
-            A site only exists in a build that contains it.
-          </p>
+    // The steps are the only part that scrolls: the way back out and the links
+    // at the foot are where they were left, however far down the steps you are.
+    <div className="flex h-full min-h-0 flex-col gap-3 pb-1">
+      <Crumbs
+        to="/options/accounts"
+        parent="Accounts"
+        title={canAdd ? 'Add a bookmaker' : 'Adding a bookmaker needs the project'}
+      >
+        {/* Beside the title rather than under the steps: it explains why the
+            first ticks are already there, which is read before them, not after. */}
+        {seen > 0 && canAdd && (
+          <div className="ml-auto flex flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground">
+            <span>
+              {reports.map((report) => report.meta.name).join(', ')}{' '}
+              {reports.length === 1 ? 'is' : 'are'} in this build, so those steps are ticked.
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setAgain(!again);
+                setSaid(0);
+              }}
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {again ? 'Hide the steps' : 'Add another'}
+            </button>
+          </div>
+        )}
+      </Crumbs>
+
+      {/* Above the scroll, not in it: the site being added is the subject of every
+          step, so it stays on screen however far down the steps you are. */}
+      {canAdd && (
+        <div className="mb-1 flex flex-col gap-2.5">
+          <SiteAsked site={site} onChoose={chooseSite} />
+
+          {recording.running !== null && (
+            <p className="flex items-center gap-1.5 px-1 text-xs text-pending">
+              <CircleDashed size={13} strokeWidth={1.75} className="shrink-0" />
+              Recording {recording.running} now. Browse your history, then save from the popup.
+            </p>
+          )}
+          {recording.running === null && recording.saved !== null && rightSite && (
+            <p className="flex items-center gap-1.5 px-1 text-xs text-profit">
+              <CheckMark size={13} strokeWidth={2} className="shrink-0" />
+              Recorded {recording.saved}. The file is in your downloads; step 3 goes looking for it
+              there.
+            </p>
+          )}
+          {recording.running === null && recording.saved !== null && !rightSite && (
+            <p className="flex items-start gap-1.5 px-1 text-xs text-pending">
+              <ShieldAlert size={13} strokeWidth={1.75} className="mt-px shrink-0" />
+              The last recording was of {recording.saved}, not {site?.host}. Record the site you are
+              adding, or change which site that is above.
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="scroll-area min-h-0 flex-1 overflow-y-auto pr-1">
+        {canAdd ? (
+          <div className="flex flex-col gap-2.5">
+            <Step n={1} title="Get the project" {...step(1)}>
+              <p className="text-xs">
+                Paste all three into a terminal - they run one after another, and the last one waits
+                a minute.
+              </p>
+              <Code text={CLONE} />
+              <p className="mt-2 text-xs">
+                No git?{' '}
+                <a
+                  href={ZIP}
+                  className="text-primary underline-offset-2 hover:underline"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Download it as a zip
+                </a>{' '}
+                - unzip it, open that folder in a terminal, and run the last line only. Either way
+                it needs{' '}
+                <a
+                  href="https://nodejs.org"
+                  className="text-primary underline-offset-2 hover:underline"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Node
+                </a>
+                , which brings <Key>npx</Key> with it.
+              </p>
+            </Step>
+
+            <Step n={2} title="Record your account at the bookmaker" {...step(2)}>
+              {site === null && (
+                <p className="mb-2 flex items-start gap-1.5 text-xs text-pending">
+                  <ShieldAlert size={13} strokeWidth={1.75} className="mt-px shrink-0" />
+                  Give the address above first. The popup offers to record that one site and no
+                  other.
+                </p>
+              )}
+              <Substeps
+                items={[
+                  <>
+                    Sign in at the bookmaker, then click the BETtracker icon in the toolbar and
+                    press <Key>Record this site</Key>. Allow the access it asks for - it is for that
+                    one site, and it is given back when you save.
+                  </>,
+                  <>
+                    Now open every page the app has to read, and wait for each to finish loading.
+                    Every site names them differently; look for:
+                    <ul className="mt-1 list-disc space-y-0.5 pl-4 text-muted-foreground">
+                      <li>
+                        <span className="text-foreground/90">Bet history</span> - settled bets, and
+                        page back until the oldest one you have
+                      </li>
+                      <li>
+                        <span className="text-foreground/90">Open bets</span> - unsettled, pending,
+                        in play
+                      </li>
+                      <li>
+                        <span className="text-foreground/90">Balance</span> - the wallet or account
+                        page, each currency you hold
+                      </li>
+                      <li>
+                        <span className="text-foreground/90">Money in and out</span> - deposits,
+                        withdrawals, transactions, payments
+                      </li>
+                      <li>
+                        <span className="text-foreground/90">Bonuses</span> - free bets, promotions,
+                        rakeback, whatever is waiting to be claimed
+                      </li>
+                    </ul>
+                    One recording holds the lot - the same one keeps running while you go from page
+                    to page, and there is nothing to save in between. A page you do not open is not
+                    in it, and the site cannot be read for that page later. An empty page still
+                    counts: if you have never deposited, open the page anyway, and the coding tool
+                    sees where the site would put one.
+                  </>,
+                  <>
+                    Click the icon again, then{' '}
+                    <Key>
+                      <Download size={11} strokeWidth={2} className="mr-1" />
+                      Save recording
+                    </Key>
+                  </>,
+                  <>
+                    Leave it in your downloads. There is nothing to move and no folder to find - the
+                    next step goes looking for it there.
+                  </>,
+                ]}
+              />
+              <p className="mt-2 text-xs">
+                Nothing recorded? A few sites fetch their history somewhere the extension cannot
+                watch. Then it is DevTools: <Key>F12</Key>, <Key>Network</Key>,{' '}
+                <Key>Preserve log</Key>, and export the log <em>with</em> sensitive data.
+              </p>
+              <p className="mt-2 flex items-start gap-1.5 text-xs">
+                <ShieldAlert size={13} strokeWidth={1.75} className="mt-px shrink-0 text-pending" />
+                That file holds your account&apos;s own data. Keep it on your machine; the tool
+                strips what it can.
+              </p>
+            </Step>
+
+            <Step n={3} title="Paste this into a coding tool" {...step(3)}>
+              <p className="text-xs">
+                Claude Code, Cursor or similar, opened in that folder. It strips the recording,
+                writes the site into <Key>extension/src/bookmakers/</Key> and registers it. Answer
+                its questions as they come.
+              </p>
+              <Code text={promptFor(site)} />
+              <p className="mt-2 text-xs">
+                Stripping the recording prints what it found in it, page by page, and names
+                whatever it could not find along with where you would have got it. Read that
+                before letting the tool carry on: a page you forgot to open is a minute to record
+                again now, and a folder that parses nothing an hour from now.
+              </p>
+            </Step>
+
+            <Step n={4} title="Run the tests and the build" {...step(4)}>
+              <p className="text-xs">
+                In the project folder, one line then the other. The tests read the new site&apos;s
+                own recording back through it; the build refuses outright if the folder was not
+                registered, and copies everything into <Key>extension/dist</Key> - the folder the
+                browser loads.
+              </p>
+              <Code text={CHECK} />
+              <p className="mt-2 text-xs">
+                Red? Give the tool the output as it stands. It is written for it. Only build once
+                the tests are green - a build off a broken site loads a broken site.
+              </p>
+            </Step>
+
+            <Step n={5} title={unpacked ? 'Reload this copy' : 'Load the build'} {...step(5)}>
+              <Substeps
+                items={
+                  unpacked
+                    ? [
+                        <>
+                          Open <Key>edge://extensions</Key> or <Key>chrome://extensions</Key>.
+                        </>,
+                        <>
+                          Press <Key>Reload</Key> on this copy. The build you just made is already
+                          in the folder it reads.
+                        </>,
+                        <>Sign in at the bookmaker, say yes when asked, and let it sync.</>,
+                      ]
+                    : [
+                        <>
+                          Open <Key>edge://extensions</Key> or <Key>chrome://extensions</Key>, and
+                          turn on Developer mode.
+                        </>,
+                        <>
+                          <Key>Load unpacked</Key> → the project&apos;s <Key>extension/dist</Key>{' '}
+                          folder.
+                        </>,
+                        <>Sign in at the bookmaker, say yes when asked, and let it sync.</>,
+                      ]
+                }
+              />
+              <p className="mt-2 text-xs">
+                {unpacked ? (
+                  <>
+                    This is that copy - you are reading it. Every site after the first is a rebuild
+                    of it, never a second extension.
+                  </>
+                ) : (
+                  <>
+                    Switch the store copy off first - two copies read one account into two
+                    histories. You do this once: from then on the project rebuilds this same copy.
+                  </>
+                )}
+              </p>
+            </Step>
+
+            <Step n={6} title="Check that everything arrived" {...step(6)}>
+              <p className="text-xs">
+                Sign in and let it sync, then send any wrong line to the coding tool.
+              </p>
+              <p className="mt-1 text-xs">
+                <span className="text-muted-foreground">Untested</span> is not a failure - it means
+                your account has never had one of those, so nothing here can prove it either way. An
+                open bet, an accumulator, a deposit or a bonus each stay untested until you have
+                one: leave a bet running, sync again, and the line answers itself.
+              </p>
+              {reports.map((report) => (
+                <SiteReport
+                  key={report.meta.id}
+                  id={report.meta.id}
+                  name={report.meta.name}
+                  checks={report.checks}
+                />
+              ))}
+              {/* Folded away: these are the reader's own job with the bookmaker's
+                page open beside this one, and they are not why they came here. */}
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs text-primary">
+                  What this page cannot check
+                </summary>
+                <p className="mt-1.5 text-xs">
+                  It reads what was stored, so it can only say a figure arrived - never that it is
+                  right. With the bookmaker&apos;s own history page open beside this one:
+                </p>
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-xs">
+                  <li>The bet count matches the site&apos;s own, not one page of it</li>
+                  <li>Profit and turnover match, to the cent</li>
+                  <li>The oldest bet you have is here - paging reached the end</li>
+                  <li>
+                    Stake, odds and return match the site&apos;s figures on a bet you remember
+                  </li>
+                  <li>A second sync changes nothing: no duplicates, the same counts</li>
+                </ul>
+              </details>
+            </Step>
+          </div>
+        ) : (
+          <section className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-3.5 text-sm text-muted-foreground">
+            <p>
+              This copy came from the store, so it reads the bookmakers it was built with and no
+              others. A bookmaker is not a setting that can be typed in here - it is code that knows
+              where that one site keeps your bets, and code only reaches the browser in a build.
+            </p>
+            <p>
+              Adding one is done in the project. You record your own signed-in session at the site,
+              a coding tool reads that recording and writes the site from it, and you build and load
+              the result yourself. Nothing about the recording leaves your machine, and no one else
+              has to have heard of the bookmaker for it to work.
+            </p>
+            <p>
+              That build is a separate extension with its own records, so the history on this page
+              stays here and the built copy starts empty. It reads the same bookmakers this one
+              does, and yours as well.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-0.5">
+              <a
+                href={`${REPO}/blob/main/docs/ADD_A_BOOKMAKER.md`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                How to add a bookmaker
+              </a>
+              <a
+                href={REPO}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                Get the project on GitHub
+              </a>
+            </div>
+          </section>
         )}
       </div>
 
-      {canAdd ? (
-        <div className="flex flex-col gap-2.5">
-          <Step n={1} title="Get the project" {...step(1)}>
-            <p className="text-xs">
-              Paste all three into a terminal - they run one after another, and the last one waits a
-              minute. It also makes the <Key>har/</Key> folder, which is where the next step saves
-              to.
-            </p>
-            <Code text={CLONE} />
-            <p className="mt-2 text-xs">
-              No git?{' '}
-              <a
-                href={ZIP}
-                className="text-primary underline-offset-2 hover:underline"
-                target="_blank"
-                rel="noreferrer noopener"
-              >
-                Download it as a zip
-              </a>{' '}
-              - unzip it, open that folder in a terminal, and run the last line only. Either way it
-              needs{' '}
-              <a
-                href="https://nodejs.org"
-                className="text-primary underline-offset-2 hover:underline"
-                target="_blank"
-                rel="noreferrer noopener"
-              >
-                Node
-              </a>
-              , which brings <Key>npx</Key> with it.
-            </p>
-          </Step>
-
-          <Step n={2} title="Record your account at the bookmaker" {...step(2)}>
-            <Substeps
-              items={[
-                <>
-                  Sign in at the bookmaker, then press <Key>F12</Key>.
-                </>,
-                <>
-                  Open <Key>Network</Key> and tick <Key>Preserve log</Key>.
-                </>,
-                <>
-                  Now open every page the app has to read, and wait for each to finish loading.
-                  Every site names them differently; look for:
-                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-muted-foreground">
-                    <li>
-                      <span className="text-foreground/90">Bet history</span> - settled bets, and
-                      page back until the oldest one you have
-                    </li>
-                    <li>
-                      <span className="text-foreground/90">Open bets</span> - unsettled, pending, in
-                      play
-                    </li>
-                    <li>
-                      <span className="text-foreground/90">Balance</span> - the wallet or account
-                      page, each currency you hold
-                    </li>
-                    <li>
-                      <span className="text-foreground/90">Money in and out</span> - deposits,
-                      withdrawals, transactions, payments
-                    </li>
-                    <li>
-                      <span className="text-foreground/90">Bonuses</span> - free bets, promotions,
-                      rakeback, whatever is waiting to be claimed
-                    </li>
-                  </ul>
-                  A page you do not open is not in the recording, and the site cannot be read for it
-                  later.
-                </>,
-                <>
-                  Right-click the list, then{' '}
-                  <Key>
-                    <Download size={11} strokeWidth={2} className="mr-1" />
-                    Save all as HAR with content
-                  </Key>
-                </>,
-                <>
-                  Save it into <Key>har/</Key> in the project, in a folder named after the site:{' '}
-                  <Key>har/bet365/</Key>. One folder per bookmaker, so a second site is a second
-                  folder and neither reads the other&apos;s pages.
-                </>,
-              ]}
-            />
-            <p className="mt-2 flex items-start gap-1.5 text-xs">
-              <ShieldAlert size={13} strokeWidth={1.75} className="mt-px shrink-0 text-pending" />
-              That file holds your live session. Keep it on your machine; the tool strips it.
-            </p>
-          </Step>
-
-          <Step n={3} title="Paste this into a coding tool" {...step(3)}>
-            <p className="text-xs">
-              Claude Code, Cursor or similar, opened in that folder. It strips the recording, writes
-              the site into <Key>extension/src/bookmakers/</Key> and registers it. Answer its
-              questions as they come.
-            </p>
-            <Code text={PROMPT} />
-          </Step>
-
-          <Step n={4} title="Run the tests and the build" {...step(4)}>
-            <p className="text-xs">
-              In the project folder, one line then the other. The tests read the new site&apos;s own
-              recording back through it; the build refuses outright if the folder was not
-              registered, and copies everything into <Key>extension/dist</Key> - the folder the
-              browser loads.
-            </p>
-            <Code text={CHECK} />
-            <p className="mt-2 text-xs">
-              Red? Give the tool the output as it stands. It is written for it. Only build once the
-              tests are green - a build off a broken site loads a broken site.
-            </p>
-          </Step>
-
-          <Step n={5} title={unpacked ? 'Reload this copy' : 'Load the build'} {...step(5)}>
-            <Substeps
-              items={
-                unpacked
-                  ? [
-                      <>
-                        Open <Key>edge://extensions</Key> or <Key>chrome://extensions</Key>.
-                      </>,
-                      <>
-                        Press <Key>Reload</Key> on this copy. The build you just made is already in
-                        the folder it reads.
-                      </>,
-                      <>Sign in at the bookmaker, say yes when asked, and let it sync.</>,
-                    ]
-                  : [
-                      <>
-                        Open <Key>edge://extensions</Key> or <Key>chrome://extensions</Key>, and
-                        turn on Developer mode.
-                      </>,
-                      <>
-                        <Key>Load unpacked</Key> → the project&apos;s <Key>extension/dist</Key>{' '}
-                        folder.
-                      </>,
-                      <>Sign in at the bookmaker, say yes when asked, and let it sync.</>,
-                    ]
-              }
-            />
-            <p className="mt-2 text-xs">
-              {unpacked ? (
-                <>
-                  This is that copy - you are reading it. Every site after the first is a rebuild of
-                  it, never a second extension.
-                </>
-              ) : (
-                <>
-                  Switch the store copy off first - two copies read one account into two histories.
-                  You do this once: from then on the project rebuilds this same copy.
-                </>
-              )}
-            </p>
-          </Step>
-
-          <Step n={6} title="Check that everything arrived" {...step(6)}>
-            <p className="text-xs">
-              Come back to this page and let it sync. The new site is listed below, one line per
-              thing it has to have proved, and this step ticks itself when none of them is wrong:
-            </p>
-            <Substeps
-              items={[
-                <>Bets read, each naming a sport, a match and a selection.</>,
-                <>Won, lost and void all read as what they are; accumulators carry their legs.</>,
-                <>Open bets, the balance, money in and out, bonuses.</>,
-                <>The account syncs without an error.</>,
-              ]}
-            />
-            <p className="mt-2 text-xs">
-              <span className="text-muted-foreground">Untested</span> means your account has never
-              had one of those, not that it failed. Send the wrong and untested lines back to the
-              tool - that is the whole bug report it needs. Then compare the totals with the
-              bookmaker&apos;s own history page: this page can say a figure arrived, never that it
-              is right.
-            </p>
-          </Step>
-        </div>
-      ) : (
-        <section className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-          This copy came from the store, so it reads the bookmakers it was built with and no others.
-          Adding one takes the project itself: clone it, load the build it produces, and a coding
-          tool writes the site from a recording of your own signed-in session.
-        </section>
-      )}
-
-      {seen > 0 && canAdd && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-muted-foreground">
-          <span>
-            {reports.map((report) => report.meta.name).join(', ')}{' '}
-            {reports.length === 1 ? 'is' : 'are'} in this build, so the steps up to loading{' '}
-            {reports.length === 1 ? 'it' : 'them'} are ticked for you - a folder reaches the browser
-            only by passing all of them.
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setAgain(!again);
-              setSaid(0);
-            }}
-            className="text-primary underline-offset-2 hover:underline"
-          >
-            {again ? 'Hide the steps' : 'Add another bookmaker'}
-          </button>
-        </div>
-      )}
-
-      {reports.map((report) => (
-        <SiteReport
-          key={report.meta.id}
-          id={report.meta.id}
-          name={report.meta.name}
-          checks={report.checks}
-        />
-      ))}
-
-      {added.length > 0 && (
-        <Section title="What this page cannot check">
-          <div className="py-3 text-sm text-muted-foreground">
-            <p>
-              The report above is read off what was stored, so it can only say that a figure arrived
-              - never that it is the right one. Those are yours, with the bookmaker&apos;s own
-              history page open beside this one:
-            </p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>The bet count matches the site&apos;s own, not one page of it</li>
-              <li>Profit and turnover match, to the cent</li>
-              <li>The oldest bet you have is here - paging reached the end</li>
-              <li>Stake, odds and return match the site&apos;s figures on a bet you remember</li>
-              <li>A second sync changes nothing: no duplicates, the same counts</li>
-            </ul>
-          </div>
-        </Section>
-      )}
-
-      <div className="mt-auto flex flex-wrap justify-center gap-5 pt-2 text-xs">
+      <div className="flex flex-wrap justify-center gap-5 pt-1 text-xs">
         {[
           [REPO, 'The project'],
           [`${REPO}/blob/main/docs/ADD_A_BOOKMAKER.md`, 'Every step in detail'],
