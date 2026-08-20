@@ -4,7 +4,7 @@
 
 <h1>BETtracker</h1>
 
-<h3>All your bets. One clear view.</h3>
+<h3>Every bookmaker you play at, in one view. On your own computer.</h3>
 
 <p>
   <a href="https://microsoftedge.microsoft.com/addons/detail/bettracker/dofgloogkcigmpnkmoaefnejeffdbcmi">
@@ -29,12 +29,16 @@
 
 ***
 
-Your bookmaker shows today's balance and a list going back a few pages, one
-account at a time. So the one question you actually have, **am I up or am I
-down**, has no answer on the screen.
+Every bookmaker shows you its own balance and its own last few pages. None of
+them shows the rest. So the one question you actually have, **am I up or am I
+down**, has no answer on any screen.
 
-BETtracker reads your own history and answers it. On your computer, nowhere
-else.
+BETtracker answers it. Sign in at each bookmaker as you always do, and it reads
+the history that is already yours: bets, balances, deposits and withdrawals,
+from as many accounts as you play at, added up together across currencies.
+
+It lives in your browser and writes to your own disk. No account to make, no
+server, no subscription, nothing to switch on.
 
 ## Install
 
@@ -44,15 +48,13 @@ else.
 | **Chrome, Brave, Opera** | [Download `bettracker.zip`](https://github.com/Martinek16/BETtracker/releases/latest/download/bettracker.zip), then unzip it into a folder you intend to keep. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick that folder. | Unzip it properly, rather than loading it straight out of the archive viewer. Deleting the folder uninstalls the extension. |
 
 > [!NOTE]
-> There is no Chrome listing because Google removes gambling related extensions from its store, even ones that only read your own history. Edge accepted it.
->
-> The green **Code** button at the top of this page, and the **Source code** files on the release, are the project's source. Chrome cannot load either of them: they have to be built first. `bettracker.zip` is the built extension.
+> There is no Chrome listing because Google removes gambling related extensions from its store, even ones that only read your own history. Edge accepted it. Download `bettracker.zip`, not **Source code**: the source has to be built first, and Chrome refuses it.
 
-Then sign in at a bookmaker as you always do, and say yes once when the
-extension asks whether it may read that account. Your bets appear. Older
-history fills in over the next few visits, a page at a time. It only looks
-backwards: no tips, no predictions, no telling you what to bet.
-[**How it works, screen by screen**](docs/HOW_IT_WORKS.md)
+Then open a bookmaker and say yes once when the extension asks whether it may
+read that account. Your bets appear. Repeat at the next bookmaker, and the two
+sit side by side. Older history fills in over the following visits, a page at a
+time. It only looks backwards: no tips, no predictions, no telling you what to
+bet. [**How it works, screen by screen**](docs/HOW_IT_WORKS.md)
 
 ## Bookmakers it can read
 
@@ -84,13 +86,13 @@ No. It only reads pages you have already opened, and never sees your password.
 </details>
 
 <details>
-<summary><b>Why is an old bet missing?</b></summary><br>
-Long histories are read backwards, one page at a time. Open the bookmaker and leave the tab a moment.
+<summary><b>How many bookmakers can I have at once?</b></summary><br>
+As many as it can read. They are added up together, and any one of them can be renamed, hidden or deleted on its own.
 </details>
 
 <details>
-<summary><b>Why did an account stop updating?</b></summary><br>
-The bookmaker signed you out. Open its site again and it picks up where it left off.
+<summary><b>Why is an old bet missing?</b></summary><br>
+Long histories are read backwards, one page at a time. Open the bookmaker and leave the tab a moment.
 </details>
 
 <details>
@@ -98,28 +100,16 @@ The bookmaker signed you out. Open its site again and it picks up where it left 
 No. Only sports bets. Casino money shows up as a smaller balance.
 </details>
 
-<details>
-<summary><b>What about currencies, and crypto?</b></summary><br>
-Everything is converted on the day the bet was placed, not today, so last year's profit does not move because a rate did. Crypto stakes go through the coin's own daily close.
-</details>
-
-<details>
-<summary><b>Will my bookmaker mind?</b></summary><br>
-It reads the same pages your browser already loaded, with your own session, slower than you clicking. That said, plenty of bookmakers write their terms broadly enough to cover anything they dislike. Your account, your call.
-</details>
+[**The rest of the questions**](docs/FAQ.md) - currencies and crypto, accounts
+that stop updating, what your bookmaker may think of it.
 
 ***
 
 # Add your bookmaker
 
-Missing yours? Add it yourself, in a few minutes. An AI tool writes the code. You
-just follow the steps.
-
-**What you need:** an account at that bookmaker, and an AI coding tool -
-Claude Code, Cursor or similar.
-
-**Where to start:** one terminal, five lines. Nothing to fill in - the last one
-asks which bookmaker you are adding.
+Missing yours? Add it yourself, in a few minutes. An AI coding tool - Claude
+Code, Cursor or similar - writes the code. You need an account at that
+bookmaker, and a terminal:
 
 ```bash
 git clone --depth 1 https://github.com/Martinek16/BETtracker
@@ -129,26 +119,22 @@ pnpm install
 pnpm add-bookmaker
 ```
 
-That last line runs the rest: it waits for your recording - leave it wherever
-your browser saves it, the command goes looking - strips your tokens out of it,
-writes the instructions to a file and starts your assistant on that file. No
-assistant, or not Claude Code? The command prints that file's path; open yours
-in the project folder and give it the same file. The whole of it:
+Nothing to fill in. The last line asks which bookmaker you are adding, then
+runs the rest of it:
 
-1. **You** record your bet history. If you have BETtracker installed, its popup
-   does the recording: **Record this site**, click through your account, **Save
-   recording**. Otherwise DevTools does it - F12, Network tab, export the log
-   with sensitive data. A few minutes either way.
-2. **The tool** strips your tokens and your name out of that file, writes the
-   folder, runs the tests and builds.
-3. **You** load the extension and check the figures. The extension itself lists
-   what the new site has proved and what is still untested - Options →
-   Accounts → Add a bookmaker.
+1. **You** record your bet history. BETtracker's own popup does it - **Record
+   this site**, click through your account, **Save recording**. Without it,
+   DevTools does the same: F12, Network tab, export the log with sensitive
+   data.
+2. **The tool** strips your tokens and your name out of that recording, writes
+   the folder, runs the tests and builds.
+3. **You** load the extension and check the figures against the site. It lists
+   what the new bookmaker has proved and what is still untested, under
+   Options → Accounts → Add a bookmaker.
 
-Two of the three are yours: signing in, and saying whether the numbers are
-right. Nobody else can do either.
-
-It all goes into one folder. Nothing else in the project changes.
+Signing in and saying whether the numbers are right are yours; nobody else can
+do either. It all goes into one folder, and nothing else in the project
+changes.
 
 [**Every step in detail**](docs/ADD_A_BOOKMAKER.md)
 

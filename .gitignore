@@ -6,6 +6,7 @@ dist/
 .env
 .env.local
 *.log
+*.stackdump
 
 # Whatever editor or assistant somebody works with is their own setup, not a
 # thing the project asks a contributor to install.
