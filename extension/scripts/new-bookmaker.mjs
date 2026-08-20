@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Start a bookmaker folder: `pnpm new-bookmaker <id> [site] [name]`.
  *

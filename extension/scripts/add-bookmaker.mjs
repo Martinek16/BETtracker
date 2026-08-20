@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * The whole of adding a bookmaker, from one terminal: `pnpm add-bookmaker <url>`.
  *
