@@ -22,6 +22,16 @@ describe('bet-at-home adapter', () => {
     expect(acc?.legs.length).toBeGreaterThan(1);
   });
 
+  it('carries the builder price on the picks it was quoted for', () => {
+    const builder = page.bets.find((b) => b.legs.some((l) => l.groupOdds !== undefined));
+    const picks = builder?.legs.filter((l) => l.groupOdds !== undefined) ?? [];
+    expect(picks.length).toBeGreaterThan(1);
+    // One price shared by the group, and never a pick's own: the bookmaker
+    // prices a builder as a whole, which is why it cannot be recomputed.
+    expect(new Set(picks.map((l) => l.groupOdds)).size).toBe(1);
+    expect(picks.every((l) => l.odds !== picks[0]?.groupOdds)).toBe(true);
+  });
+
   it('uses decimal odds and consistent money fields', () => {
     for (const b of page.bets) {
       expect(b.odds).toBeGreaterThan(1);

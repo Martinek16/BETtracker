@@ -199,6 +199,12 @@ const mapBetType = (
 
 const normalizeLeg = (raw: RawSelection): BetLeg => {
   const eventId = raw.eventId == null ? null : String(raw.eventId);
+  // Only a builder leg carries one, and then it is the group's price, not its
+  // own: `priceValue` is what this pick alone was worth.
+  const groupOdds =
+    raw.priceValue == null || raw.betBuilderOdds == null
+      ? null
+      : toNumber(raw.betBuilderOdds, 0) || null;
   return {
     sport: toStringOrNull(raw.sportName),
     league: toStringOrNull(raw.tournamentName),
@@ -215,6 +221,7 @@ const normalizeLeg = (raw: RawSelection): BetLeg => {
       : null,
     isLive: raw.isLive === true,
     ...(eventId !== null ? { eventId } : {}),
+    ...(groupOdds !== null ? { groupOdds } : {}),
   };
 };
 

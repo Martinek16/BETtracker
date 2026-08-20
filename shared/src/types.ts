@@ -81,6 +81,12 @@ export interface BetLeg {
   isLive: boolean;
   /** Bookmaker event id. Join key for a live-score feed; absent on older records. */
   eventId?: string;
+  /**
+   * Price of the bet builder this leg belongs to, the same figure on each of its
+   * legs. Correlated picks are priced under their product, so the combination
+   * cannot be recomputed from `odds` and has to be carried.
+   */
+  groupOdds?: number;
 }
 
 /**
