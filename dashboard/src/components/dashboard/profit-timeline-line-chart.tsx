@@ -137,12 +137,12 @@ export const ProfitTimelineLineChart = ({
       {split ? (
         <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-1">
           {seriesPoints.map((s) => (
-            <span
-              key={s.label}
-              className="flex items-center gap-1.5 text-[10px] text-muted-foreground"
-            >
+            <span key={s.label} title={s.label} className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} />
-              {s.label}
+              <AccountIcon
+                bookmaker={s.bookmaker}
+                className="h-3.5 w-3.5 overflow-hidden rounded-[2px]"
+              />
             </span>
           ))}
         </div>

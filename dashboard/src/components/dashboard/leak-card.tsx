@@ -108,7 +108,10 @@ export const LeakCard = ({
         title="What's costing you money"
         action={<AnalysisUnitToggle value={unit} onChange={setUnit} />}
       />
-      <div className="min-h-0 flex-1 overflow-hidden">
+      {/* Scrolled, not clipped: six rows and a heading do not fit the card at
+          every window height, and hidden overflow cut the last of them off with
+          nothing on screen saying there was more. */}
+      <div className="scroll-area min-h-0 flex-1 overflow-y-auto pr-1">
         {unit === 'selections' ? (
           !hasAny ? (
             <p className="text-sm text-muted-foreground">Not enough picks yet to spot a pattern</p>

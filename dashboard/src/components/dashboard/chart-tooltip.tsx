@@ -48,13 +48,18 @@ export const ChartTooltip = ({
       <div className="mt-1.5 space-y-1">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center justify-between gap-3 text-[10px]">
-            <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
-              {row.icon}
-              <span className="truncate">{row.label}</span>
+            {/* The mark stands in for the name where there is one: a bookmaker
+                called "bet-at-home" beside a six-figure amount does not fit the
+                box, and it was the amount that wrapped onto a second line. */}
+            <span
+              title={row.label}
+              className="flex min-w-0 items-center gap-1.5 text-muted-foreground"
+            >
+              {row.icon ?? <span className="truncate">{row.label}</span>}
             </span>
             <span
               className={cn(
-                'font-medium tabular-nums',
+                'shrink-0 whitespace-nowrap font-medium tabular-nums',
                 row.tone === 'profit' && 'text-profit',
                 row.tone === 'loss' && 'text-loss',
                 (!row.tone || row.tone === 'neutral') && 'text-popover-foreground',

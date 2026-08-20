@@ -663,22 +663,16 @@ const renderUnsupported = async (): Promise<void> => {
   const adding = await addingSite();
   const offer = recordOffer(host, adding, __STORE_BUILD__);
   if (!offer.offer) {
+    // Only while a site is being added is the page being the wrong one worth
+    // saying. Everywhere else this popup is opened over an ordinary site, and
+    // naming that site back at the reader alongside an invitation to write an
+    // adapter for it is an offer nobody on that page asked for.
     state.textContent =
-      offer.because === 'store-copy'
-        ? `${soon ?? host} is not one we read. Adding one takes the project.`
-        : offer.because === 'another-site'
-          ? `${soon ?? host} is not one we read. You are adding ${adding?.host}.`
-          : `${soon ?? host} is not one we read.`;
-    // A button rather than directions to a page: the popup is two lines wide,
-    // and the page it would spell out the way to is one click from here.
-    if (offer.because === 'nothing-named')
-      choices.append(
-        actionButton('Add this bookmaker', () => {
-          void chrome.tabs.create({
-            url: chrome.runtime.getURL('index.html#/options/accounts/add-bookmaker'),
-          });
-        }),
-      );
+      offer.because === 'another-site'
+        ? `${soon ?? host} is not one we read. You are adding ${adding?.host}.`
+        : soon === null
+          ? 'This site is not one we can read bets from.'
+          : `${soon} is not supported yet. Coming later.`;
     return;
   }
 
