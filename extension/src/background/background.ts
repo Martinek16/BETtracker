@@ -35,6 +35,7 @@ import {
   type LiveScore,
   type SyncMeta,
 } from '@betanal/shared';
+import { metaFor } from '../bookmakers/catalog';
 import { adapterFor, adapters } from '../bookmakers/registry';
 import { siteOriginKey } from '../bookmakers/types';
 import type { BookmakerAdapter, Credentials, MoneyDepth } from '../bookmakers/types';
@@ -88,6 +89,14 @@ let statuses: Record<string, SyncMeta['lastStatus']> = {};
  * newly-supported bookmaker opt-in rather than silently tracked.
  */
 let consent: Partial<Record<Bookmaker, boolean>> = {};
+/**
+ * What a bookmaker is called, from its own `bookmaker.json` and nowhere else.
+ * The adapter used to carry a name of its own, and a scaffolded folder is a copy
+ * of an existing one: it answered to the example's name on the popup of a site
+ * that had nothing to do with it.
+ */
+const nameOf = (bookmaker: Bookmaker): string => metaFor(bookmaker)?.name ?? bookmaker;
+
 /** The site waiting for an answer, surfaced by the popup. */
 let pending: Bookmaker | null = null;
 /**
@@ -1030,7 +1039,7 @@ const sync = async (mode: 'incremental' | 'full', only: Bookmaker | null = null)
           // rather than the one the previous run left behind.
           await importBalance({ adapter, connection }, true);
           const moneyError = await importMoney({ adapter, connection }, depth === 'full');
-          if (moneyError !== null) failures.push(`${adapter.name} transactions: ${moneyError}`);
+          if (moneyError !== null) failures.push(`${nameOf(adapter.id)} transactions: ${moneyError}`);
         } catch (err) {
           if (err instanceof RelayUnavailableError) {
             // Not a failure of the account: there is simply no tab of the site
@@ -1041,13 +1050,13 @@ const sync = async (mode: 'incremental' | 'full', only: Bookmaker | null = null)
             // stored history is intact and the next run picks up where this one
             // stopped. Reported so the run does not claim to be up to date.
             startCooldown(adapter.id, err.retryAfterMs, err.message);
-            failures.push(`${adapter.name} paused: ${err.message}`);
+            failures.push(`${nameOf(adapter.id)} paused: ${err.message}`);
             await updateStatus(account, before);
           } else if (err instanceof SessionExpiredError) {
-            failures.push(`${adapter.name} reconnecting`);
+            failures.push(`${nameOf(adapter.id)} reconnecting`);
             await handleSessionExpired(connection);
           } else {
-            failures.push(`${adapter.name}: ${(err as Error).message}`);
+            failures.push(`${nameOf(adapter.id)}: ${(err as Error).message}`);
             log('error', adapter.id, `sync failed: ${(err as Error).message}`);
             await updateStatus(account, 'error', (err as Error).message);
           }
@@ -1520,7 +1529,7 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
               entry !== undefined && settings.hiddenAccounts.includes(accountKey(entry.account));
             return {
               bookmaker: adapter.id,
-              name: adapter.name,
+              name: nameOf(adapter.id),
               accountId: current?.accountId ?? null,
               knownAccounts: known.filter((a) => a.bookmaker === adapter.id).length,
               consent: consent[adapter.id],

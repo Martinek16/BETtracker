@@ -91,7 +91,6 @@ export interface OpenBets {
  */
 export interface BookmakerAdapter {
   readonly id: Bookmaker;
-  readonly name: string;
   /**
    * Which login these credentials belong to, read from the site itself. Called
    * before anything is written, so a second account is separated from the first

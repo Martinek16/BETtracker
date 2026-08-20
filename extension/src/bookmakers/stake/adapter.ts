@@ -1615,7 +1615,6 @@ export const parseWagered = (list: unknown): BalanceInfo['wagered'] | undefined 
 
 export const stake: BookmakerAdapter = {
   id: BOOKMAKER,
-  name: 'Stake',
 
   async accountId(creds) {
     const data = await gql(creds, USER_ID);

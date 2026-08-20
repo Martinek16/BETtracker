@@ -177,9 +177,14 @@ describe.each(adapters())('$name adapter surface', (adapter) => {
     expect(adapter.parseOpen([{ nonsense: true }], account)).toEqual([]);
   });
 
-  it('names itself for the popup and the account pages', () => {
-    expect(adapter.name.length).toBeGreaterThan(0);
+  /**
+   * The name comes off `bookmaker.json` - `plugin.test.ts` asserts it is there.
+   * An adapter carrying one of its own is how a copied folder came to greet a
+   * contributor's site under the example's name.
+   */
+  it('is identified by its id alone, and names itself nowhere', () => {
     expect(adapter.id.length).toBeGreaterThan(0);
+    expect(adapter).not.toHaveProperty('name');
   });
 
   it('has a folder handing over parsed samples to be checked against', () => {
