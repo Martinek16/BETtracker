@@ -81,14 +81,35 @@ export const retarget = (source, from, to) =>
     .replaceAll(`bookmaker: '${from}'`, `bookmaker: '${to}'`);
 
 /**
- * The one line of the copied capture rule that cannot be left pointing at the
- * example. `manifest.test.ts` asks every site the manifest injects into to be
- * recognised by a rule, so a rule still matching stake's hosts fails a shared
- * test with the new folder's name on it - which reads as the scaffold being
- * broken rather than as a line to fill in.
+ * The two lines of the copied capture rule that cannot be left pointing at the
+ * example, and the comments that describe them.
+ *
+ * `host` is the obvious one: `manifest.test.ts` asks every site the manifest
+ * injects into to be recognised by a rule, so a rule still matching stake's
+ * hosts fails a shared test with the new folder's name on it.
+ *
+ * `fingerprint` is the one that cost an evening. It is how a page whose address
+ * we do not know is identified, first match wins, and the example is registered
+ * first - so a copy that still carries stake's fingerprint hands stake every
+ * page of the new site: the popup offers to read it as Stake, and the session
+ * the user signs in with is filed under Stake. Pointed at the site's own address
+ * instead, which is true of the new site and of nothing else, until whoever
+ * writes the adapter replaces it with the call that really gives the platform
+ * away.
  */
-export const retargetHost = (source, host) =>
-  source.replace(/^(\s*)host: \/.*\/,$/m, `$1host: /(^|\\.)${host.replaceAll('.', '\\.')}$/,`);
+export const retargetHost = (source, host) => {
+  const site = host.replaceAll('.', '\\.');
+  const rewritten = {
+    host: `host: /(^|\\.)${site}$/, // this site's own addresses, mirrors included`,
+    fingerprint: `fingerprint: /\\/\\/([a-z0-9-]+\\.)*${site}\\//, // a call only this platform makes, once one is known`,
+  };
+  // `[^\n]` rather than `.`, which stops at the CR of a checkout with CRLF
+  // endings - where the comment above the line then survived being replaced.
+  return source.replace(
+    /(?:[ \t]*\/\/[^\n]*\n)*([ \t]*)(host|fingerprint): \/[^\n]*\/,/g,
+    (_, indent, key) => `${indent}${rewritten[key]}`,
+  );
+};
 
 /** The declaration the manifest and `privacy.test.ts` both read. Hosts are the contributor's to fill. */
 const meta = (id, site, name, brand, color) => ({
