@@ -91,7 +91,11 @@ const SECRET_VALUE = [
   { pattern: /\b(?:\d[ -]?){13,19}\b/g, valid: (m) => luhn(m.replace(/[ -]/g, '')) }, // card
   { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g }, // email
   { pattern: /\b[0-9a-f]{32,}\b/gi }, // hex token
-  { pattern: /\b[A-Za-z0-9_-]{40,}\b/g }, // opaque token
+  // A digit is required because letters alone are how a site names a long
+  // method: `testPredcasnoIzplaciloPodatkiZaIzplaciloListka` is 45 characters
+  // and was being replaced with a hash, taking the endpoint's name - the one
+  // thing an adapter is written from - out of the recording with it.
+  { pattern: /\b[A-Za-z0-9_-]{40,}\b/g, valid: (m) => /\d/.test(m) }, // opaque token
 ];
 
 const isSecretValue = ({ valid }, match) => valid === undefined || valid(match);
@@ -139,6 +143,52 @@ const standIn = (key, value) => {
   // A stand-in that still looked like an email would be caught by the leak
   // check on the way out, so the key name is left to say what the field was.
   return pseudonym(value, key);
+};
+
+/**
+ * A stand-in shaped like what it replaces, so the file it is written into is
+ * still the file it was. Digits stay digits: an account number sits in JSON as
+ * a bare number, and `x-3f9a` in its place is not JSON at all.
+ */
+const standInText = (value) => {
+  if (!/^\d+$/.test(value)) return `x-${pseudonym(value)}`;
+  const digits = BigInt(`0x${pseudonym(value)}`)
+    .toString()
+    .padStart(value.length, '7')
+    .slice(-value.length);
+  // A leading zero is not a number JSON will parse back.
+  return digits.startsWith('0') ? `1${digits.slice(1)}` : digits;
+};
+
+const escapeRe = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * The identity the key names never gave away.
+ *
+ * `IDENTITY_KEY` recognises a person by the name of the field holding them, and
+ * a bookmaker that does not write its fields in English defeats it completely:
+ * a site answering `{"r4":"MIHA MARTINEK","r5":"Martinek16","r0":220326256}`
+ * came through a full clean with every one of those intact. No shape says that
+ * a string is somebody's name - team names and place names look identical - so
+ * the contributor is asked, and what they answer goes wherever it appears:
+ * bodies, headers and the URLs too.
+ */
+export const redactPersonal = (text, values) => {
+  let count = 0;
+  const cleaned = values
+    .map((value) => String(value).trim())
+    // Two characters would match inside half the words in the file, and the
+    // damage of that lands in the fixtures rather than in a warning.
+    .filter((value) => value.length >= 3);
+  const out = cleaned.reduce(
+    (acc, value) =>
+      acc.replace(new RegExp(`\\b${escapeRe(value)}\\b`, 'gi'), () => {
+        count += 1;
+        return standInText(value);
+      }),
+    text,
+  );
+  return { text: out, redactions: count };
 };
 
 /** Walks a parsed body, redacting by key and scrubbing every string it passes. */
@@ -191,8 +241,11 @@ const scrubQuery = (query = []) =>
 const scrubUrl = (url, query) => {
   try {
     const parsed = new URL(url);
-    parsed.search = '';
-    for (const { name, value } of query) parsed.searchParams.append(name, value);
+    // Joined rather than handed to `searchParams`, which encodes what it is
+    // given: a HAR stores the value as the site sent it, still percent-encoded,
+    // so a second pass turned `a=%20` into `a=%2520` and an adapter written from
+    // the clean recording asked the site a question it had never been asked.
+    parsed.search = query.map(({ name, value }) => `${name}=${value}`).join('&');
     return scrubText(parsed.toString());
   } catch {
     return scrubText(url);
@@ -354,6 +407,11 @@ const NEEDS = [
 export const coverage = (entries) => {
   const byEndpoint = new Map();
   for (const entry of entries) {
+    // A script is kept in the file because a site sometimes hides its history in
+    // one, but counting it as an endpoint made every recording look thorough: a
+    // single page pulling ten bundles read as ten endpoints, and the "this is
+    // one page of a site" warning below then never fired for anybody.
+    if (/javascript/i.test(entry.response?.content?.mimeType ?? '')) continue;
     const url = entry.request?.url ?? '';
     const seen = byEndpoint.get(endpointOf(url)) ?? { calls: 0, queries: new Set() };
     seen.calls += 1;
@@ -525,11 +583,15 @@ export const findRecording = (site) => {
 };
 
 const main = () => {
-  const [given, output] = process.argv.slice(2);
-  if (given === '--make-folder') {
+  const args = process.argv.slice(2);
+  if (args[0] === '--make-folder') {
     makeHarDir();
     return;
   }
+  const personal = args
+    .filter((arg) => arg.startsWith('--me='))
+    .flatMap((arg) => arg.slice('--me='.length).split(','));
+  const [given, output] = args.filter((arg) => !arg.startsWith('--'));
   const input = given ?? findRecording();
   if (input === undefined) {
     console.error(
@@ -567,7 +629,9 @@ const main = () => {
   })();
 
   const result = sanitizeHar(JSON.parse(readFileSync(input, 'utf8')));
-  const text = JSON.stringify(result.har, null, 2);
+  const mine = redactPersonal(JSON.stringify(result.har, null, 2), personal);
+  const text = mine.text;
+  result.redactions += mine.redactions;
 
   const leaks = findLeaks(text);
   if (leaks.length > 0) {
@@ -596,6 +660,14 @@ const main = () => {
   } else {
     console.log(recordingReport(coverage(result.har.log.entries)).join('\n'));
   }
+  if (personal.length === 0)
+    console.log(
+      '\n  Nothing was given to redact by hand. A field named `name` or `email` is\n' +
+        '  replaced automatically, but a site that names its fields `r4` and `r5` -\n' +
+        '  or names them in its own language - hides your name from that entirely.\n' +
+        '  Search the file for your own name, and if it is in there, run:\n' +
+        `    pnpm sanitize-har ${basename(input)} --me="Your Name,yourNickname,12345678"`,
+    );
   console.log('\n  Read it before sharing it. This tool is a net, not a guarantee.');
 };
 

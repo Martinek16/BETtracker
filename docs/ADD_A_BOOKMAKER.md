@@ -195,16 +195,30 @@ tool that has nothing to work from.
 (Recorded more than one site in a sitting, or keep your downloads somewhere
 unusual? `pnpm sanitize-har path/to/that.har` instead.)
 
-It removes cookies and tokens, replaces your name, email and account number with
-stand-ins, and throws away everything that is not an API response. Amounts and
-odds stay - they are what the code has to be tested against, and on their own
-they identify nobody.
+It removes cookies and tokens, throws away everything that is not an API
+response, and replaces the personal fields it can recognise by name - `name`,
+`email`, `accountNumber` - with stand-ins. Amounts and odds stay: they are what
+the code has to be tested against, and on their own they identify nobody.
+
+**A site that does not name its fields in English defeats that entirely.** One
+answering `{"r4":"MIHA MARTINEK","r5":"Martinek16","r0":220326256}` comes through
+a full clean with every one of those still in it, because no shape tells a
+person's name from a team's. Nothing but you knows they are yours, so `pnpm
+add-bookmaker` asks before it starts waiting, and by hand it is an argument:
+
+```bash
+pnpm sanitize-har that.har --me="Your Name,yourNickname,12345678"
+```
+
+Whatever you give it is cut out wherever it appears - bodies, headers, URLs -
+and replaced with something the same shape, so the file still parses.
 
 It refuses to write the file at all if something in it still looks like a
 credential, and names the line and the key it found rather than the value.
 
 **Open the sanitised file and look at it anyway.** The tool is a net, not a
-guarantee. It does not know that `"nickname": "YourNickname87"` is you.
+guarantee. Search it for your own name. If it is in there, run it again with
+`--me=`.
 
 ## 3. Write the folder
 

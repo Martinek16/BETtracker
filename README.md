@@ -126,8 +126,9 @@ runs the rest of it:
    this site**, click through your account, **Save recording**. Without it,
    DevTools does the same: F12, Network tab, export the log with sensitive
    data.
-2. **The tool** strips your tokens and your name out of that recording, writes
-   the folder, runs the tests and builds.
+2. **The tool** strips your tokens out of that recording, cuts out the name and
+   account number you gave it when it asked, writes the folder, runs the tests
+   and builds.
 3. **You** load the extension and check the figures against the site. It lists
    what the new bookmaker has proved and what is still untested, under
    Options → Accounts → Add a bookmaker.

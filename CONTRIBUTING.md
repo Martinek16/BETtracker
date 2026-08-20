@@ -51,8 +51,11 @@ everyone's clone within minutes.
 
 `har/` is gitignored, `pnpm sanitize-har` cleans a recording before it goes
 anywhere, and CI rejects a `.har` or an added line shaped like a token. All
-three can be defeated. **Read the fixtures you are committing** - no tool knows
-that `"nickname": "YourNickname87"` is you.
+three can be defeated. The cleaner recognises a personal field by its name, so a
+site that names its fields in its own language hands it nothing to recognise -
+tell it what is yours with `--me="Your Name,yourNickname,12345678"`. Then **read
+the fixtures you are committing**: no tool knows that `"nickname":
+"YourNickname87"` is you.
 
 A sanitised recording is not a thing to commit as it stands either. What a
 bookmaker's folder publishes is **how that site answers**, so the next person can

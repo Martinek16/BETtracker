@@ -5,7 +5,14 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { coverage, findLeaks, recordingReport, sanitizeHar, tooThin } from './sanitize-har.mjs';
+import {
+  coverage,
+  findLeaks,
+  recordingReport,
+  redactPersonal,
+  sanitizeHar,
+  tooThin,
+} from './sanitize-har.mjs';
 
 const har = {
   log: {
@@ -129,8 +136,75 @@ describe('sanitizeHar', () => {
     expect(entry.request.url).not.toContain('99887766');
     expect(entry.request.url).toContain('playerId=');
     for (const { name, value } of entry.request.queryString) {
-      expect(entry.request.url).toContain(`${name}=${encodeURIComponent(value)}`);
+      expect(entry.request.url).toContain(`${name}=${value}`);
     }
+  });
+
+  /**
+   * A HAR keeps a query value as the site sent it, still percent-encoded. Encode
+   * it a second time and `a=%20` becomes `a=%2520`, which is a different
+   * question - and the adapter written from the clean recording asks that one.
+   */
+  it('does not encode a query value that arrived encoded', () => {
+    const { har: clean } = sanitizeHar({
+      log: {
+        entries: [
+          {
+            startedDateTime: '2026-01-01T00:00:00.000Z',
+            time: 1,
+            request: {
+              method: 'GET',
+              url: 'https://api.example.com/list?filter=%20&page=2',
+              headers: [],
+              queryString: [
+                { name: 'filter', value: '%20' },
+                { name: 'page', value: '2' },
+              ],
+            },
+            response: {
+              status: 200,
+              headers: [],
+              content: { mimeType: 'application/json', text: '{"items":[]}' },
+            },
+          },
+        ],
+      },
+    });
+    expect(clean.log.entries[0].request.url).toContain('filter=%20');
+    expect(clean.log.entries[0].request.url).not.toContain('%2520');
+  });
+
+  /**
+   * A long name is not a token. Replacing one took the endpoint's own name out
+   * of the recording, which is the single thing the adapter is written from.
+   */
+  it('leaves a long method name alone and still takes a long token', () => {
+    const method = 'testPredcasnoIzplaciloPodatkiZaIzplaciloListka';
+    const token = 'A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0U1v2W3x4';
+    const { har: clean } = sanitizeHar({
+      log: {
+        entries: [
+          {
+            startedDateTime: '2026-01-01T00:00:00.000Z',
+            time: 1,
+            request: {
+              method: 'GET',
+              url: `https://api.example.com/rpc?action=${method}`,
+              headers: [],
+              queryString: [{ name: 'action', value: method }],
+            },
+            response: {
+              status: 200,
+              headers: [],
+              content: { mimeType: 'application/json', text: `{"ref":"${token}"}` },
+            },
+          },
+        ],
+      },
+    });
+    const entry = clean.log.entries[0];
+    expect(entry.request.url).toContain(method);
+    expect(entry.response.content.text).not.toContain(token);
   });
 
   /**
@@ -328,4 +402,57 @@ describe('coverage', () => {
   it('says nothing about paging when the recording has it', () => {
     expect(recordingReport(coverage(thorough)).join('\n')).not.toContain('page back through');
   });
+});
+
+/**
+ * The rule the key names cannot reach. A site that answers `{"r4":"MIHA
+ * MARTINEK"}` gives away a name that no shape and no field name recognises,
+ * so what the contributor types has to be taken at its word - and the file it
+ * is cut out of has to still parse afterwards.
+ */
+describe('redactPersonal', () => {
+  const body = JSON.stringify({ r4: 'MIHA MARTINEK', r5: 'Martinek16', r0: 220326256 });
+
+  it('takes a name, a username and an account number no field name gave away', () => {
+    const { text, redactions } = redactPersonal(body, [
+      'MIHA MARTINEK',
+      'Martinek16',
+      '220326256',
+    ]);
+    expect(text).not.toContain('MIHA MARTINEK');
+    expect(text).not.toContain('Martinek16');
+    expect(text).not.toContain('220326256');
+    expect(redactions).toBe(3);
+  });
+
+  it('leaves the file parsing, with the number still a number of the same length', () => {
+    const { text } = redactPersonal(body, ['MIHA MARTINEK', 'Martinek16', '220326256']);
+    const parsed = JSON.parse(text);
+    expect(String(parsed.r0)).toHaveLength(9);
+    expect(Number.isInteger(parsed.r0)).toBe(true);
+  });
+
+  it('ignores something too short to be anything but a coincidence', () => {
+    expect(redactPersonal('a bet on Bo', ['Bo']).redactions).toBe(0);
+  });
+});
+
+/**
+ * A bundle is kept in the file - a site sometimes hides its history in one -
+ * but counted as an endpoint it made every recording look thorough, and the
+ * thin-recording warning then never fired for anybody.
+ */
+it('does not count a script as an endpoint', () => {
+  const script = (url) => ({
+    request: { url },
+    response: { content: { mimeType: 'application/javascript' } },
+  });
+  const found = coverage([
+    script('https://www.example.com/bundle.js'),
+    script('https://www.example.com/vendor.js'),
+    script('https://www.example.com/ScriptResource.axd?d=1'),
+    { request: { url: 'https://api.example.com/bets/history' } },
+  ]);
+  expect(found.endpoints).toHaveLength(1);
+  expect(tooThin(found)).toBe(true);
 });
