@@ -506,11 +506,10 @@ const reconnect = async (bookmaker: Bookmaker, origin: string | null = null): Pr
 };
 
 /**
- * A mirror the manifest never listed. The user granted us the origin in the popup
- * a moment ago, so the two page scripts are registered for it by hand: a match
- * pattern cannot say `bah*.com`, and mirrors are renumbered faster than a release
- * could follow them. Reloading the tab is what makes the site authenticate again
- * with the scripts finally watching.
+ * A site the browser has just let us into. The manifest names no bookmaker, so
+ * every site arrives this way: the two page scripts are registered by hand for
+ * the one origin that was granted, and nowhere else. Reloading the tab is what
+ * makes the site authenticate again with the scripts finally watching.
  */
 const enableMirror = async (bookmaker: Bookmaker, origin: string): Promise<void> => {
   let host: string;
@@ -525,20 +524,49 @@ const enableMirror = async (bookmaker: Bookmaker, origin: string): Promise<void>
     allFrames: true,
     persistAcrossSessions: true,
   };
+  let placed = true;
   try {
     await chrome.scripting.registerContentScripts([
       { id: `mirror-${host}`, js: ['content.js'], ...shared },
       { id: `mirror-${host}-main`, js: ['inject.js'], world: 'MAIN' as const, ...shared },
     ]);
   } catch {
-    /* already registered on an earlier visit; keep what is there */
+    placed = false; // already registered on an earlier visit; keep what is there
   }
   noteOrigin(bookmaker, origin);
   await chrome.storage.local.set({ [siteOriginKey(bookmaker)]: origin });
+  // Only where the scripts were not there a moment ago. This is called from more
+  // than one direction now, and reloading a tab that is already being read
+  // throws away the session it was in the middle of handing us.
+  if (!placed) return;
   for (const tab of await chrome.tabs.query({ url: `${origin}/*` })) {
     if (tab.id !== undefined) await chrome.tabs.reload(tab.id);
   }
 };
+
+/**
+ * A site the user let us into from the browser's own settings rather than from
+ * the popup. Nothing in the manifest claims a bookmaker any more, so a grant made
+ * there leaves no scripts behind it and the site would sit there granted and
+ * unread. The grant itself is the signal, wherever it was made.
+ */
+chrome.permissions.onAdded.addListener((granted) => {
+  void (async () => {
+    for (const pattern of granted.origins ?? []) {
+      let host: string;
+      let origin: string;
+      try {
+        const url = new URL(pattern.replace('://*.', '://www.'));
+        host = url.host;
+        origin = url.origin;
+      } catch {
+        continue;
+      }
+      const bookmaker = bookmakerForHost(host);
+      if (bookmaker !== null) await enableMirror(bookmaker, origin);
+    }
+  })();
+});
 
 /**
  * Everything this worker holds about a site, dropped. Called when the last login
@@ -1543,9 +1571,9 @@ const scheduleAutoSync = async (): Promise<void> => {
 /**
  * The page scripts, put into tabs that were already open.
  *
- * A content script declared in the manifest is placed when a document loads, so
- * a bookmaker the user had open before installing - or before the extension was
- * updated - stays unwatched until they navigate. Nobody reloads a site they are
+ * A registered content script is placed when a document loads, so a bookmaker
+ * the user had open before the extension was updated stays unwatched until they
+ * navigate. Nobody reloads a site they are
  * already using because they just installed something, so the panel never
  * appeared and the extension looked like it did nothing at all.
  */

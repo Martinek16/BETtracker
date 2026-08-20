@@ -1,5 +1,6 @@
 import type { Bookmaker, ConnectionTone } from '@betanal/shared';
 import { bookmakerForHost, bookmakerForRequests, PANEL_MESSAGE } from '../messaging';
+import { metaFor } from '../bookmakers/catalog';
 import { recordOffer, type AddingSite } from './record-offer';
 import type { SaveResult } from '../inject/recorder';
 import type {
@@ -480,6 +481,31 @@ const mirrorHere = async (): Promise<{ bookmaker: Bookmaker; origin: string } | 
 };
 
 /**
+ * A bookmaker we could read, on a site the browser has not let us into.
+ *
+ * Nothing is granted up front: the extension ships asking for no bookmaker at
+ * all, so the browser's own list of what it may read stays empty until somebody
+ * says otherwise - rather than naming every mirror every supported site might
+ * ever rotate onto, most of which do not exist yet. The address answers it where
+ * we know the site by name; where we do not, the page is fingerprinted by what
+ * it has already loaded.
+ */
+const ungrantedSiteHere = async (): Promise<{ bookmaker: Bookmaker; origin: string } | null> => {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tab?.url === undefined) return null;
+  let url: URL;
+  try {
+    url = new URL(tab.url);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'https:') return null;
+  if (await chrome.permissions.contains({ origins: [`${url.origin}/*`] })) return null;
+  const known = bookmakerForHost(url.host);
+  return known !== null ? { bookmaker: known, origin: url.origin } : await mirrorHere();
+};
+
+/**
  * Sites we recognise on sight but do not read yet. Kept here rather than as a
  * capture rule so nothing else in the extension mistakes one for a supported
  * bookmaker; the popup only says the name back to the user.
@@ -694,8 +720,8 @@ const renderUnsupported = async (): Promise<void> => {
   );
 };
 
-/** The offer to watch a mirror we recognised but were never given access to. */
-const renderMirrorOffer = (bookmaker: Bookmaker, name: string, origin: string): void => {
+/** The offer to read a site we recognised but were never given access to. */
+const renderSiteOffer = (bookmaker: Bookmaker, name: string, origin: string): void => {
   const site = document.createElement('div');
   site.className = 'site';
 
@@ -711,17 +737,21 @@ const renderMirrorOffer = (bookmaker: Bookmaker, name: string, origin: string): 
 
   const state = document.createElement('div');
   state.className = 'state';
-  state.textContent = `This page runs ${name}. Read your bets here too?`;
+  state.textContent = `This page runs ${name}. Read your bets here?`;
 
   const choices = document.createElement('div');
   choices.className = 'choices';
   const yes = document.createElement('button');
   yes.className = 'primary';
-  yes.textContent = 'Enable here';
+  yes.textContent = 'Read this site';
   yes.addEventListener('click', () => {
+    // One dialogue, not two: an adapter that reads its bets off another backend
+    // is dead without that host, and asking for it later would be a second
+    // prompt about a site the user has already said yes to.
+    const origins = [`${origin}/*`, ...(metaFor(bookmaker)?.apiHosts ?? [])];
     // The grant has to answer this click: Chrome refuses an origin request that
     // does not come from a user gesture.
-    void chrome.permissions.request({ origins: [`${origin}/*`] }).then(async (granted) => {
+    void chrome.permissions.request({ origins }).then(async (granted) => {
       choices.remove();
       if (!granted) {
         state.textContent = 'Not enabled. Nothing on this page is read.';
@@ -737,9 +767,20 @@ const renderMirrorOffer = (bookmaker: Bookmaker, name: string, origin: string): 
   $('accounts').replaceChildren(site);
 };
 
+const nameOf = (accounts: readonly AccountStatus[], bookmaker: Bookmaker): string =>
+  accounts.find((a) => a.bookmaker === bookmaker)?.name ?? metaFor(bookmaker)?.name ?? bookmaker;
+
 const refresh = async (): Promise<void> => {
   const res = (await send({ type: 'GET_STATUS' })) as FromBackground | undefined;
   if (!res || res.type !== 'STATUS') return;
+  // Asked before anything is reported: a site we know by name but were never
+  // let into looks exactly like a site that has nothing to say, and the
+  // difference is the one thing the user can do something about from here.
+  const ungranted = panel === null ? await ungrantedSiteHere() : null;
+  if (ungranted !== null) {
+    renderSiteOffer(ungranted.bookmaker, nameOf(res.accounts, ungranted.bookmaker), ungranted.origin);
+    return;
+  }
   // The popup speaks about the page the user is on, and nothing else: anywhere
   // we cannot read bets from, saying so is the only honest answer.
   here = res.pending ?? (await currentBookmaker());
@@ -748,13 +789,16 @@ const refresh = async (): Promise<void> => {
   // against the bookmakers the background actually knows.
   if (here !== null && !res.accounts.some((a) => a.bookmaker === here)) here = null;
   if (here === null) {
-    const found = await mirrorHere();
+    const found = panel === null ? await mirrorHere() : null;
     if (found === null) {
       await renderUnsupported();
       return;
     }
-    const name = res.accounts.find((a) => a.bookmaker === found.bookmaker)?.name ?? found.bookmaker;
-    renderMirrorOffer(found.bookmaker, name, found.origin);
+    // Access we already hold - the offer above answers the case where we do not -
+    // on a site nothing is watching. Granting an origin in the browser's own
+    // settings leaves no scripts behind it, and this is where that is noticed.
+    renderNote(`This page runs ${nameOf(res.accounts, found.bookmaker)}. Reading it…`);
+    await send({ type: 'ENABLE_MIRROR', bookmaker: found.bookmaker, origin: found.origin });
     return;
   }
   render(

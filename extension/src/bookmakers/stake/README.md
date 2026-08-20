@@ -22,8 +22,8 @@ have a bet behind it.
 ## Mirrors
 
 `stake1000.com` … `stake1080.com` plus the country domains, declared as a
-`siteRanges` block in `bookmaker.json` and expanded into the manifest at build
-time.
+`siteRanges` block in `bookmaker.json`, so the popup recognises whichever mirror
+is current and offers to read that page.
 
 ## Fixtures
 

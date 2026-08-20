@@ -20,9 +20,10 @@ Worth knowing before you audit it, and worth knowing before you install it:
 - The only outbound calls to a third party are exchange rates, from
   `api.frankfurter.dev` and `api.binance.com`. They are told a currency pair and
   a date. They are not told anything about you.
-- The extension asks for access to the bookmaker sites it supports and nothing
-  wider. `manifest.test.ts` fails the build if a permission over the whole web
-  is ever added.
+- The extension ships holding no bookmaker at all. A site is granted one origin
+  at a time, by the user, from the popup, on the page they are standing on.
+  `manifest.test.ts` fails the build if a permission over the whole web is ever
+  asked for up front.
 
 Anything that contradicts the above is a security bug, including by accident.
 

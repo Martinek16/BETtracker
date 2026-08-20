@@ -45,6 +45,13 @@ export interface BookmakerMeta {
    * relying on, which lands the reader on the front page instead.
    */
   betsPath?: string;
+  /**
+   * Backends the adapter calls that are not the site's own address. Asked for in
+   * the same breath as the site itself: the browser grants an origin at a time,
+   * and a site whose bets are read from somewhere else answers nothing without
+   * both.
+   */
+  apiHosts?: readonly string[];
 }
 
 export const CATALOG: readonly BookmakerMeta[] = [betAtHome, stake];

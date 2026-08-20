@@ -1,15 +1,14 @@
 import * as esbuild from 'esbuild';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { expandSites } from './sites.mjs';
 
 /**
  * A folder is only half of a bookmaker: it also has to be named in the capture
  * rules, the adapter registry and the catalogue. Miss one and nothing complains
- * — the manifest still lets the content script load, so the site opens, the page
- * is read, and absolutely nothing happens. That is indistinguishable from a
- * broken adapter, and it is where an evening goes. Said here rather than only in
- * the test suite because a build is what you run before loading the extension.
+ * — the popup still offers to read the site, the scripts still go in, and
+ * absolutely nothing happens. That is indistinguishable from a broken adapter,
+ * and it is where an evening goes. Said here rather than only in the test suite
+ * because a build is what you run before loading the extension.
  */
 const COLLECTORS = ['src/bookmakers/capture.ts', 'src/bookmakers/registry.ts', 'src/bookmakers/catalog.ts'];
 
@@ -65,8 +64,7 @@ const targets = [
 const dashboardDist = '../dashboard/dist';
 
 const copyStatic = async () => {
-  const manifest = expandSites(JSON.parse(await readFile('manifest.json', 'utf8')));
-  await writeFile('dist/manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);
+  await writeFile('dist/manifest.json', await readFile('manifest.json', 'utf8'));
   await cp('src/popup/popup.html', 'dist/popup.html');
   if (existsSync('icons')) await cp('icons', 'dist/icons', { recursive: true });
   if (existsSync(dashboardDist)) {
