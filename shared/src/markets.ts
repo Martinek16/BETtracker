@@ -7,7 +7,7 @@
  * detail under it.
  */
 
-import { sidePicked } from './teams';
+import { sidePicked, withoutSide } from './teams';
 
 /** First match wins, so the specific subject (corners, cards) beats the shape
  * of the bet (over/under), which both names carry. */
@@ -17,16 +17,46 @@ const FAMILIES: ReadonlyArray<{ label: string; match: readonly string[] }> = [
   { label: 'Bookings', match: ['card', 'booking'] },
   {
     label: 'Players',
-    match: ['player', 'scorer', 'assist', 'shots', 'points', 'rebound'],
+    match: ['player', 'scorer', 'goalscorer', 'assist', 'shots', 'points', 'rebound'],
   },
-  { label: 'Teams', match: ['both teams', 'btts', 'gg/ng', 'team total'] },
+  // What one side did, whoever they played: kept its clean sheet, scored in
+  // both halves, won without conceding. The scoreline itself is a Score.
+  {
+    label: 'Teams',
+    match: [
+      'both teams',
+      'btts',
+      'gg/ng',
+      'team total',
+      'clean sheet',
+      'to nil',
+      'to score in',
+      'to score over',
+      'to score under',
+      'first team to score',
+      'last team to score',
+      'team to score first',
+      'team to score last',
+    ],
+  },
   {
     label: 'Scores',
-    match: ['correct score', 'clean sheet', 'to score', 'scoring', 'both halves', 'score goal'],
+    match: [
+      'correct score',
+      'to score',
+      'scoring',
+      'both halves',
+      'score goal',
+      // Which goal it was is a score question, not a total. The entries are
+      // joined into one regular expression, so a pattern is at home here.
+      '\\d+(?:st|nd|rd|th) goal',
+    ],
   },
   { label: 'Halves', match: ['half', 'halve', 'period', 'quarter', 'set', 'map', 'inning'] },
   { label: 'Handicap', match: ['handicap', 'asian', 'spread'] },
-  { label: 'Goals', match: ['over', 'under', 'total', 'goal'] },
+  // Not 'Goals': the same question is asked of points, games, sets, maps and
+  // runs, and only one of the sports that ask it calls the answer a goal.
+  { label: 'Totals', match: ['over', 'under', 'total', 'goal'] },
   {
     label: 'Match result',
     match: [
@@ -98,7 +128,31 @@ const STATS: readonly string[] = [
   'sets',
   'games',
   'aces',
+  'turnovers',
+  'pointers',
 ];
+
+/** Whole words only: the 'runs' inside "Brunson" is half a surname, and cutting
+ * there left the market filed under "runson". */
+const STAT_PATTERNS = STATS.map((stat) => new RegExp(`\\b${stat}\\b`, 'i'));
+
+/**
+ * A market that a book prints a participant in front of. Reading it off the
+ * event only works while both are spelled the same way, and one book writes
+ * "NK Olimpija Ljubljana" in the market against "Olimpija" in the fixture,
+ * which left a Clean Sheet row per club.
+ */
+const MARKET_HEAD = /\b(?:clean sheet|to score|to win|win to nil|both halves|anytime)\b/i;
+
+/** A word no participant is called, and every one of these markets asks about
+ * somebody unnamed - "Both Teams To Score" is not a bet on a club called Both. */
+const NOT_A_NAME = /\b(?:both|teams?|first|last|next|any|either|player|match|total|the|no|opponent|goals?|halves?)\b/i;
+
+const withoutName = (name: string): string => {
+  const head = MARKET_HEAD.exec(name);
+  if (head === null || head.index === 0) return name;
+  return NOT_A_NAME.test(name.slice(0, head.index)) ? name : name.slice(head.index);
+};
 
 /** Only a priced line carries a name in front of it; "Correct Score" does not. */
 const PRICED_LINE = /\b(over\/under|handicap)\b/i;
@@ -106,6 +160,24 @@ const PRICED_LINE = /\b(over\/under|handicap)\b/i;
 /** The score at which the market was opened. "Asian Handicap (0:0) -0.5" is the
  * same handicap as "Asian Handicap -0.5". */
 const OPENING_SCORE = /\s*\(\d+\s*:\s*\d+\)/g;
+
+/** What the book counts towards the market. "Total (Incl. Overtime)" is the
+ * total; the note is the house rule under it, not another bet. */
+const COUNTING_RULE = /\s*\((?:incl|excl|inc|exc)[^)]*\)/gi;
+
+/**
+ * Which instance of a thing was bet on - the third goal, the fifth corner, the
+ * seventieth minute. The bet is the same bet whichever one it was, so a market
+ * that is not priced at a line keeps its question and drops the count.
+ */
+const INSTANCE = /\b\d+(?::\d+)*(?:st|nd|rd|th)?\+?(?=\s|$)/gi;
+
+/** Title case, so one book's "to Score in Both Halves" and another's
+ * "To Score In Both Halves" are one row and not two. */
+const titled = (name: string): string =>
+  name.replace(/\S+/g, (word) => word.charAt(0).toUpperCase() + word.slice(1));
+
+const tidy = (name: string): string => name.replace(/\s+/g, ' ').trim();
 
 /** One bet, several house styles. Only names that mean exactly the same thing. */
 const ALIASES: ReadonlyArray<readonly [RegExp, string]> = [
@@ -164,35 +236,31 @@ export const marketLine = (
   if (name === '') return 'Unknown';
 
   // A side of this very match, printed in front of its own market.
-  for (const side of (event ?? '').split(/\s+[-–—]\s+/)) {
-    const team = side.trim();
-    if (team !== '' && name.toLowerCase().startsWith(`${team.toLowerCase()} `)) {
-      name = name.slice(team.length + 1);
-      break;
-    }
-  }
+  name = withoutName(withoutSide(name, event));
 
   // Whatever is left in front of the stat is a player, who is not the bet.
   const kind = PRICED_LINE.exec(name);
   if (kind !== null && kind.index > 0) {
-    const before = name.slice(0, kind.index).toLowerCase();
+    const before = name.slice(0, kind.index);
     let cut: { at: number; length: number } | null = null;
-    for (const stat of STATS) {
-      const at = before.indexOf(stat);
-      if (at < 0) continue;
-      if (cut === null || at < cut.at || (at === cut.at && stat.length > cut.length)) {
-        cut = { at, length: stat.length };
+    for (const pattern of STAT_PATTERNS) {
+      const hit = pattern.exec(before);
+      if (hit === null) continue;
+      const at = hit.index;
+      const length = hit[0].length;
+      if (cut === null || at < cut.at || (at === cut.at && length > cut.length)) {
+        cut = { at, length };
       }
     }
     if (cut !== null) name = name.slice(cut.at);
   }
 
-  name = name.replace(OPENING_SCORE, '').trim();
+  name = tidy(name.replace(OPENING_SCORE, '').replace(COUNTING_RULE, ''));
   const alias = ALIASES.find(([pattern]) => pattern.test(name));
   if (alias !== undefined) return alias[1] === '1X2' ? matchResult(event, selection) : alias[1];
 
-  name = name.charAt(0).toUpperCase() + name.slice(1);
-  if (!LINE_MARKET.test(name)) return name;
+  name = titled(name);
+  if (!LINE_MARKET.test(name)) return tidy(name.replace(INSTANCE, ''));
 
   // What was bet is the subject and the direction - "Points Over" - not the
   // number, which the book moves for every fixture.
@@ -210,7 +278,9 @@ export const marketLine = (
     // that was actually backed, which is the opposite sign half the time.
     const line = SIGNED_LINE.exec(pick)?.[0] ?? SIGNED_LINE.exec(name)?.[0] ?? null;
     if (line === null) return head;
-    if (sport === LOW_LINE_SPORT) return `${head} ${line}`;
+    // Every half-goal of a handicap was its own row, in football most of all,
+    // where the same bet is offered at nine of them. Which way it was taken is
+    // the bet; the number is the fixture.
     return `${head} ${line.startsWith('-') ? '−' : '+'}`;
   }
 

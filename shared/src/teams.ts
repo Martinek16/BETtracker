@@ -85,6 +85,25 @@ export const sidePicked = (event: string | null, selection: string | null): numb
   return partial?.index ?? null;
 };
 
+/**
+ * A market name without the participant a book printed in front of it. Books
+ * file "Everton FC Clean Sheet" and "Clean Sheet" for the same market, which
+ * otherwise reads as one market per club. Club words are ignored on both sides,
+ * and the whole name is never taken - a market has to be left.
+ */
+export const withoutSide = (name: string, event: string | null): string => {
+  if (event === null) return name;
+  const parts = name.trim().split(/\s+/);
+  for (const side of event.split(SPLIT)) {
+    const wanted = normalize(side);
+    if (wanted === '') continue;
+    for (let take = parts.length - 1; take > 0; take -= 1) {
+      if (normalize(parts.slice(0, take).join(' ')) === wanted) return parts.slice(take).join(' ');
+    }
+  }
+  return name;
+};
+
 /** The participant this pick backed, or null when the pick names no side. */
 export const teamPicked = (event: string | null, selection: string | null): string | null => {
   const at = sidePicked(event, selection);

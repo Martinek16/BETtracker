@@ -132,7 +132,11 @@ export interface SelectionStats {
    * High means the group's figure is one lucky price, not a pattern.
    */
   topSwingShare: number;
-  /** The sports the group spans. Exactly one means the group is that sport's. */
+  /**
+   * The sports the group spans, the one it mostly is first. A market bet in
+   * four sports is still mainly one of them, and saying which is more use than
+   * leaving the row unmarked because it is not purely one.
+   */
   sports: string[];
 }
 
@@ -148,6 +152,21 @@ const swingOf = (sel: Selection): number => {
   if (sel.leg.status === 'won') return sel.odds - 1;
   if (sel.leg.status === 'lost') return -1;
   return 0;
+};
+
+/** The sports a group holds, the one it holds most of first. Ties break by name
+ * so two runs over the same bets order them the same way. */
+const sportsIn = (group: readonly Selection[]): string[] => {
+  const counts = new Map<string, number>();
+  for (const sel of group) {
+    const sport = sportOf(sel);
+    if (sport !== null) counts.set(sport, (counts.get(sport) ?? 0) + 1);
+  }
+  return [...counts]
+    .sort(([aSport, aPicks], [bSport, bPicks]) =>
+      bPicks - aPicks === 0 ? aSport.localeCompare(bSport) : bPicks - aPicks,
+    )
+    .map(([sport]) => sport);
 };
 
 const statsFor = (key: string, label: string, group: readonly Selection[]): SelectionStats => {
@@ -185,9 +204,7 @@ const statsFor = (key: string, label: string, group: readonly Selection[]): Sele
       0,
     ),
     topSwingShare: swing === 0 ? 0 : Math.max(...swings.map(Math.abs)) / swing,
-    sports: [
-      ...new Set(group.map(sportOf).filter((sport): sport is string => sport !== null)),
-    ].sort(),
+    sports: sportsIn(group),
   };
 };
 
@@ -216,16 +233,23 @@ const readsBetter = (candidate: string, held: string): boolean => {
   return gap === 0 ? candidate < held : gap > 0;
 };
 
+/** The group a selection lands in, told apart from every other group in the
+ * dimension - which for a sport-scoped one is more than its name. */
+const identityOf = (sel: Selection, dimension: LegDimension): string | null => {
+  const key = legKeyOf(sel, dimension);
+  if (key === null) return null;
+  return SPORT_SCOPED.has(dimension) ? `${spelling(key)}${SCOPE}${sportOf(sel) ?? ''}` : key;
+};
+
 const statsByKey = (
   selections: readonly Selection[],
   dimension: LegDimension,
 ): SelectionStats[] => {
-  const scoped = SPORT_SCOPED.has(dimension);
   const buckets = new Map<string, { label: string; group: Selection[] }>();
   for (const sel of selections) {
     const key = legKeyOf(sel, dimension);
-    if (key === null) continue;
-    const identity = scoped ? `${spelling(key)}${SCOPE}${sportOf(sel) ?? ''}` : key;
+    const identity = identityOf(sel, dimension);
+    if (key === null || identity === null) continue;
     const existing = buckets.get(identity);
     if (existing === undefined) {
       buckets.set(identity, { label: key, group: [sel] });
@@ -245,14 +269,19 @@ export const groupSelectionsBy = (
   dimension: LegDimension,
 ): SelectionStats[] => statsByKey(selectionsOf(bets), dimension);
 
-/** The same grouping, one level down: the markets inside a market family. */
+/**
+ * The same grouping, further in: the selections left after entering every group
+ * in `within`, split by `child`. Two levels take two entries - the lines of a
+ * market family, then the sports one of those lines was priced in.
+ */
 export const groupSelectionsWithin = (
   bets: readonly Bet[],
-  parent: LegDimension,
-  parentKey: string,
+  within: readonly (readonly [LegDimension, string])[],
   child: LegDimension,
 ): SelectionStats[] =>
   statsByKey(
-    selectionsOf(bets).filter((sel) => legKeyOf(sel, parent) === parentKey),
+    selectionsOf(bets).filter((sel) =>
+      within.every(([dimension, key]) => identityOf(sel, dimension) === key),
+    ),
     child,
   );

@@ -133,7 +133,7 @@ describe('groupSelectionsWithin', () => {
         ],
       }),
     ];
-    const lines = groupSelectionsWithin(bets, 'marketFamily', 'Goals', 'marketLine');
+    const lines = groupSelectionsWithin(bets, [['marketFamily', 'Totals']], 'marketLine');
     expect(lines.map((l) => l.key).sort()).toEqual(['Total Over 2.5', 'Total Under 1.5']);
   });
 
@@ -146,9 +146,29 @@ describe('groupSelectionsWithin', () => {
         ],
       }),
     ];
-    const lines = groupSelectionsWithin(bets, 'marketFamily', 'Goals', 'marketLine');
+    const lines = groupSelectionsWithin(bets, [['marketFamily', 'Totals']], 'marketLine');
     expect(lines.map((l) => l.key)).toEqual(['Total Over']);
     expect(lines[0]?.picks).toBe(2);
+  });
+
+  it('splits one line of a family into the sports that priced it', () => {
+    const bets = [
+      makeBet({
+        legs: [
+          makeLeg({ sport: 'Basketball', marketType: 'Over/Under 210.5', selection: 'Over 210.5' }),
+          makeLeg({ sport: 'Tennis', marketType: 'Over/Under 21.5', selection: 'Over 21.5' }),
+        ],
+      }),
+    ];
+    const sports = groupSelectionsWithin(
+      bets,
+      [
+        ['marketFamily', 'Totals'],
+        ['marketLine', 'Total Over'],
+      ],
+      'sport',
+    );
+    expect(sports.map((s) => s.key).sort()).toEqual(['Basketball', 'Tennis']);
   });
 });
 

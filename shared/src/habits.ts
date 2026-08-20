@@ -1,6 +1,7 @@
 import type { Bet } from './types';
 import { groupBy, type GroupStats, type LegDimension, type SlipDimension } from './dimensions';
 import { groupSelectionsBy } from './selections';
+import { OTHER_MARKETS } from './markets';
 
 /** One betting habit, phrased so it can be read straight off the screen. */
 export interface Habit {
@@ -161,7 +162,13 @@ export const habitLeaks = (bets: readonly Bet[], minBets = 5, limit = 3): HabitL
   };
 };
 
-const SCANNED_LEGS: readonly LegDimension[] = ['sport', 'marketType', 'oddsBracket', 'isLive'];
+/**
+ * The family rather than the book's own market name: "Over/Under 2.5" and
+ * "Over/Under 3.5" are one habit priced at two numbers, and scanned apart neither
+ * of them ever reaches the minimum to be named at all. Same grouping the
+ * breakdowns read markets at.
+ */
+const SCANNED_LEGS: readonly LegDimension[] = ['sport', 'marketFamily', 'oddsBracket', 'isLive'];
 
 const legLabelFor = (dimension: LegDimension, key: string): string => {
   switch (dimension) {
@@ -190,7 +197,10 @@ export const selectionLeaks = (bets: readonly Bet[], minPicks = 8, limit = 3): H
         (g) =>
           g.decided >= minPicks &&
           g.decided <= decidedTotal * DOMINANT_SHARE &&
-          g.key !== 'Unknown',
+          g.key !== 'Unknown' &&
+          // The bucket everything unrecognised falls into is not a habit anyone
+          // can bet less of.
+          g.key !== OTHER_MARKETS,
       )
       .map((g) => ({
         dimension,
