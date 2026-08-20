@@ -32,9 +32,8 @@ calls that can move data without showing a request: `sendBeacon`, `WebSocket`,
 `chrome.storage.sync` - which is not local storage, it copies to the browser
 account.
 
-Both the test and the manifest read the same `bookmaker.json`, so an undeclared
-host is one the extension holds no permission for either. An adapter talks to
-the bookmaker it is for, and to nothing else.
+The declared hosts are the whole of what a folder is allowed to name. An adapter
+talks to the bookmaker it is for, and to nothing else.
 
 ## The three collectors
 
@@ -95,9 +94,12 @@ Sites that renumber their domains (`bah24.si`, `stake1042.com`) declare a
 "siteRanges": [{ "prefix": "bah", "from": 20, "to": 45, "suffixes": ["com", "si"] }]
 ```
 
-The build expands these into the manifest's `matches` and `host_permissions`.
-`manifest.test.ts` then checks that every site the extension asks to be injected
-into is one a capture rule actually recognises.
+No site reaches the manifest. Permission is asked for one origin at a time, from
+the popup, on the page the user is standing on, and the scripts are registered
+at that moment. What the ranges are for is the popup knowing the page it is
+looking at belongs to you before it offers to read it - and
+`manifest.test.ts` checks that every host a folder names is one a capture rule
+actually recognises, since otherwise the grant lands on a site nothing claims.
 
 ## Adding one
 

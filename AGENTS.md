@@ -312,8 +312,8 @@ are the ones that pass a typecheck and then misinform somebody.
   never arrives. See `bet-at-home/` for a site that does this.
 - **An undeclared host.** Every host the adapter names must appear in
   `bookmaker.json`. `privacy.test.ts` reads your source and fails otherwise, and
-  the manifest grants permission from the same file, so an undeclared host is
-  also one the extension cannot reach. No analytics, no error reporting, no
+  a host named nowhere is a host the popup never asks the browser for, so the
+  adapter reaches it on no machine. No analytics, no error reporting, no
   `sendBeacon`, `WebSocket`, `XMLHttpRequest`, `new Image`, `eval`, injected
   `<script>` or `chrome.storage.sync`.
 - **`capture.ts` importing an adapter.** It is loaded by the MAIN-world inject
@@ -336,8 +336,9 @@ Then confirm with `git status` that nothing outside the folder and the three
 collectors changed.
 
 What the tests are for: `plugin.test.ts` - the folder is complete and
-registered. `manifest.test.ts` - every address the extension asks to be injected
-into is one a capture rule recognises. `conformance.test.ts` - your `samples.ts`
+registered. `manifest.test.ts` - the extension still ships asking for no
+bookmaker, and every address your folder declares is one a capture rule
+recognises. `conformance.test.ts` - your `samples.ts`
 obeys the rules every site obeys. `privacy.test.ts` - the folder talks to its
 bookmaker and nothing else.
 

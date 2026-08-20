@@ -35,6 +35,9 @@ There is no server and no API key, because bookmakers do not offer one. What
 they do offer is the same interface their own website uses, and you are already
 signed in to it.
 
+0. **You grant the site.** The extension ships knowing no bookmaker's address.
+   Open the popup on a bookmaker page and it offers to read that one; say yes
+   and the browser grants that address, and only then does anything below run.
 1. **A content script watches the page** you have open at the bookmaker. It reads
    which requests the site's own JavaScript makes, and when one matches that
    bookmaker's capture rule it takes the session header out of it. Only the

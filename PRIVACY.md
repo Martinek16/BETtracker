@@ -101,8 +101,7 @@ your browser and operating system up to date, and lock the account you use.
 | `scripting`, `activeTab` | Running the reader inside the bookmaker page you are on |
 | `https://api.frankfurter.dev/*` | Exchange rates for accounts in another currency |
 | `https://api.binance.com/*` | Coin prices for a wallet held in crypto |
-| `https://sports-api.everymatrix.com/*`, `https://*.nwacdn.com/*` | bet-at-home's own sportsbook and banking backends |
-| Optional access to other addresses | Only for a bookmaker address you add yourself, and only after the browser asks you |
+| Optional access to other addresses | Nothing is held up front. A site is granted one at a time, by you, from the popup, on the page you are standing on — together with the backend that page reads its bets from, such as bet-at-home's `sports-api.everymatrix.com` |
 
 ## Limited use
 

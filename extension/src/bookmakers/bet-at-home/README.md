@@ -19,8 +19,8 @@ reports no transactions.
 ## Mirrors
 
 The domain is renumbered periodically (`bah24.si`, `bah31.com`, …), so
-`bookmaker.json` declares a `siteRanges` block rather than listing each one. The
-build expands it into the manifest's match patterns.
+`bookmaker.json` declares a `siteRanges` block rather than listing each one, so
+the popup recognises whichever number is current and offers to read that page.
 
 ## Fixtures
 

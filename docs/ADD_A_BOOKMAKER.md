@@ -279,8 +279,8 @@ wrong here:
 - **`plugin.test.ts`** - your folder is complete, and registered in all three
   collectors. Forget one and the extension does nothing, silently.
 - **`manifest.test.ts`** - the addresses you declared match the ones your
-  capture rule recognises. Get these out of step and the extension either is not
-  injected where it should be, or is injected and then does nothing.
+  capture rule recognises. Get these out of step and the popup grants the site,
+  puts the scripts in, and then nothing happens.
 - **`conformance.test.ts`** - your bets obey the rules every site's bets obey.
   It reads your folder's `samples.ts`, so a folder without that file is never
   checked at all. Two of its rules exist for the failure that wastes the most
