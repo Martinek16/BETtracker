@@ -7,7 +7,8 @@ import {
   type LegDimension,
   type SelectionStats,
 } from '@betanal/shared';
-import { ArrowDown, ArrowUp, ChevronRight } from 'lucide-react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, ListFilter } from 'lucide-react';
 import { sportIconFor } from '@/components/dashboard/live-score';
 import { usePersistedState } from '@/lib/persisted-state';
 import { cn, formatMoney, formatPercent } from '@/lib/utils';
@@ -33,12 +34,45 @@ const SORT_KEYS: readonly SortKey[] = [
   'moneyPl',
 ];
 
-/** The one dimension that opens: a family into the priced lines under it. */
-const DRILLDOWN: Partial<Record<LegDimension, LegDimension>> = { marketFamily: 'marketLine' };
+/**
+ * What a row opens into. A market family opens into the lines it was priced at;
+ * every other row opens into the sports it spans, which is the split a reader
+ * was reaching for when they asked what a figure was made of. A row that holds
+ * one sport has nothing to open into.
+ */
+const childOf = (dimension: LegDimension, stats: SelectionStats): LegDimension | undefined => {
+  if (dimension === 'marketFamily') return 'marketLine';
+  if (dimension === 'sport') return undefined;
+  return stats.sports.length > 1 ? 'sport' : undefined;
+};
+
+/** The groups entered to reach a row, outermost first. */
+type Path = readonly (readonly [LegDimension, string])[];
+
+const TOP: Path = [];
+
+/**
+ * Dimensions whose every group is one sport and nothing else, so the icon is a
+ * column of its own rather than a mark pinned to the name. League and team are
+ * already split per sport upstream; a market family spans several and an icon
+ * beside it would be a guess at the mixture.
+ */
+const SPORT_COLUMN: ReadonlySet<LegDimension> = new Set<LegDimension>([
+  'sport',
+  'league',
+  'team',
+]);
+
+/** The sport a row is wholly about, or null when it is about more than one. */
+const sportOfRow = (dimension: LegDimension, stats: SelectionStats): string | null => {
+  if (dimension === 'sport') return stats.label;
+  if (!SPORT_COLUMN.has(dimension)) return null;
+  return stats.sports[0] ?? null;
+};
 
 const COL = {
-  lead: 'w-4 shrink-0',
   rank: 'w-8 shrink-0',
+  sport: 'w-6 shrink-0',
   group: 'min-w-0 flex-1',
   interval: 'hidden flex-1 lg:block',
   picks: 'w-14 shrink-0',
@@ -137,16 +171,80 @@ const SortHeaderCell = ({
 );
 
 /**
- * The sport a group belongs to, when it belongs to exactly one. A market that
- * several sports were bet in is not a sport's market, so it stays unmarked.
+ * The sport column's header: which sport the table is narrowed to. A grid rather
+ * than a list, because a sport is read as its icon and a column of twenty names
+ * is a scroll where a shape would have done.
  */
-const SportMark = ({ stats }: { stats: SelectionStats }): JSX.Element | null => {
-  if (stats.sports.length !== 1) return null;
-  const Glyph = sportIconFor(stats.sports[0]!);
+const SportPicker = ({
+  sports,
+  value,
+  onChange,
+}: {
+  sports: readonly string[];
+  value: string;
+  onChange: (sport: string) => void;
+}): JSX.Element => {
+  // No word in the head: it is a column of marks, and the label was wider than
+  // the marks under it, which pushed the name column away from them.
+  const Picked = value === '' ? ListFilter : sportIconFor(value);
   return (
-    <span className="shrink-0" title={stats.sports[0]}>
-      <Glyph aria-hidden className="h-3.5 w-3.5 text-muted-foreground" />
-    </span>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger
+        aria-label="Pick a sport"
+        title={value === '' ? 'Pick a sport' : value}
+        className={cn(
+          COL.sport,
+          'flex items-center outline-none',
+          value === '' ? 'text-muted-foreground hover:text-foreground' : 'text-foreground',
+        )}
+      >
+        <Picked aria-hidden className="h-3.5 w-3.5 shrink-0" />
+        <ChevronDown className="h-2.5 w-2.5 shrink-0" />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="start"
+          sideOffset={4}
+          className="z-50 w-52 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md"
+        >
+          <DropdownMenu.Item
+            onSelect={() => {
+              onChange('');
+            }}
+            className={cn(
+              'cursor-pointer select-none rounded px-1.5 py-1 text-[10px] outline-none focus:bg-accent focus:text-accent-foreground',
+              value === '' && 'bg-accent text-accent-foreground',
+            )}
+          >
+            All sports
+          </DropdownMenu.Item>
+          <div className="grid grid-cols-4 gap-0.5">
+            {sports.map((sport) => {
+              const Icon = sportIconFor(sport);
+              return (
+                <DropdownMenu.Item
+                  key={sport}
+                  onSelect={() => {
+                    onChange(sport);
+                  }}
+                  className={cn(
+                    'flex cursor-pointer select-none flex-col items-center gap-0.5 rounded px-0.5 py-1 text-[9px] leading-none outline-none focus:bg-accent focus:text-accent-foreground',
+                    sport === value && 'bg-accent text-accent-foreground',
+                  )}
+                >
+                  {/* Held at 16px while the words around it shrink: a sport is
+                      told apart by its shape, and a smaller one is a smudge. */}
+                  <Icon aria-hidden className="h-4 w-4" />
+                  <span className="w-full truncate text-center" title={sport}>
+                    {sport}
+                  </span>
+                </DropdownMenu.Item>
+              );
+            })}
+          </div>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 };
 
@@ -167,125 +265,103 @@ const IntervalTrack = ({ stats }: { stats: SelectionStats }): JSX.Element => (
   </div>
 );
 
-/** The lines a market family was built from - still aggregates, never single bets. */
-const MarketLines = ({
-  lines,
-  showImplied,
-  currency,
-  sortKey,
-  desc,
-}: {
-  lines: readonly SelectionStats[];
-  showImplied: boolean;
-  currency: string;
-  sortKey: SortKey;
-  desc: boolean;
-}): JSX.Element => {
-  if (lines.length === 0) {
-    return <p className="px-3 py-2 text-xs text-muted-foreground">No markets here.</p>;
-  }
-  // The order the table is being read in, so opening a family does not reshuffle.
-  const sorted = [...lines].sort((a, b) => {
+/** The order the table is being read in, so opening a row does not reshuffle it. */
+const sortRows = (
+  rows: readonly SelectionStats[],
+  sortKey: SortKey,
+  desc: boolean,
+): SelectionStats[] =>
+  [...rows].sort((a, b) => {
     if (sortKey === 'key') {
       return desc ? b.label.localeCompare(a.label) : a.label.localeCompare(b.label);
     }
     const diff = a[sortKey] - b[sortKey];
+    if (diff === 0) return b.edgePp - a.edgePp;
     return desc ? -diff : diff;
   });
-  return (
-    <ul className="space-y-px">
-      {sorted.map((line) => (
-        <li
-          key={line.key}
-          className="flex items-center gap-3 border-l-2 border-border/40 bg-muted/10 px-3 py-1.5"
-        >
-          <span className={COL.lead} />
-          <span className={COL.rank} />
-          <span className={cn(COL.group, 'flex min-w-0 items-center gap-2')}>
-            <SportMark stats={line} />
-            <span className="truncate text-xs text-foreground" title={line.label}>
-              {line.label}
-            </span>
-          </span>
-          <span className={COL.interval} />
-          <span
-            className={cn(COL.picks, 'text-center text-[11px] tabular-nums text-muted-foreground')}
-            title={`${line.decided} settled`}
-          >
-            {line.picks}
-          </span>
-          <HitCell stats={line} className="text-[11px]" />
-          {showImplied ? (
-            <span
-              className={cn(
-                COL.implied,
-                'text-center text-[11px] tabular-nums text-muted-foreground',
-              )}
-            >
-              {formatPercent(line.meanImplied, 0)}
-            </span>
-          ) : null}
-          <span
-            className={cn(
-              COL.edge,
-              'text-center text-[11px] tabular-nums',
-              line.edgePp >= 0 ? 'text-profit' : 'text-loss',
-            )}
-          >
-            {line.edgePp >= 0 ? '+' : ''}
-            {line.edgePp.toFixed(1)}%
-          </span>
-          <MoneyCell stats={line} currency={currency} className="text-[11px]" />
-          <span
-            className={cn(
-              COL.units,
-              'text-center text-[11px] font-medium tabular-nums',
-              line.flatUnitsPl >= 0 ? 'text-profit' : 'text-loss',
-            )}
-          >
-            {line.flatUnitsPl >= 0 ? '+' : ''}
-            {line.flatUnitsPl.toFixed(1)}u
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-};
 
 const GroupCells = ({
   stats,
   rank,
+  depth,
+  dimension,
+  sportColumn,
   showImplied,
-  showSport,
   currency,
+  open,
 }: {
   stats: SelectionStats;
-  rank: number;
+  /** Numbered at the top level only; a split is read against its parent. */
+  rank: number | null;
+  depth: number;
+  dimension: LegDimension;
+  sportColumn: boolean;
   showImplied: boolean;
-  showSport: boolean;
   currency: string;
+  /** Whether the row is open, or null where it has nothing to open into. */
+  open: boolean | null;
 }): JSX.Element => {
+  const deep = depth > 0;
+  const sport = sportOfRow(dimension, stats);
+  // Where the whole table is one sport per row the icon stands in its own
+  // column; a sport split opened out of a market keeps its icon on the name,
+  // since the rows above it in that table have no sport of their own.
+  const Column = sportColumn && sport !== null ? sportIconFor(sport) : null;
+  // Beside the name, a row that is wholly one sport says so. A row spanning
+  // several says nothing and carries the arrow into the split instead, which is
+  // where the sports it is made of are actually named.
+  const Mark = sportColumn || stats.sports.length !== 1 ? null : sportIconFor(stats.sports[0]!);
   return (
     <>
       <span className={cn(COL.rank, 'text-[10px] font-medium tabular-nums text-muted-foreground')}>
-        {rank}.
+        {rank === null ? null : `${rank}.`}
       </span>
-      <span className={cn(COL.group, 'flex min-w-0 items-center gap-2')}>
-        {showSport ? <SportMark stats={stats} /> : null}
-        <span className="truncate text-sm font-medium" title={stats.label}>
+      {sportColumn ? (
+        <span className={cn(COL.sport, 'flex items-center')} title={sport ?? undefined}>
+          {Column === null ? null : (
+            <Column aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
+        </span>
+      ) : null}
+      {/* Each level is indented inside the name column, so the numbers to the
+          right of it stay under the headers they belong to. */}
+      <span className={cn(COL.group, 'flex min-w-0 items-center gap-2', depth > 1 && 'pl-4')}>
+        <span
+          className={cn('truncate', deep ? 'text-xs text-foreground' : 'text-sm font-medium')}
+          title={stats.label}
+        >
           {stats.label}
         </span>
+        {open === null ? (
+          Mark === null ? null : (
+            <span className="flex shrink-0 items-center" title={stats.sports[0]}>
+              <Mark aria-hidden className="h-3.5 w-3.5 text-muted-foreground/70" />
+            </span>
+          )
+        ) : (
+          <ChevronRight
+            aria-hidden
+            className={cn(
+              'h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform',
+              open && 'rotate-90',
+            )}
+          />
+        )}
       </span>
-      <div className={COL.interval}>
-        <IntervalTrack stats={stats} />
-      </div>
+      {deep ? (
+        <span className={COL.interval} />
+      ) : (
+        <div className={COL.interval}>
+          <IntervalTrack stats={stats} />
+        </div>
+      )}
       <span
         className={cn(COL.picks, 'text-center text-[11px] tabular-nums text-muted-foreground')}
         title={`${stats.decided} settled`}
       >
         {stats.picks}
       </span>
-      <HitCell stats={stats} className="text-[11px] font-medium" />
+      <HitCell stats={stats} className={cn('text-[11px]', !deep && 'font-medium')} />
       {showImplied ? (
         <span
           className={cn(COL.implied, 'text-center text-[11px] tabular-nums text-muted-foreground')}
@@ -296,18 +372,24 @@ const GroupCells = ({
       <span
         className={cn(
           COL.edge,
-          'text-center text-[11px] font-medium tabular-nums',
+          'text-center text-[11px] tabular-nums',
+          !deep && 'font-medium',
           stats.edgePp >= 0 ? 'text-profit' : 'text-loss',
         )}
       >
         {stats.edgePp >= 0 ? '+' : ''}
         {stats.edgePp.toFixed(1)}%
       </span>
-      <MoneyCell stats={stats} currency={currency} className="text-[11px] font-medium" />
+      <MoneyCell
+        stats={stats}
+        currency={currency}
+        className={cn('text-[11px]', !deep && 'font-medium')}
+      />
       <span
         className={cn(
           COL.units,
-          'text-center text-sm font-semibold tabular-nums',
+          'text-center tabular-nums',
+          deep ? 'text-[11px] font-medium' : 'text-sm font-semibold',
           stats.flatUnitsPl >= 0 ? 'text-profit' : 'text-loss',
         )}
       >
@@ -320,13 +402,17 @@ const GroupCells = ({
 
 /**
  * A group is a figure, not a drawer: opening one used to render every bet under
- * it, which is the whole reason this view crawled. Only a market family opens,
- * and only into more figures.
+ * it, which is the whole reason this view crawled. A row opens into more figures
+ * and nothing else - the lines a market was priced at, then the sports it was
+ * priced in.
  */
 const GroupRow = ({
   stats,
   rank,
   bets,
+  within,
+  depth,
+  sportColumn,
   showImplied,
   currency,
   dimension,
@@ -334,73 +420,87 @@ const GroupRow = ({
   desc,
 }: {
   stats: SelectionStats;
-  rank: number;
+  rank: number | null;
   bets: readonly Bet[];
+  within: Path;
+  depth: number;
+  sportColumn: boolean;
   showImplied: boolean;
   currency: string;
   dimension: LegDimension;
   sortKey: SortKey;
   desc: boolean;
 }): JSX.Element => {
-  const child = DRILLDOWN[dimension];
+  const child = childOf(dimension, stats);
+  const path = useMemo<Path>(
+    () => [...within, [dimension, stats.key]],
+    [within, dimension, stats.key],
+  );
   const [open, setOpen] = usePersistedState(
-    `analytics.selections.${dimension}.open.${stats.key}`,
+    `analytics.selections.open.${path.map(([d, k]) => `${d}:${k}`).join('>')}`,
     false,
   );
-  const lines = useMemo(
-    () =>
-      open && child !== undefined ? groupSelectionsWithin(bets, dimension, stats.key, child) : [],
-    [open, child, bets, dimension, stats.key],
+  const rows = useMemo(
+    () => (open && child !== undefined ? groupSelectionsWithin(bets, path, child) : []),
+    [open, child, bets, path],
   );
 
   const cells = (
     <GroupCells
       stats={stats}
       rank={rank}
+      depth={depth}
+      dimension={dimension}
+      sportColumn={sportColumn}
       showImplied={showImplied}
-      // A family is the market itself, whichever sport priced it; the sport only
-      // means something on the lines it opens into.
-      showSport={child === undefined}
       currency={currency}
+      open={child === undefined ? null : open}
     />
   );
+  const shell =
+    depth === 0
+      ? 'rounded-md border border-border/60 bg-card/40'
+      : 'border-l-2 border-border/40 bg-muted/10';
+  const line = depth === 0 ? 'px-3 py-2.5' : 'px-3 py-1.5';
+  // The row a reader is on, lit under the cursor: nine columns of numbers are
+  // easy to slip a line on, and nothing else says which line they are reading.
+  const lit = 'hover:bg-muted/40';
 
   if (child === undefined) {
     return (
-      <li className="flex items-center gap-3 rounded-md border border-border/60 bg-card/40 px-3 py-2.5">
-        <span className={COL.lead} />
-        {cells}
-      </li>
+      <li className={cn(shell, lit, 'flex items-center gap-3', line)}>{cells}</li>
     );
   }
 
   return (
-    <li className="rounded-md border border-border/60 bg-card/40">
+    <li className={shell}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/20"
+        className={cn('flex w-full items-center gap-3 text-left', lit, line)}
       >
-        <ChevronRight
-          className={cn(
-            COL.lead,
-            'h-3.5 text-muted-foreground transition-transform',
-            open && 'rotate-90',
-          )}
-        />
         {cells}
       </button>
       {open ? (
-        <div className="border-t border-border/60 pb-1 pt-1">
-          <MarketLines
-            lines={lines}
-            showImplied={showImplied}
-            currency={currency}
-            sortKey={sortKey}
-            desc={desc}
-          />
-        </div>
+        <ul className={cn('space-y-px', depth === 0 && 'border-t border-border/60 py-1')}>
+          {sortRows(rows, sortKey, desc).map((row) => (
+            <GroupRow
+              key={row.key}
+              stats={row}
+              rank={null}
+              bets={bets}
+              within={path}
+              depth={depth + 1}
+              sportColumn={sportColumn}
+              showImplied={showImplied}
+              currency={currency}
+              dimension={child}
+              sortKey={sortKey}
+              desc={desc}
+            />
+          ))}
+        </ul>
       ) : null}
     </li>
   );
@@ -422,32 +522,53 @@ export const SelectionBreakdown = ({
     SORT_KEYS,
   );
   const [desc, setDesc] = usePersistedState(`analytics.selections.${dimension}.desc`, true);
+  const [picked, setPicked] = usePersistedState(`analytics.selections.${dimension}.sport`, '');
   // Grouping by odds already fixes what the price said, so the column would only
   // repeat the row's own name.
   const showImplied = dimension !== 'oddsBracket';
+  const sportColumn = SPORT_COLUMN.has(dimension);
+  // Not on the sport tab: the rows there are the sports, so picking one is the
+  // table asking the reader to do its own grouping over again.
+  const sportFilter = sportColumn && dimension !== 'sport';
   const allGroups = useMemo(
     () => groupSelectionsBy(bets, dimension).filter((g) => g.picks > 0),
     [bets, dimension],
   );
 
+  // The sports these rows are actually made of, the most-backed first. Taken
+  // from the data rather than from a list, so a sport nobody bets on is never
+  // offered and a new one needs no edit here.
+  const sports = useMemo(() => {
+    const picks = new Map<string, number>();
+    for (const group of allGroups) {
+      for (const sport of group.sports) picks.set(sport, (picks.get(sport) ?? 0) + group.picks);
+    }
+    return [...picks].sort((a, b) => b[1] - a[1]).map(([sport]) => sport);
+  }, [allGroups]);
+  // A sport picked on a run that had it, on a range of dates that does not, is
+  // an empty table with nothing saying why.
+  const sport = sportFilter && sports.includes(picked) ? picked : '';
+
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
     // The sport counts as part of the name, so "hockey" reaches every hockey
     // league without the word appearing in a single one of their titles.
-    const filtered =
-      q === ''
-        ? allGroups
-        : allGroups.filter(
-            (g) =>
-              g.label.toLowerCase().includes(q) ||
-              g.sports.some((sport) => sport.toLowerCase().includes(q)),
-          );
+    const filtered = allGroups.filter(
+      (g) =>
+        (sport === '' || g.sports.includes(sport)) &&
+        (q === '' ||
+          g.label.toLowerCase().includes(q) ||
+          g.sports.some((s) => s.toLowerCase().includes(q))),
+    );
     return [...filtered].sort((a, b) => {
       const diff =
         sortKey === 'key' ? compareGroupKeys(dimension, a.label, b.label) : a[sortKey] - b[sortKey];
+      // Rows of the same size are read best-first, by how far the picks beat the
+      // price they were taken at, rather than in the order they were grouped.
+      if (diff === 0) return b.edgePp - a.edgePp;
       return desc ? -diff : diff;
     });
-  }, [allGroups, query, sortKey, desc, dimension]);
+  }, [allGroups, query, sport, sortKey, desc, dimension]);
 
   const shown = groups.map((stats, i) => ({ stats, rank: i + 1 }));
 
@@ -476,8 +597,12 @@ export const SelectionBreakdown = ({
       {/* Reserves the body's scrollbar gutter, and the row border it does not
           draw, so the columns stay aligned with the ones below. */}
       <div className="scroll-gutter mb-2 flex shrink-0 items-center gap-3 overflow-y-scroll border border-transparent px-3">
-        <span className={COL.lead} />
         <span className={COL.rank} />
+        {!sportColumn ? null : sportFilter ? (
+          <SportPicker sports={sports} value={sport} onChange={setPicked} />
+        ) : (
+          <span className={COL.sport} />
+        )}
         <SortHeaderCell label="Group" sortKey="key" widthClass={COL.group} {...header('key')} />
         <span
           className={cn(COL.interval, 'text-[10px] uppercase tracking-wide text-muted-foreground')}
@@ -531,7 +656,11 @@ export const SelectionBreakdown = ({
       </div>
 
       {groups.length === 0 ? (
-        <p className="px-3 py-2 text-sm text-muted-foreground">No groups match “{query}”.</p>
+        <p className="px-3 py-2 text-sm text-muted-foreground">
+          {query.trim() === ''
+            ? `No ${sport.toLowerCase()} groups here.`
+            : `No groups match “${query}”.`}
+        </p>
       ) : (
         // Always scroll, never auto: a list short enough to lose its scrollbar
         // gets 6px wider and drags every column out from under its header.
@@ -542,6 +671,9 @@ export const SelectionBreakdown = ({
               stats={stats}
               rank={rank}
               bets={bets}
+              within={TOP}
+              depth={0}
+              sportColumn={sportColumn}
               showImplied={showImplied}
               currency={currency}
               dimension={dimension}

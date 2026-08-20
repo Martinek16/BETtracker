@@ -69,6 +69,140 @@ const STAKE_BANDS: ReadonlyArray<{ label: string; max: number }> = [
   { label: '10000+', max: Infinity },
 ];
 
+/**
+ * Bands that follow the money rather than a fixed ladder.
+ *
+ * A ladder printed once for everyone reads well for the bettor it was drawn
+ * around and badly for the rest: a punter whose every slip is between €100 and
+ * €250 learns nothing from a row saying so, and one staking €2 needs the bottom
+ * rung split rather than the top. So the ladder below is only the starting
+ * point, and any rung the slips pile up on is cut where they actually sit.
+ */
+interface Band {
+  /** Exclusive for stakes, inclusive for odds - see `closed`. */
+  min: number;
+  max: number;
+}
+
+/** Cut points a reader recognises, coarsest first. */
+const STEPS = [1000, 500, 250, 100, 50, 25, 10, 5, 2.5, 1, 0.5, 0.25, 0.1, 0.05];
+
+/** The roundest number strictly inside the band, nearest to where the slips sit. */
+const splitPoint = (min: number, max: number, target: number): number | null => {
+  for (const step of STEPS) {
+    const inside: number[] = [];
+    for (let v = (Math.floor(min / step) + 1) * step; v < max; v += step) {
+      const rounded = Number(v.toFixed(2));
+      if (rounded > min && rounded < max) inside.push(rounded);
+    }
+    const nearest = inside.reduce<number | null>(
+      (best, v) => (best === null || Math.abs(v - target) < Math.abs(best - target) ? v : best),
+      null,
+    );
+    if (nearest !== null) return nearest;
+  }
+  return null;
+};
+
+/** A band nobody can act on: it holds this much of the period all by itself. */
+const CROWDED_SHARE = 0.3;
+/** Below this a split only makes two bands too small to read anything into. */
+const CROWDED_MIN = 12;
+
+const refine = (base: readonly Band[], values: readonly number[], closed: Closed): Band[] => {
+  const holds = (band: Band, v: number): boolean =>
+    closed === 'upper' ? v > band.min && v <= band.max : v >= band.min && v < band.max;
+
+  let bands = [...base];
+  // Four passes turn one crowded rung into at most five, which is as far as a
+  // card with room for a dozen rows can usefully go.
+  for (let pass = 0; pass < 4; pass++) {
+    const held = bands.map((band) => values.filter((v) => holds(band, v)).sort((a, b) => a - b));
+    const counts = held.map((v) => v.length);
+    const index = counts.indexOf(Math.max(...counts, 0));
+    const inside = held[index];
+    const band = bands[index];
+    if (band === undefined || inside === undefined) break;
+    if (inside.length < CROWDED_MIN || inside.length < values.length * CROWDED_SHARE) break;
+    const median = inside[Math.floor(inside.length / 2)]!;
+    // An open-ended top band is cut against the biggest slip in it, since it has
+    // no ceiling of its own to measure the middle against.
+    const ceiling = Number.isFinite(band.max) ? band.max : inside[inside.length - 1]! + 0.01;
+    const cut = splitPoint(band.min, ceiling, median);
+    if (cut === null) break;
+    bands = [
+      ...bands.slice(0, index),
+      { min: band.min, max: cut },
+      { min: cut, max: band.max },
+      ...bands.slice(index + 1),
+    ];
+  }
+  return bands;
+};
+
+type Closed = 'upper' | 'lower';
+
+interface Ladder {
+  base: readonly Band[];
+  closed: Closed;
+  value: (bet: Bet) => number;
+  format: (v: number) => string;
+}
+
+const bandsOf = (labels: ReadonlyArray<{ max: number }>): Band[] =>
+  labels.map((b, i) => ({ min: i === 0 ? 0 : labels[i - 1]!.max, max: b.max }));
+
+const ADAPTIVE: Partial<Record<SlipDimension, Ladder>> = {
+  stakeBand: {
+    base: bandsOf(STAKE_BANDS),
+    closed: 'upper',
+    value: (bet) => bet.stake,
+    format: (v) => String(Math.round(v * 100) / 100),
+  },
+  slipOdds: {
+    base: ODDS_BRACKETS,
+    closed: 'lower',
+    value: (bet) => bet.odds,
+    format: (v) => v.toFixed(2),
+  },
+};
+
+const bandLabel = (band: Band, ladder: Ladder): string => {
+  if (band.max === Infinity) return `${ladder.format(band.min)}+`;
+  if (band.min === 0 && ladder.closed === 'upper') return `≤ ${ladder.format(band.max)}`;
+  return `${ladder.format(band.min)}–${ladder.format(band.max)}`;
+};
+
+/**
+ * How this population of slips is grouped on this dimension. Population-aware,
+ * so a band can be cut where the slips actually sit; every other dimension falls
+ * straight through to `keyForSlip`.
+ */
+export const slipKeyer = (
+  bets: readonly Bet[],
+  dimension: SlipDimension,
+): ((bet: Bet) => string) => {
+  const ladder = ADAPTIVE[dimension];
+  if (ladder === undefined) return (bet) => keyForSlip(bet, dimension);
+  const bands = refine(ladder.base, bets.map(ladder.value), ladder.closed);
+  const last = bands[bands.length - 1]!;
+  return (bet) => {
+    const v = ladder.value(bet);
+    const band =
+      bands.find((b) =>
+        ladder.closed === 'upper' ? v > b.min && v <= b.max : v >= b.min && v < b.max,
+      ) ?? last;
+    return bandLabel(band, ladder);
+  };
+};
+
+/** The upper edge a band label names, so cut bands still sort into the ladder. */
+const bandRank = (key: string): number => {
+  if (key.endsWith('+')) return Infinity;
+  const numbers = key.match(/\d+(\.\d+)?/g);
+  return numbers === null ? Number.POSITIVE_INFINITY : Number(numbers[numbers.length - 1]);
+};
+
 /** Slips are named the way a bookmaker names them, then banded once the names run out. */
 const FOLD_NAMES = ['Single', 'Double', 'Treble', '4-fold', '5-fold'];
 
@@ -224,6 +358,9 @@ const monthRank = (key: string): number => {
 /** Ascending comparator for group keys, in whatever order the dimension reads in. */
 export const compareGroupKeys = (dimension: DimensionKey, a: string, b: string): number => {
   if (dimension === 'month') return monthRank(a) - monthRank(b);
+  // Bands are read off their edges rather than a fixed list: they are cut to fit
+  // the slips, so no list written here would name all of them.
+  if (dimension === 'stakeBand' || dimension === 'slipOdds') return bandRank(a) - bandRank(b);
   const order = KEY_ORDER[dimension];
   if (order === undefined) return a.localeCompare(b);
   // A key the order does not name (e.g. 'Mixed') sits after the ones it does.
@@ -276,9 +413,6 @@ export const keyForSlip = (bet: Bet, dimension: SlipDimension): string => {
       return bet.cashedOutAt === null ? 'Held to the end' : 'Cashed out';
   }
 };
-
-export const betMatchesGroup = (bet: Bet, dimension: SlipDimension, key: string): boolean =>
-  keyForSlip(bet, dimension) === key;
 
 const statsFor = (key: string, bets: readonly Bet[]): GroupStats => {
   const staked = bets.reduce((sum, bet) => sum + bet.stake, 0);
@@ -334,8 +468,9 @@ export const comboSizeBands = (bets: readonly Bet[]): GroupStats[] =>
 /** Group whole slips by a dimension and compute aggregated stats per group. */
 export const groupBy = (bets: readonly Bet[], dimension: SlipDimension): GroupStats[] => {
   const buckets = new Map<string, Bet[]>();
+  const keyOf = slipKeyer(bets, dimension);
   for (const bet of bets) {
-    const key = keyForSlip(bet, dimension);
+    const key = keyOf(bet);
     const existing = buckets.get(key);
     if (existing) existing.push(bet);
     else buckets.set(key, [bet]);

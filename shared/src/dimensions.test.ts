@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import normalized from './__fixtures__/bets.normalized.json';
 import {
-  betMatchesGroup,
   comboSizeBands,
   compareGroupKeys,
   groupBy,
@@ -128,6 +127,37 @@ describe('odds and stake bands cover the whole range', () => {
   });
 });
 
+describe('bands cut to the slips they hold', () => {
+  const staked = (amounts: number[]): Bet[] => amounts.map((stake) => makeBet({ stake }));
+
+  it('splits a band the whole period sits in', () => {
+    // Thirty slips between 100 and 250, which the fixed ladder calls one band.
+    const keys = groupBy(
+      staked(Array.from({ length: 30 }, (_, i) => 110 + i * 4)),
+      'stakeBand',
+    ).map((g) => g.key);
+    expect(keys.length).toBeGreaterThan(1);
+    expect(keys).not.toContain('100–250');
+  });
+
+  it('leaves the ladder alone when no band is crowded', () => {
+    const keys = groupBy(staked([2, 7, 30, 60, 120, 300]), 'stakeBand').map((g) => g.key);
+    expect(keys).toContain('100–250');
+  });
+
+  it('reads cut bands in order, not alphabetically', () => {
+    expect(compareGroupKeys('stakeBand', '100–150', '150–250')).toBeLessThan(0);
+    expect(compareGroupKeys('stakeBand', '≤ 5', '100–150')).toBeLessThan(0);
+    expect(compareGroupKeys('slipOdds', '1.50–1.75', '20.00+')).toBeLessThan(0);
+  });
+
+  it('still places every slip exactly once after a split', () => {
+    const amounts = Array.from({ length: 40 }, (_, i) => 100 + i);
+    const grouped = groupBy(staked(amounts), 'stakeBand');
+    expect(grouped.reduce((sum, g) => sum + g.bets, 0)).toBe(amounts.length);
+  });
+});
+
 describe('comboSizeBands', () => {
   it('partitions every slip into exactly one band', () => {
     const banded = comboSizeBands(bets);
@@ -157,16 +187,6 @@ describe('comboSizeBands', () => {
       makeBet({ legs: legs(12) }),
     ]);
     expect(sized.map((g) => g.bets)).toEqual([1, 1, 1, 1, 1, 1]);
-  });
-});
-
-describe('betMatchesGroup', () => {
-  it.each(ALL)('recovers exactly the slips groupBy counted for %s', (dimension) => {
-    for (const group of groupBy(bets, dimension)) {
-      const matched = bets.filter((b) => betMatchesGroup(b, dimension, group.key));
-      expect(matched).toHaveLength(group.bets);
-      expect(matched.reduce((sum, b) => sum + profitOf(b), 0)).toBeCloseTo(group.profit, 6);
-    }
   });
 });
 

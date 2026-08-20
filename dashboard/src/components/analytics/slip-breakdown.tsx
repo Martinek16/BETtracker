@@ -1,11 +1,9 @@
 import { useMemo } from 'react';
 import {
-  betMatchesGroup,
   compareGroupKeys,
   formatOdds,
   groupBy,
-  isLiveBet,
-  keyForSlip,
+  slipKeyer,
   profitOf,
   resolvedStake,
   shrunkYield,
@@ -14,10 +12,8 @@ import {
   type GroupStats,
   type SlipDimension,
 } from '@betanal/shared';
-import { ArrowDown, ArrowUp, ChevronRight } from 'lucide-react';
-import { betDisplayTitle, betLegLines } from '@/lib/bet-display';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import { ProfitBar } from '@/components/dashboard/profit-bar';
-import { StatusBadge } from '@/components/ui/badge';
 import { useDashboard } from '@/context/dashboard-context';
 import { usePersistedState } from '@/lib/persisted-state';
 import { cn, formatDateTime, formatMoney, formatPercent, symbolOf } from '@/lib/utils';
@@ -52,6 +48,14 @@ const STRIP_VIEWS: readonly StripView[] = ['profit', 'results'];
 
 /** Enough slips to show a run, few enough to fit the column at any width. */
 const RECENT = 14;
+
+/** Groupings whose own name already tells you the price of everything in them. */
+const ODDS_IS_THE_GROUPING: ReadonlySet<SlipDimension> = new Set<SlipDimension>([
+  'slipOdds',
+  'selectionType',
+  'betType',
+  'legCount',
+]);
 
 // Shared column widths so the header and every row line up identically.
 const COL = {
@@ -125,75 +129,6 @@ const SortHeaderCell = ({
   </button>
 );
 
-const MatchRows = ({ bets, currency }: { bets: readonly Bet[]; currency: string }): JSX.Element => {
-  const { oddsFormat } = useDashboard();
-  if (bets.length === 0) {
-    return <p className="px-3 py-2 text-xs text-muted-foreground">No matching bets.</p>;
-  }
-  const sorted = [...bets].sort((a, b) => b.placedAt.localeCompare(a.placedAt));
-  return (
-    <ul className="space-y-px">
-      {sorted.map((bet) => {
-        const pl = profitOf(bet);
-        const combo = bet.legs.length > 1;
-        return (
-          <li
-            key={bet.betId}
-            className="flex items-start gap-3 border-l-2 border-border/40 bg-muted/10 px-3 py-2"
-          >
-            <span className="w-[7.5rem] shrink-0 whitespace-nowrap text-[11px] leading-tight text-muted-foreground">
-              {formatDateTime(bet.placedAt)}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium text-foreground">{betDisplayTitle(bet)}</p>
-              {combo ? (
-                <ul className="mt-0.5 space-y-px">
-                  {betLegLines(bet).map((line, i) => (
-                    <li
-                      key={`${bet.betId}-${String(i)}`}
-                      className="truncate text-[10px] leading-tight text-muted-foreground/70"
-                    >
-                      {line}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="truncate text-[10px] leading-tight text-muted-foreground/70">
-                  {bet.selection ?? bet.marketType ?? '—'}
-                </p>
-              )}
-            </div>
-            <span className="w-12 shrink-0 text-center text-[11px] tabular-nums text-muted-foreground">
-              @{formatOdds(bet.odds, oddsFormat)}
-            </span>
-            <span className="w-16 shrink-0 text-center text-[11px] tabular-nums text-muted-foreground">
-              {formatMoney(bet.stake, currency)}
-            </span>
-            <span
-              className="w-16 shrink-0 text-center text-[11px] font-medium tabular-nums"
-              style={{
-                color:
-                  bet.status === 'pending'
-                    ? undefined
-                    : `hsl(var(--${pl >= 0 ? 'profit' : 'loss'}))`,
-              }}
-            >
-              {bet.status === 'pending' ? '—' : formatMoney(pl, currency)}
-            </span>
-            {/* Fixed width: 'Cashed out' is twice the width of 'Won', and a badge
-                that sets its own width drags every column left of it out of line. */}
-            <span className="flex w-20 shrink-0 justify-center">
-              <span className="origin-center scale-[0.85] whitespace-nowrap">
-                <StatusBadge status={bet.status} live={isLiveBet(bet)} />
-              </span>
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-};
-
 const STATUS_COLOR: Record<string, string> = {
   won: 'hsl(var(--profit))',
   lost: 'hsl(var(--loss))',
@@ -227,7 +162,6 @@ const GroupRow = ({
   group,
   rank,
   maxAbs,
-  bets,
   recent,
   strip,
   showOdds,
@@ -237,7 +171,6 @@ const GroupRow = ({
   group: RankedGroup;
   rank: number;
   maxAbs: number;
-  bets: readonly Bet[];
   recent: readonly Bet[];
   strip: StripView;
   showOdds: boolean;
@@ -245,33 +178,15 @@ const GroupRow = ({
   currency: string;
 }): JSX.Element => {
   const { oddsFormat } = useDashboard();
-  const [open, setOpen] = usePersistedState(
-    `analytics.slips.${dimension}.open.${group.key}`,
-    false,
-  );
-  const matches = useMemo(
-    () => (open ? bets.filter((b) => betMatchesGroup(b, dimension, group.key)) : []),
-    [open, bets, dimension, group.key],
-  );
   // Stake bands are bare numbers, which say nothing on their own once a book
   // settles in more than one currency.
   const label = dimension === 'stakeBand' ? `${group.key} ${symbolOf(currency)}` : group.key;
 
   return (
     <li className="rounded-md border border-border/60 bg-card/40">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/20"
-      >
-        <ChevronRight
-          className={cn(
-            COL.lead,
-            'h-3.5 text-muted-foreground transition-transform',
-            open && 'rotate-90',
-          )}
-        />
+      <div className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
+        {/* The gutter the header reserves, so the columns line up under it. */}
+        <span className={COL.lead} />
         <span
           className={cn(COL.rank, 'text-[10px] font-medium tabular-nums text-muted-foreground')}
         >
@@ -327,12 +242,7 @@ const GroupRow = ({
           {group.unitsPl >= 0 ? '+' : ''}
           {group.unitsPl.toFixed(1)}u
         </span>
-      </button>
-      {open ? (
-        <div className="border-t border-border/60 pb-1 pt-1">
-          <MatchRows bets={matches} currency={currency} />
-        </div>
-      ) : null}
+      </div>
     </li>
   );
 };
@@ -357,16 +267,20 @@ export const SlipBreakdown = ({
     'profit',
     STRIP_VIEWS,
   );
-  // Grouping by odds already fixes the group's price, so the column would only
-  // repeat the row's own name.
-  const showOdds = dimension !== 'slipOdds';
+  // Dropped wherever the grouping already decides the price: an odds band and a
+  // favourite/underdog split are the column under another name, and a fold count
+  // fixes it too - four legs multiply out long however they were picked.
+  const showOdds = !ODDS_IS_THE_GROUPING.has(dimension);
 
   const recentByKey = useMemo(() => {
     const map = new Map<string, Bet[]>();
     if (strip !== 'results') return map;
     const byTime = [...bets].sort((a, b) => a.placedAt.localeCompare(b.placedAt));
+    // The same keyer the groups were built with: a band cut to fit this period
+    // has no fixed name to look up.
+    const keyOf = slipKeyer(bets, dimension);
     for (const bet of byTime) {
-      const key = keyForSlip(bet, dimension);
+      const key = keyOf(bet);
       const list = map.get(key);
       if (list === undefined) {
         map.set(key, [bet]);
@@ -395,6 +309,10 @@ export const SlipBreakdown = ({
     return [...filtered].sort((a, b) => {
       const diff =
         sortKey === 'key' ? compareGroupKeys(dimension, a.key, b.key) : a[sortKey] - b[sortKey];
+      // Two groups the same size are read best-first rather than in whatever
+      // order the grouping happened to build them, and the shrunk yield is what
+      // "best" means here - a lucky single slip does not head the tie.
+      if (diff === 0) return b.ranked - a.ranked;
       return desc ? -diff : diff;
     });
   }, [allGroups, query, sortKey, desc, dimension]);
@@ -508,7 +426,6 @@ export const SlipBreakdown = ({
               group={group}
               rank={i + 1}
               maxAbs={maxAbs}
-              bets={bets}
               recent={recentByKey.get(group.key) ?? []}
               strip={strip}
               showOdds={showOdds}
