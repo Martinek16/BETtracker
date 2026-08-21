@@ -716,7 +716,14 @@ const importMoney = async ({ adapter, connection }: Live, full = false): Promise
   const account = await ensureAccount(adapter, connection);
   if (account === null) return null;
   const bank = connection.banking;
-  if (adapter.needsBankingSession === true && bank === null) return null;
+  // Said rather than skipped in silence. A site that keeps its cashier on a
+  // separate session hands that session out only on the page that uses it, so
+  // deposits, withdrawals and bonuses stay empty until the user opens their
+  // payments page once - and nothing anywhere used to admit that was why.
+  if (adapter.needsBankingSession === true && bank === null) {
+    log('info', adapter.id, 'deposits and bonuses wait for your payments page to be opened once');
+    return null;
+  }
   try {
     // A full resync means the stored history is not trusted, so the backfill flag
     // does not get to skip the walk - otherwise deposits stay stuck at the few
