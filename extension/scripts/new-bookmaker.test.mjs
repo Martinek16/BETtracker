@@ -89,6 +89,19 @@ describe('renaming the copied example', () => {
     expect(out).toContain('fingerprint:');
   });
 
+  /**
+   * The fingerprint decides which bookmaker a page nobody listed belongs to,
+   * first match wins. Left as the example's, the new folder hands every one of
+   * its own pages to the example.
+   */
+  it('leaves the copy no way to be mistaken for the example', () => {
+    const out = retargetHost(collector('stake/capture.ts'), 'bet365.com');
+    expect(out).not.toContain('fingerprint: /\\/_api\\/graphql/');
+    expect(out).toMatch(/fingerprint: \/.*bet365\\\.com/);
+    // The example's own comments describe the example's mirrors and endpoint.
+    expect(out).not.toContain('Stake serves the same site');
+  });
+
   it('reads a hyphenated id as the code would name it', () => {
     expect(camelId('william-hill')).toBe('williamHill');
     expect(camelId('bet365')).toBe('bet365');

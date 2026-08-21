@@ -582,17 +582,14 @@ const startRecording = async (origin: string, host: string): Promise<void> => {
       persistAcrossSessions: false,
     },
   ]);
-  const tab = await activeTab();
-  if (tab?.id !== undefined) {
-    // The page in front of the user is already loaded, so the registration
-    // above will not reach it until it navigates.
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ['recorder.js'],
-      world: 'MAIN',
-    });
-  }
   await chrome.storage.session.set({ [RECORDING_KEY]: { origin, host } });
+  const tab = await activeTab();
+  // Reloaded rather than injected into as it stands. The page in front of the
+  // user has already fetched its account, and hooking `fetch` afterwards
+  // records only what is asked for next - which on a site that keeps what it
+  // fetched is nothing at all. Reloading makes the page ask again, this time
+  // with the registration above in place from document_start.
+  if (tab?.id !== undefined) await chrome.tabs.reload(tab.id);
 };
 
 /** The page writes the file, and the access it was given is handed straight back. */

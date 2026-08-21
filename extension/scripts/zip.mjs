@@ -16,7 +16,12 @@ if (!entries.includes('manifest.json')) {
 const name = entries.includes('recorder.js') ? 'bettracker.zip' : 'bettracker-store.zip';
 const out = fileURLToPath(new URL(`../${name}`, import.meta.url));
 
-rmSync(out, { force: true });
+// Both, not only the one being written: the other is last week's build, it sits
+// beside this one under a name that says nothing about its age, and loading it
+// is how you end up testing a bookmaker that was removed two commits ago.
+for (const stale of ['bettracker.zip', 'bettracker-store.zip']) {
+  rmSync(fileURLToPath(new URL(`../${stale}`, import.meta.url)), { force: true });
+}
 // bsdtar picks the zip format from the extension; GNU tar (git bash) cannot,
 // so on Windows address the System32 copy directly instead of trusting PATH.
 const tar = process.platform === 'win32' ? `${process.env.SystemRoot}\\System32\\tar.exe` : 'tar';

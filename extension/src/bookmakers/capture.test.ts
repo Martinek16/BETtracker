@@ -24,6 +24,27 @@ describe('bookmakerForRequests', () => {
   });
 });
 
+/**
+ * Both lookups take the first rule that matches, so two rules answering to the
+ * same pattern is not a tie - it is the older site silently claiming the newer
+ * one's pages, its popup card and the session signed in there. The way it
+ * happens is a folder scaffolded from another and shipped before its patterns
+ * were rewritten.
+ */
+describe('one pattern, one bookmaker', () => {
+  it.each(['host', 'fingerprint'])('never lets two sites share a %s', (key) => {
+    const seen = new Map<string, string>();
+    for (const rule of CAPTURE_RULES) {
+      const pattern = rule[key as 'host' | 'fingerprint'].source;
+      expect(
+        seen.get(pattern),
+        `${rule.bookmaker} and ${seen.get(pattern)} share a ${key}: ${pattern}`,
+      ).toBeUndefined();
+      seen.set(pattern, rule.bookmaker);
+    }
+  });
+});
+
 describe('stake activity', () => {
   const url = 'https://stake.com/_api/graphql';
   const stake = CAPTURE_RULES.find((r) => r.bookmaker === 'stake');

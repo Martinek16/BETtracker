@@ -41,7 +41,6 @@ const BOOKMAKER: Bookmaker = 'bet-at-home';
 
 export const CONFIG = {
   id: BOOKMAKER,
-  name: 'bet-at-home',
   apiHostFragment: 'sports-api.everymatrix.com',
   paths: {
     settled: (operatorId: string) => `/bets-api/v1/${operatorId}/settled-bets`,
@@ -740,7 +739,6 @@ const importBonuses = async (
 
 export const betAtHome: BookmakerAdapter = {
   id: CONFIG.id,
-  name: CONFIG.name,
   // Deposits live on another backend with its own session, only seen once the
   // user opens the account pages.
   needsBankingSession: true,

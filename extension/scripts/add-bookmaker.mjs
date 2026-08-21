@@ -197,15 +197,27 @@ const main = async () => {
   const folder = join(HAR_DIR, id);
   mkdirSync(folder, { recursive: true });
 
+  // Asked before the waiting starts, because it is a question about the
+  // contributor and not about the recording. What the key names give away is
+  // redacted without it; a site that answers `{"r4":"MIHA MARTINEK"}` gives away
+  // nothing, and no shape tells a name from a team.
+  const personal = await ask(
+    '\nYour name, your username there and your account number, as that site\n' +
+      'writes them, separated by commas. They are cut out of the recording, and\n' +
+      'they are the part no tool can recognise on its own.\n' +
+      'Enter to skip: ',
+  );
+
   // A recording made before this command was started is the likeliest case of
   // all - the doc used to ask for one - and waiting three quarters of an hour
-  // for it to be saved again is not a sane answer to it.
-  const already = findRecording(id);
+  // for it to be saved again is not a sane answer to it. Downloads is looked in
+  // as well: `har/<id>/` was created a line ago, so narrowing to it finds an
+  // empty folder and nothing else, which is how a browser's own save location
+  // came to be ignored.
+  const already = findRecording(id) ?? findRecording();
   let found = already;
   if (already !== undefined) {
-    const answer = await ask(
-      `Use the recording already in har/${id}/, ${basename(already)}? [Y/n] `,
-    );
+    const answer = await ask(`Use the recording already saved, ${already}? [Y/n] `);
     if (/^n/i.test(answer)) found = undefined;
   }
 
@@ -242,7 +254,9 @@ const main = async () => {
     }
 
     console.log('\nCleaning it.\n');
-    if (!run([join(ROOT, 'extension/scripts/sanitize-har.mjs'), recording])) {
+    const args = [join(ROOT, 'extension/scripts/sanitize-har.mjs'), recording];
+    if (personal !== '') args.push(`--me=${personal}`);
+    if (!run(args)) {
       console.error('\nsanitize-har failed. Nothing was shared; fix that before going on.');
       process.exit(1);
     }
