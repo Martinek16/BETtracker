@@ -5,7 +5,27 @@
   "description": "Private, offline dashboard for your own betting account history. No sign-up, nothing uploaded, no ads. Adults 18+.",
   "permissions": ["storage", "alarms", "scripting", "activeTab"],
   "optional_host_permissions": ["https://*/*"],
-  "host_permissions": ["https://api.frankfurter.dev/*", "https://api.binance.com/*"],
+  "host_permissions": [
+    "$bookmakerApiHosts",
+    "https://api.frankfurter.dev/*",
+    "https://api.binance.com/*",
+    "$sites"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["$sites"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["$sites"],
+      "js": ["inject.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    }
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"

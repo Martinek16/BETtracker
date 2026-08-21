@@ -21,7 +21,6 @@
     "Its numbered mirrors, such as stake1001.com"
   ],
   "sites": [
-    "https://stake.com/*",
     "https://*.stake.com/*",
     "https://*.stake.bet/*",
     "https://*.stake.games/*",
@@ -32,8 +31,7 @@
     "https://*.stake.krd/*",
     "https://*.stake.us/*",
     "https://*.stake.jp/*",
-    "https://*.stake.ceo/*",
-    "https://*.stake.tr/*"
+    "https://*.stake.ceo/*"
   ],
   "siteRanges": [{ "prefix": "stake", "from": 1000, "to": 1080, "suffixes": ["com"] }],
   "apiHosts": []
