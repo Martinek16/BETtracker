@@ -12,9 +12,12 @@ host:
 | Bets, balance | `sports-api.everymatrix.com`    | `x-session-token`, `x-user-id`, `x-operator-id`      |
 | Banking       | `*.nwacdn.com`                  | `x-sessionid` + the player id read out of the URL    |
 
-`capture.ts` therefore fills two independent slots. An account that captured the
-sportsbook session but never opened the banking page still syncs bets - it just
-reports no transactions.
+`capture.ts` therefore fills two independent slots. The banking backend is the
+first one the site calls, on every page, so its session normally arrives *before*
+the sportsbook one - which is why `connections.ts` holds an early banking session
+aside rather than dropping it. An account holding only the sportsbook session
+still syncs bets; it just reports no transactions until the site's next page load
+offers the other one.
 
 ## Mirrors
 

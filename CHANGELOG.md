@@ -9,9 +9,12 @@ Nothing to click, and money that shows up when it happens.
 - **A deposit is in the app before you leave the page.** bet-at-home was watched
   only through the figure in its header, and the cashier does not always redraw
   it - so the deposit waited for the next scheduled read.
-- **Deposits and bonuses say when they are waiting.** bet-at-home keeps them on
-  a session of its own that it hands out only on your payments page. Until you
-  open it once they cannot be read, and the account said "Connected" anyway.
+- **Deposits and bonuses no longer need a trip to the payments page.**
+  bet-at-home keeps them on a session of its own, which it offers on every page
+  it loads - but it offers it before the extension has asked whether you want
+  this site read at all, and the answer arriving second meant the session had
+  already been thrown away. It is held until you answer now, and dropped if you
+  say no.
 - **No more being told to sign in while you are signed in.** The extension read
   "no session captured yet" as "signed out", and the session is not on every
   page of a site - on the cashier it is on none of them. The page is asked now,

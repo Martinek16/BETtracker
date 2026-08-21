@@ -650,7 +650,13 @@ const setConsent = async (bookmaker: Bookmaker, enabled: boolean): Promise<void>
   // with it. Without this, saying yes before the site has authenticated left the
   // popup asking the same question, which reads as the button doing nothing.
   broadcast({ type: 'STATUS_CHANGED' });
-  if (!enabled) return;
+  // A no leaves nothing behind. The banking session is held from the moment the
+  // site offers it, which is before this question is answered, so this is where
+  // it goes when the answer is no.
+  if (!enabled) {
+    dropBookmaker(bookmaker);
+    return;
+  }
   if (connectionsOf(bookmaker).length === 0) await reconnect(bookmaker);
   // Only the site that was just switched on: the other one was not part of the
   // question and has no reason to be read because of it.
@@ -726,11 +732,15 @@ const importMoney = async ({ adapter, connection }: Live, full = false): Promise
   if (account === null) return null;
   const bank = connection.banking;
   // Said rather than skipped in silence. A site that keeps its cashier on a
-  // separate session hands that session out only on the page that uses it, so
-  // deposits, withdrawals and bonuses stay empty until the user opens their
-  // payments page once - and nothing anywhere used to admit that was why.
+  // separate session is offered that session once per page load, so a run that
+  // starts before the site's next one has nothing to walk the deposits with -
+  // and nothing anywhere used to admit that was why they were empty.
   if (adapter.needsBankingSession === true && bank === null) {
-    log('info', adapter.id, 'deposits and bonuses wait for your payments page to be opened once');
+    log(
+      'info',
+      adapter.id,
+      'deposits and bonuses wait for the site to hand over its cashier session',
+    );
     return null;
   }
   try {
@@ -1077,7 +1087,8 @@ const sync = async (mode: 'incremental' | 'full', only: Bookmaker | null = null)
           // rather than the one the previous run left behind.
           await importBalance({ adapter, connection }, true);
           const moneyError = await importMoney({ adapter, connection }, depth === 'full');
-          if (moneyError !== null) failures.push(`${nameOf(adapter.id)} transactions: ${moneyError}`);
+          if (moneyError !== null)
+            failures.push(`${nameOf(adapter.id)} transactions: ${moneyError}`);
         } catch (err) {
           if (err instanceof RelayUnavailableError) {
             // Not a failure of the account: there is simply no tab of the site
@@ -1355,7 +1366,14 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
     }
     case 'BANKING_CREDENTIALS': {
       whenReady(() => {
-        if (origin === null || consent[message.banking.bookmaker] !== true) return;
+        // Kept while the question is still on screen, not only after a yes. This
+        // backend is the first one the site calls, so its session arrives before
+        // the sportsbook one that raises the question - and the page offers each
+        // session once. Dropped here, it was not offered again until the user
+        // landed on a page that calls this backend and nothing else: the
+        // cashier. That is the whole reason deposits and bonuses turned up only
+        // after a visit there. A no drops it again, in `setConsent`.
+        if (origin === null || consent[message.banking.bookmaker] === false) return;
         const connection = putBanking(message.banking.bookmaker, origin, message.banking);
         if (connection === null) return;
         // The second session is exactly what a refused money walk was missing,
@@ -1578,10 +1596,11 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
             const state = paused
               ? { tone: 'idle' as const, label: 'Switched off in settings' }
               : connectionOf(meta);
-            // Bets read fine, deposits and bonuses never arrive: the site keeps
-            // its cashier on a session of its own and hands that out only on the
-            // page that uses it. "Connected" was true of the bets and a lie about
-            // everything else, and the reason was admitted in a log nobody opens.
+            // Bets read fine and the money side has nothing to ask with yet: the
+            // site keeps its cashier on a session of its own, offered once per
+            // page load. Nothing for the user to do about it - the next page of
+            // the site hands it over - but it is why the transaction count can
+            // sit at nothing under a green "Connected".
             const moneyWaiting =
               adapter.needsBankingSession === true && signedIn && here?.banking == null;
             return {
@@ -1597,13 +1616,11 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
               looksSignedOut: pageSignedOut.get(adapter.id) ?? null,
               meta,
               // Only ever in place of "Connected": a real failure is the more
-              // urgent answer and keeps the line.
+              // urgent answer and keeps the line. Green either way - nothing is
+              // wrong and nothing is being asked of anyone.
               connection:
                 state.tone === 'ok' && moneyWaiting
-                  ? {
-                      tone: 'stuck' as const,
-                      label: 'Open your payments page once to read deposits and bonuses',
-                    }
+                  ? { tone: 'ok' as const, label: 'Connected - deposits and bonuses still to come' }
                   : state,
               bets: betCounts[adapter.id] ?? 0,
               transactions: txCounts[adapter.id] ?? 0,

@@ -739,8 +739,8 @@ const importBonuses = async (
 
 export const betAtHome: BookmakerAdapter = {
   id: CONFIG.id,
-  // Deposits live on another backend with its own session, only seen once the
-  // user opens the account pages.
+  // Deposits live on another backend with a session of its own, which the site
+  // offers once per page load.
   needsBankingSession: true,
 
   async accountId(creds) {
