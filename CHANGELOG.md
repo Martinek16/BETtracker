@@ -12,6 +12,10 @@ Nothing to click, and money that shows up when it happens.
 - **Deposits and bonuses say when they are waiting.** bet-at-home keeps them on
   a session of its own that it hands out only on your payments page. Until you
   open it once they cannot be read, and the account said "Connected" anyway.
+- **No more being told to sign in while you are signed in.** The extension read
+  "no session captured yet" as "signed out", and the session is not on every
+  page of a site - on the cashier it is on none of them. The page is asked now,
+  and asked again when it changes, so signing in without reloading is noticed.
 - **The site list is only sites that exist.** A dead address and a duplicate came
   out of it.
 

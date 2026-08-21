@@ -105,7 +105,15 @@ const viewFor = (account: AccountStatus, pending: Bookmaker | null): View => {
   if (!account.signedIn && account.consent !== false && pending !== bookmaker) {
     return {
       tone: 'idle',
-      state: `Sign in to ${name} to read your bets.`,
+      // Not a session yet, but the page is showing an account rather than a
+      // login form: the site simply has not made the call the session is read
+      // from - it is not made on every page, and on the cashier not at all.
+      // Telling this user to sign in was both wrong and unactionable, since
+      // they already had.
+      state:
+        account.looksSignedOut === false
+          ? `Waiting for ${name} to hand over your session - open your bets there.`
+          : `Sign in to ${name} to read your bets.`,
       primary: null,
       secondary: null,
       quiet: true,

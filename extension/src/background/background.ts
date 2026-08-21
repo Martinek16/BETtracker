@@ -796,6 +796,15 @@ const importMoney = async ({ adapter, connection }: Live, full = false): Promise
 const lastBalance = new Map<string, string>();
 
 /**
+ * What each site's own page last showed about being signed in. Holding a session
+ * proves a login; holding none proves nothing - the authenticated call this
+ * extension captures is not made on every page of a site, and on the payments
+ * page it is not made at all. Read as "signed out" it told a user who was
+ * plainly signed in to go and sign in.
+ */
+const pageSignedOut = new Map<Bookmaker, boolean>();
+
+/**
  * A balance read between two syncs is a fresh day, and often the first record in
  * its currency. Only the sync asks the rate feed, so the header held a figure it
  * could not price and quietly fell back to the tracked one instead.
@@ -1397,7 +1406,12 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
       void reconnect(message.bookmaker).then(() => sendResponse(undefined));
       return true; // async response
     }
-    case 'LOGGED_OUT': {
+    case 'PAGE_LOGIN': {
+      pageSignedOut.set(message.bookmaker, message.signedOut);
+      // An open popup is otherwise still showing whatever the page said when it
+      // loaded, which is the stale answer this message exists to replace.
+      broadcast({ type: 'STATUS_CHANGED' });
+      if (!message.signedOut) return false;
       // Only about the page that said so. Another login at the same site may
       // still be signed in elsewhere, and its status is none of this tab's
       // business.
@@ -1580,6 +1594,7 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
               // Stake's cookie rides along with a stranger's requests too. The
               // login being named is what makes it a session worth acting on.
               signedIn,
+              looksSignedOut: pageSignedOut.get(adapter.id) ?? null,
               meta,
               // Only ever in place of "Connected": a real failure is the more
               // urgent answer and keeps the line.
