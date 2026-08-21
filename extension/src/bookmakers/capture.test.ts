@@ -57,6 +57,23 @@ describe('one pattern, one bookmaker', () => {
   });
 });
 
+describe('bet-at-home activity', () => {
+  const bah = CAPTURE_RULES.find((r) => r.bookmaker === 'bet-at-home');
+  const acted = (url: string): boolean => bah?.activity?.(url, '{}') === true;
+
+  it('reads a call to the cashier as the account changing', () => {
+    // The regression this exists for: money was deposited and the app knew
+    // nothing about it until the page was reloaded, because the header figure it
+    // watches had not been redrawn.
+    expect(acted('https://betathomecom.nwacdn.com/v1/player/123/payment/deposit')).toBe(true);
+  });
+
+  it('ignores the sportsbook, which the balance already speaks for', () => {
+    expect(acted('https://sports-api.everymatrix.com/v1/bets-api/v1/12/open-bets')).toBe(false);
+    expect(acted('https://www.bet-at-home.com/en/sport')).toBe(false);
+  });
+});
+
 describe('stake activity', () => {
   const url = 'https://stake.com/_api/graphql';
   const stake = CAPTURE_RULES.find((r) => r.bookmaker === 'stake');

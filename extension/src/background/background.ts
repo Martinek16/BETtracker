@@ -693,6 +693,15 @@ const moneyMoved = async (account: AccountRef): Promise<boolean> => {
   return stored.reading !== reading;
 };
 
+/**
+ * Forgets what the balance read at the last walk, so the next one cannot be
+ * skipped as "nothing moved". Used when the page itself says money moved: that
+ * word arrives while the figure it would be compared against is still the old
+ * one, and the walk was then skipped for the very deposit that set it off.
+ */
+const forgetMoneyCheck = (account: AccountRef): Promise<void> =>
+  chrome.storage.local.remove(`${MONEY_CHECK_KEY}:${accountKey(account)}`);
+
 const rememberMoneyCheck = async (account: AccountRef): Promise<void> => {
   const reading = lastBalance.get(accountKey(account));
   // Nothing to compare against next time. Writing a stand-in would make the next
@@ -1174,6 +1183,11 @@ const accountActivity = (connection: Connection): void => {
     // and while it runs the panel's own poll answers out of the database - which
     // is what kept a bet the user had only just placed from showing up.
     if (!syncing) await readOpenNow({ adapter, connection });
+    // The page said the money moved, so the run behind this must not decide for
+    // itself that it did not. Its own test is the balance, and the balance is
+    // read off the page a moment after the deposit that changed it.
+    const account = accountOf(connection);
+    if (account !== null) await forgetMoneyCheck(account);
     // The debounce above is per login; the run it sets off is not, and it walks
     // whichever sessions are due. A second account at the same site is read on
     // the same trip rather than waiting for its own movement.
