@@ -1,5 +1,5 @@
 import type { Bookmaker, ConnectionTone } from '@betanal/shared';
-import { bookmakerForHost, bookmakerForRequests, PANEL_MESSAGE } from '../messaging';
+import { bookmakerForHost, bookmakerForRequests, sitePatternFor, PANEL_MESSAGE } from '../messaging';
 import { metaFor } from '../bookmakers/catalog';
 import { recordOffer, type AddingSite } from './record-offer';
 import type { SaveResult } from '../inject/recorder';
@@ -745,7 +745,10 @@ const renderSiteOffer = (bookmaker: Bookmaker, name: string, origin: string): vo
     // One dialogue, not two: an adapter that reads its bets off another backend
     // is dead without that host, and asking for it later would be a second
     // prompt about a site the user has already said yes to.
-    const origins = [`${origin}/*`, ...(metaFor(bookmaker)?.apiHosts ?? [])];
+    const origins = [
+      sitePatternFor(new URL(origin).host),
+      ...(metaFor(bookmaker)?.apiHosts ?? []),
+    ];
     // The grant has to answer this click: Chrome refuses an origin request that
     // does not come from a user gesture.
     void chrome.permissions.request({ origins }).then(async (granted) => {

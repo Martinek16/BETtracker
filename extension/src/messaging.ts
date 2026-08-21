@@ -11,7 +11,7 @@ import type {
   SyncMeta,
 } from '@betanal/shared';
 
-export { bookmakerForHost, bookmakerForRequests } from './bookmakers/capture';
+export { bookmakerForHost, bookmakerForRequests, sitePatternFor } from './bookmakers/capture';
 
 /** Tag used on window.postMessage between the MAIN-world inject and content script. */
 export const PAGE_BRIDGE_TAG = 'bettracker-bridge';

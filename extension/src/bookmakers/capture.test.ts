@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { CAPTURE_RULES, bookmakerForHost, bookmakerForRequests } from './capture';
+import { CAPTURE_RULES, bookmakerForHost, bookmakerForRequests, sitePatternFor } from './capture';
+
+describe('sitePatternFor', () => {
+  it('asks for the site, not the one address the user happens to be on', () => {
+    // The regression this exists for: a grant for www. alone left the sportsbook
+    // frames on the site's other subdomains unwatched, so a signed-in account
+    // read as signed out.
+    expect(sitePatternFor('www.bet-at-home.com')).toBe('https://*.bet-at-home.com/*');
+    expect(sitePatternFor('sports.bet-at-home.com')).toBe('https://*.bet-at-home.com/*');
+    expect(sitePatternFor('stake.com')).toBe('https://*.stake.com/*');
+    expect(sitePatternFor('bah24.si')).toBe('https://*.bah24.si/*');
+  });
+});
 
 describe('bookmakerForRequests', () => {
   it('names a mirror no rule lists, from the API the page calls', () => {

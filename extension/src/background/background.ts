@@ -62,7 +62,7 @@ import {
   syncOpenBets,
 } from '../sync/sync';
 import { syncRates } from '../sync/rates';
-import { bookmakerForHost } from '../messaging';
+import { bookmakerForHost, sitePatternFor } from '../messaging';
 import type {
   FromBackground,
   OpenBetsSnapshot,
@@ -527,28 +527,42 @@ const enableMirror = async (bookmaker: Bookmaker, origin: string): Promise<void>
   } catch {
     return;
   }
+  // The whole domain, not the one address granted: the sportsbook is drawn in
+  // frames on the site's own subdomains, and a script bound to `www.` alone
+  // never sees the calls those frames make.
+  const match = sitePatternFor(host);
+  const id = `mirror-${host}`;
   const shared = {
-    matches: [`${origin}/*`],
+    matches: [match],
     runAt: 'document_start' as const,
     allFrames: true,
     persistAcrossSessions: true,
   };
-  let placed = true;
-  try {
-    await chrome.scripting.registerContentScripts([
-      { id: `mirror-${host}`, js: ['content.js'], ...shared },
-      { id: `mirror-${host}-main`, js: ['inject.js'], world: 'MAIN' as const, ...shared },
-    ]);
-  } catch {
-    placed = false; // already registered on an earlier visit; keep what is there
+  // Asked rather than inferred from a failure. Registering twice throws the same
+  // way a genuinely broken registration does, and treating the two alike left a
+  // site granted, unwatched and silent about it.
+  const registered = await chrome.scripting.getRegisteredContentScripts();
+  const placed = registered.some((script) => script.id === id);
+  if (!placed) {
+    try {
+      await chrome.scripting.registerContentScripts([
+        { id, js: ['content.js'], ...shared },
+        { id: `${id}-main`, js: ['inject.js'], world: 'MAIN' as const, ...shared },
+      ]);
+    } catch (err) {
+      log('warn', bookmaker, `cannot watch ${match}: ${(err as Error).message}`);
+      return;
+    }
   }
   noteOrigin(bookmaker, origin);
   await chrome.storage.local.set({ [siteOriginKey(bookmaker)]: origin });
   // Only where the scripts were not there a moment ago. This is called from more
   // than one direction now, and reloading a tab that is already being read
   // throws away the session it was in the middle of handing us.
-  if (!placed) return;
-  for (const tab of await chrome.tabs.query({ url: `${origin}/*` })) {
+  if (placed) return;
+  // A session can only be lifted out of a call the page makes while we are
+  // watching, and this page made all of its own before the grant.
+  for (const tab of await chrome.tabs.query({ url: match })) {
     if (tab.id !== undefined) await chrome.tabs.reload(tab.id);
   }
 };
@@ -562,17 +576,16 @@ const enableMirror = async (bookmaker: Bookmaker, origin: string): Promise<void>
 chrome.permissions.onAdded.addListener((granted) => {
   void (async () => {
     for (const pattern of granted.origins ?? []) {
-      let host: string;
-      let origin: string;
-      try {
-        const url = new URL(pattern.replace('://*.', '://www.'));
-        host = url.host;
-        origin = url.origin;
-      } catch {
-        continue;
+      // Read off the tab the grant was made on rather than guessed out of the
+      // pattern: `https://*.stake.com/*` names no address, and the site the user
+      // is standing on is the one address that is certainly right.
+      for (const tab of await chrome.tabs.query({ url: pattern })) {
+        if (tab.url === undefined) continue;
+        const bookmaker = bookmakerForUrl(tab.url);
+        if (bookmaker === null) continue;
+        await enableMirror(bookmaker, new URL(tab.url).origin);
+        break;
       }
-      const bookmaker = bookmakerForHost(host);
-      if (bookmaker !== null) await enableMirror(bookmaker, origin);
     }
   })();
 });
