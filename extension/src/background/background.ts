@@ -497,7 +497,7 @@ const openBookmakerTabs = async (): Promise<Set<Bookmaker>> => {
  * is wrong, there is simply nothing to read yet. Reloading the tab makes the
  * site authenticate again immediately, instead of asking the user to sign out.
  */
-const reconnect = async (bookmaker: Bookmaker, origin: string | null = null): Promise<void> => {
+const reconnect = async (bookmaker: Bookmaker, origin: string | null = null): Promise<boolean> => {
   // The mirror the dead session was captured on, where there is one: reloading
   // the other account's tab hands back the other account's token and leaves this
   // one just as stale as it was.
@@ -509,9 +509,12 @@ const reconnect = async (bookmaker: Bookmaker, origin: string | null = null): Pr
     if (tab.id === undefined || tab.url === undefined) continue;
     if (bookmakerForUrl(tab.url) === bookmaker) {
       await chrome.tabs.reload(tab.id);
-      return;
+      return true;
     }
   }
+  // No tab of the site open, so there was nothing to reload and no session is
+  // coming. The caller has to say so rather than leave the user waiting.
+  return false;
 };
 
 /**
@@ -602,7 +605,7 @@ const forgetSite = async (bookmaker: Bookmaker): Promise<void> => {
   await chrome.storage.local.set({ consent });
   // Every login at the site, not one of them: this is the site being given up.
   for (const connection of connectionsOf(bookmaker)) {
-    reviving.delete(connection.key);
+    revivedAt.delete(connection.key);
     apiBalances.delete(connection.key);
     lastBalanceReadAt.delete(connection.key);
     lastActivityAt.delete(connection.key);
@@ -939,12 +942,22 @@ const importBalance = async ({ adapter, connection }: Live, force = false): Prom
 };
 
 /**
- * Sessions whose expiry we have already tried to heal, cleared when a session
- * lands. Keyed by connection, except for the wake-up case in `sync` where there
- * is no connection left to key by and the bookmaker's own id stands in - a
- * bookmaker id never contains the `|` a connection key is built around.
+ * When each session was last reloaded to bring it back. Keyed by connection,
+ * except for the wake-up case in `sync` where there is no connection left to key
+ * by and the bookmaker's own id stands in - a bookmaker id never contains the
+ * `|` a connection key is built around.
+ *
+ * A time rather than a "tried already" flag: a working reload lands a session
+ * within seconds, so anything later than the cooldown is a new event and worth
+ * another go. The flag had no way back - one reload that came back empty left
+ * the site refusing to reload ever again, and the refresh button did nothing at
+ * all for the rest of the browser session.
  */
-const reviving = new Set<string>();
+const revivedAt = new Map<string, number>();
+const REVIVE_COOLDOWN_MS = 60_000;
+
+const reviveDue = (key: string): boolean =>
+  Date.now() - (revivedAt.get(key) ?? 0) > REVIVE_COOLDOWN_MS;
 
 /**
  * The captured token stopped being accepted. This is not the account going away:
@@ -956,25 +969,24 @@ const reviving = new Set<string>();
  * than whenever the user next clicks something.
  *
  * Answers whether the login is really gone. A token that runs out is a thing
- * these sites do roughly hourly whether or not anyone is signed out, and calling
- * the first one "logged out" put "Stopped part-way - check the log" on a healthy
- * account every hour, over an event the extension healed by itself seconds later.
- * Only the second one - the reload having had its turn and the site still handing
- * over nothing - is the user signed out, which only they can fix.
+ * these sites do roughly hourly whether or not anyone is signed out, so calling
+ * the first one "logged out" marked a healthy account as stuck every hour, over
+ * an event the extension healed by itself seconds later. Only a second one
+ * inside the cooldown - the reload having had its turn and the site still
+ * handing over nothing - is the user signed out, which only they can fix.
  */
 const handleSessionExpired = async (connection: Connection): Promise<boolean> => {
   dropConnection(connection.key);
   const account = accountOf(connection);
-  if (reviving.has(connection.key)) {
-    if (account !== null) await updateStatus(account, 'logged_out');
-    return true;
+  if (reviveDue(connection.key)) {
+    log('info', connection.bookmaker, 'session went stale - reviving');
+    revivedAt.set(connection.key, Date.now());
+    // The mirror this login was signed in on, so the reload hands back *its*
+    // token rather than the other account's.
+    if (await reconnect(connection.bookmaker, connection.origin)) return false;
   }
-  log('info', connection.bookmaker, 'session went stale - reviving');
-  reviving.add(connection.key);
-  // The mirror this login was signed in on, so the reload hands back *its*
-  // token rather than the other account's.
-  await reconnect(connection.bookmaker, connection.origin);
-  return false;
+  if (account !== null) await updateStatus(account, 'logged_out');
+  return true;
 };
 
 /**
@@ -1004,11 +1016,28 @@ const sync = async (mode: 'incremental' | 'full', only: Bookmaker | null = null)
     // long as the user left the site alone. Reloading a tab that is already open
     // makes the site authenticate again immediately; with no such tab reconnect
     // does nothing, which is the right answer - a session cannot be conjured.
+    let reloading = false;
     for (const adapter of adapters()) {
       if (consent[adapter.id] !== true) continue;
-      if (reviving.has(adapter.id)) continue;
-      reviving.add(adapter.id);
-      await reconnect(adapter.id);
+      if (!reviveDue(adapter.id)) continue;
+      revivedAt.set(adapter.id, Date.now());
+      if (await reconnect(adapter.id)) reloading = true;
+    }
+    // A reload is on its way and the session it brings back sets off a run that
+    // reports for itself, so this one has nothing to add. With no reload there is
+    // no such run and no answer coming either - and a click answered by silence
+    // is what left the popup sitting for 45 seconds and then blaming the site.
+    if (!reloading) {
+      broadcast({
+        type: 'SYNC_PROGRESS',
+        progress: {
+          page: 0,
+          totalNew: 0,
+          done: true,
+          ok: false,
+          message: 'Open the bookmaker in a tab, then read again.',
+        },
+      });
     }
     return;
   }
@@ -1082,11 +1111,12 @@ const sync = async (mode: 'incremental' | 'full', only: Bookmaker | null = null)
           // Chromium to stop the worker and leave the account looking unread.
           await updateStatus(account, 'synced');
           // A run that got this far proves the session works, so the site earns
-          // its one reload back. Cleared on a captured token instead, a site that
-          // handed over a token its own API then refused was reloaded on every
-          // single run - the reconnect loop the log filled up with.
-          reviving.delete(connection.key);
-          reviving.delete(adapter.id);
+          // its reload back without waiting the cooldown out. Cleared on a
+          // captured token instead, a site that handed over a token its own API
+          // then refused was reloaded on every single run - the reconnect loop
+          // the log filled up with.
+          revivedAt.delete(connection.key);
+          revivedAt.delete(adapter.id);
           // A run that reached the end proves the site is answering again, so
           // whatever backoff it had earned is spent rather than doubled next time.
           clearCooldown(adapter.id);

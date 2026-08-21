@@ -25,9 +25,18 @@ Nothing to click, and money that shows up when it happens.
   nothing has ever been read from.
 - **A session running out is no longer reported as a fault.** These sites hand
   out tokens that expire roughly hourly whether or not anyone signed out, and
-  each one put "Stopped part-way - check the log" on a healthy account and a
-  warning in the log - over something the extension repaired by itself seconds
-  later. Only a revival that comes back empty is reported now.
+  each one marked a healthy account as stuck and put a warning in the log - over
+  something the extension repaired by itself seconds later. Only a revival that
+  comes back empty is reported now.
+- **Read again always reads again.** After one reload that came back without a
+  session, the site was never reloaded again for the rest of the browser
+  session: the button ran, found nothing to work with, and said nothing at all
+  until the popup gave up 45 seconds later with "No answer from the site". The
+  reload is now held off for a minute rather than for good, and a run with no
+  session to use says so at once.
+- **A lost session says what to do about it.** It used to read "Stopped part-way
+  - check the log", which named no cause and pointed at a log that had nothing
+  actionable in it.
 - **The site list is only sites that exist.** A dead address and a duplicate came
   out of it.
 
