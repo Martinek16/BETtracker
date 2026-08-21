@@ -1547,6 +1547,15 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
             // "Connected" about an account the sync now walks past would be a lie.
             const paused =
               entry !== undefined && settings.hiddenAccounts.includes(accountKey(entry.account));
+            const state = paused
+              ? { tone: 'idle' as const, label: 'Switched off in settings' }
+              : connectionOf(meta);
+            // Bets read fine, deposits and bonuses never arrive: the site keeps
+            // its cashier on a session of its own and hands that out only on the
+            // page that uses it. "Connected" was true of the bets and a lie about
+            // everything else, and the reason was admitted in a log nobody opens.
+            const moneyWaiting =
+              adapter.needsBankingSession === true && signedIn && here?.banking == null;
             return {
               bookmaker: adapter.id,
               name: nameOf(adapter.id),
@@ -1558,9 +1567,15 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
               // login being named is what makes it a session worth acting on.
               signedIn,
               meta,
-              connection: paused
-                ? { tone: 'idle' as const, label: 'Switched off in settings' }
-                : connectionOf(meta),
+              // Only ever in place of "Connected": a real failure is the more
+              // urgent answer and keeps the line.
+              connection:
+                state.tone === 'ok' && moneyWaiting
+                  ? {
+                      tone: 'stuck' as const,
+                      label: 'Open your payments page once to read deposits and bonuses',
+                    }
+                  : state,
               bets: betCounts[adapter.id] ?? 0,
               transactions: txCounts[adapter.id] ?? 0,
             };
