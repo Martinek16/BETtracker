@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.2 — August 2026
+
+Nothing to click, and money that shows up when it happens.
+
+- **A supported site is read the moment you open it.** 1.0.1 asked you to open
+  the popup and grant the site first, on a page the extension already knew.
+- **A deposit is in the app before you leave the page.** bet-at-home was watched
+  only through the figure in its header, and the cashier does not always redraw
+  it - so the deposit waited for the next scheduled read.
+- **Deposits and bonuses say when they are waiting.** bet-at-home keeps them on
+  a session of its own that it hands out only on your payments page. Until you
+  open it once they cannot be read, and the account said "Connected" anyway.
+- **The site list is only sites that exist.** A dead address and a duplicate came
+  out of it.
+
 ## 1.0.1 — August 2026
 
 Fixes to the part where you add a bookmaker of your own.
