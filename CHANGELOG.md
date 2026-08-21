@@ -19,6 +19,10 @@ Nothing to click, and money that shows up when it happens.
   "no session captured yet" as "signed out", and the session is not on every
   page of a site - on the cashier it is on none of them. The page is asked now,
   and asked again when it changes, so signing in without reloading is noticed.
+- **An account already read stays on screen.** A page that had not yet made the
+  site's authenticated call put a line about your session over everything the
+  extension already knew about the account. That line is now only for a site
+  nothing has ever been read from.
 - **The site list is only sites that exist.** A dead address and a duplicate came
   out of it.
 
