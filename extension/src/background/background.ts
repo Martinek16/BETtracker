@@ -947,25 +947,34 @@ const importBalance = async ({ adapter, connection }: Live, force = false): Prom
 const reviving = new Set<string>();
 
 /**
- * The captured token stopped being accepted (~30 min idle). This is not the
- * account going away: it stays in the registry with everything it imported, and
- * the very next authenticated request the site makes hands over a live token.
+ * The captured token stopped being accepted. This is not the account going away:
+ * it stays in the registry with everything it imported, and the very next
+ * authenticated request the site makes hands over a live token.
  *
  * The dead token is dropped because retrying it can only fail, and if one of the
  * site's tabs is open it is reloaded once so that next request happens now rather
- * than whenever the user next clicks something. Reloading twice would mean the
- * user really is signed out, which only they can fix.
+ * than whenever the user next clicks something.
+ *
+ * Answers whether the login is really gone. A token that runs out is a thing
+ * these sites do roughly hourly whether or not anyone is signed out, and calling
+ * the first one "logged out" put "Stopped part-way - check the log" on a healthy
+ * account every hour, over an event the extension healed by itself seconds later.
+ * Only the second one - the reload having had its turn and the site still handing
+ * over nothing - is the user signed out, which only they can fix.
  */
-const handleSessionExpired = async (connection: Connection): Promise<void> => {
+const handleSessionExpired = async (connection: Connection): Promise<boolean> => {
   dropConnection(connection.key);
-  log('info', connection.bookmaker, 'session went stale - reviving');
   const account = accountOf(connection);
-  if (account !== null) await updateStatus(account, 'logged_out');
-  if (reviving.has(connection.key)) return;
+  if (reviving.has(connection.key)) {
+    if (account !== null) await updateStatus(account, 'logged_out');
+    return true;
+  }
+  log('info', connection.bookmaker, 'session went stale - reviving');
   reviving.add(connection.key);
   // The mirror this login was signed in on, so the reload hands back *its*
   // token rather than the other account's.
   await reconnect(connection.bookmaker, connection.origin);
+  return false;
 };
 
 /**
@@ -1102,8 +1111,14 @@ const sync = async (mode: 'incremental' | 'full', only: Bookmaker | null = null)
             failures.push(`${nameOf(adapter.id)} paused: ${err.message}`);
             await updateStatus(account, before);
           } else if (err instanceof SessionExpiredError) {
-            failures.push(`${nameOf(adapter.id)} reconnecting`);
-            await handleSessionExpired(connection);
+            // A token being revived is not this run failing: the reload is
+            // already on its way and the session it brings back sets off a run
+            // of its own. Reported only once the revival itself came to nothing.
+            if (await handleSessionExpired(connection)) {
+              failures.push(`${nameOf(adapter.id)} signed out`);
+            } else {
+              await updateStatus(account, before);
+            }
           } else {
             failures.push(`${nameOf(adapter.id)}: ${(err as Error).message}`);
             log('error', adapter.id, `sync failed: ${(err as Error).message}`);

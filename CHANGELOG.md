@@ -23,6 +23,11 @@ Nothing to click, and money that shows up when it happens.
   site's authenticated call put a line about your session over everything the
   extension already knew about the account. That line is now only for a site
   nothing has ever been read from.
+- **A session running out is no longer reported as a fault.** These sites hand
+  out tokens that expire roughly hourly whether or not anyone signed out, and
+  each one put "Stopped part-way - check the log" on a healthy account and a
+  warning in the log - over something the extension repaired by itself seconds
+  later. Only a revival that comes back empty is reported now.
 - **The site list is only sites that exist.** A dead address and a duplicate came
   out of it.
 
