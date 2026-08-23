@@ -13,6 +13,12 @@ updates:
         dependency-type: development
       prod:
         dependency-type: production
+    # A major is breaking work, not maintenance, and grouping one in chains a
+    # dozen safe bumps to it: the whole PR then fails and nothing lands. Majors
+    # are taken deliberately, one at a time, by hand.
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: 'chore'
 
