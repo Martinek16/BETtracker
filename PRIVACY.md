@@ -63,6 +63,10 @@ Closing the browser drops it. It is sent back to the bookmaker it came from, and
   sent to `api.binance.com`. No account, no wallet, no amount.
 - **A live score feed** — while a bet of yours is running, the bookmaker's public score feed is
   opened to show the score. It carries no sign-in and says nothing about your bet.
+- **The project's release page** — if you installed this from a folder rather than a store, the
+  number of the newest release is read from `api.github.com` when your browser opens, so you can be
+  told a version has come out. Nothing is sent with the request: not the version you are on, not an
+  account, not a bet.
 - **Nothing else, ever.** No analytics, no crash reports, no telemetry, no ads. Your bets, your
   balance and your payments are sent to no one.
 
@@ -101,6 +105,7 @@ your browser and operating system up to date, and lock the account you use.
 | `scripting`, `activeTab` | Running the reader inside the bookmaker page you are on |
 | `https://api.frankfurter.dev/*` | Exchange rates for accounts in another currency |
 | `https://api.binance.com/*` | Coin prices for a wallet held in crypto |
+| `https://api.github.com/*` | The newest release number, for a copy installed from a folder |
 | Optional access to other addresses | Nothing is held up front. A site is granted one at a time, by you, from the popup, on the page you are standing on — together with the backend that page reads its bets from, such as bet-at-home's `sports-api.everymatrix.com` |
 
 ## Limited use

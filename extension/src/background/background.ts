@@ -62,6 +62,7 @@ import {
   syncOpenBets,
 } from '../sync/sync';
 import { syncRates } from '../sync/rates';
+import { checkForUpdate } from '../sync/update';
 import { bookmakerForHost, sitePatternFor } from '../messaging';
 import type {
   FromBackground,
@@ -1845,7 +1846,16 @@ chrome.runtime.onInstalled.addListener((details) => {
     void chrome.tabs.create({ url: chrome.runtime.getURL('index.html#/welcome') });
   }
   whenReady(() => void adoptOpenTabs());
+  void checkForUpdate();
 });
+
+/**
+ * Once per browser, when it opens. A copy loaded from a folder is the only one
+ * this says anything to, and the reader has to download and unzip it by hand -
+ * so the news is worth carrying, and worth carrying no more often than that.
+ * Installing covers the run before the first restart.
+ */
+chrome.runtime.onStartup.addListener(() => void checkForUpdate());
 
 /**
  * The question follows the user to whatever tab they end up in. It is drawn in

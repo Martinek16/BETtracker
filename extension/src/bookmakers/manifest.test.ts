@@ -74,10 +74,14 @@ describe('what the browser is asked for', () => {
     expect(manifest.permissions).toContain('scripting');
   });
 
-  it('holds permission for the rate feeds it actually calls', () => {
-    const rates = readFileSync(new URL('../sync/rates.ts', import.meta.url), 'utf8');
-    for (const [, host] of rates.matchAll(/https:\/\/([a-z0-9.-]+)\//g)) {
-      expect(manifest.host_permissions.some((p) => p.startsWith(`https://${host}/`))).toBe(true);
+  it('holds permission for the feeds it actually calls', () => {
+    for (const file of ['../sync/rates.ts', '../sync/update.ts']) {
+      const source = readFileSync(new URL(file, import.meta.url), 'utf8');
+      for (const [, host] of source.matchAll(/https:\/\/([a-z0-9.-]+)\//g)) {
+        expect(manifest.host_permissions.some((p) => p.startsWith(`https://${host}/`)), host).toBe(
+          true,
+        );
+      }
     }
   });
 });
