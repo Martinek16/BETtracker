@@ -16,8 +16,8 @@
     "idb": "^8.0.0"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.287",
-    "esbuild": "^0.24.2",
+    "@types/chrome": "^0.2.6",
+    "esbuild": "^0.28.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }
