@@ -2,7 +2,41 @@
 
 ## 1.0.2 — August 2026
 
-Nothing to click, and money that shows up when it happens.
+Nothing to click, money that shows up when it happens, and analytics you can
+trust to say the same thing twice.
+
+### Analytics
+
+- **A league keeps its name and its flag whichever bookmaker you filter to.** The
+  row's name and country were read off the bets on screen, so narrowing to one
+  book could rename a competition or take its flag away. They are read off every
+  bet now. A country your books spell their own way is recognised too.
+- **A one-off group no longer tops the table.** Settings has a threshold — 20
+  picks by default, or 50, 100, or off. Below it a group is sorted under the
+  ranked ones, behind a line saying why, rather than heading a profit sort on a
+  single lucky bet. It applies to any breakdown with more than 15 rows.
+- **The Odds column is the price in the middle, not the average.** One 50.00 punt
+  used to make a group of evens bets read as long odds.
+- **"Did the prices hold up?" was reading the promise wrong.** It measured what
+  the average price promises instead of what the prices promised on average —
+  which flattered every band holding one long shot.
+- **Stake bands are cut where your bets actually sit.** A band holding most of
+  the period is split at a round number near the middle of it, so it stops being
+  one row you cannot act on.
+- **Slips open in their own order** — single before combo, small stake before
+  large — instead of most-backed first. Any other order is one click on a column
+  away.
+- **The wide column switches between money and hit rate** when you click its
+  heading, and a record a run of luck would explain just as well is drawn faint.
+
+### The rest
+
+- **Settings, About and Privacy read tighter**, and the guided tour sits with
+  Appearance where it belongs.
+- **The bonus expiry notice is gone.** It fired on a date the site rarely gives
+  and told you nothing you could act on.
+
+### Reading your accounts
 
 - **A supported site is read the moment you open it.** 1.0.1 asked you to open
   the popup and grant the site first, on a page the extension already knew.
