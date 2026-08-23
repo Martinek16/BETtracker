@@ -85,7 +85,7 @@ const bandsOf = (
       thin: g.bets < MIN_SAMPLE,
       // A price of 2.50 claims 40%: the gap to what actually landed is the only
       // reading here that money cannot fake.
-      gap: g.averageOdds === 0 ? 0 : g.winRate - 100 / g.averageOdds,
+      gap: g.winRate - g.meanImplied,
     }));
 
 const Bars = ({
@@ -150,7 +150,7 @@ export const OddsPnlChart = ({
   bets: readonly Bet[];
   currency: string;
 }): JSX.Element => {
-  const data = useMemo(() => bandsOf(bets, (g) => g.averageOdds, 'slipOdds'), [bets]);
+  const data = useMemo(() => bandsOf(bets, (g) => g.medianOdds, 'slipOdds'), [bets]);
 
   return (
     <ChartFrame
@@ -178,7 +178,7 @@ export const OddsPnlChart = ({
           dataKey="gap"
           guides={[{ y: 0 }]}
           lines={(row) => [
-            `Won ${formatPercent(row.winRate, 0)}, the price promised ${formatPercent(100 / row.averageOdds, 0)}`,
+            `Won ${formatPercent(row.winRate, 0)}, the price promised ${formatPercent(row.meanImplied, 0)}`,
             `${row.gap >= 0 ? '+' : ''}${formatPercent(row.gap, 1)} against the promise`,
             `${String(row.bets)} settled slips · ${formatMoney(row.profit, currency)}`,
           ]}

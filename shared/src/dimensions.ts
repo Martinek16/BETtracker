@@ -11,7 +11,19 @@ export interface GroupStats {
   profit: number;
   roi: number;
   winRate: number;
-  averageOdds: number;
+  /**
+   * The price in the middle of the group, not the average of them. A mean is one
+   * 50.00 punt away from calling a group of evens bets long odds; a middle is
+   * the price the group actually backs, whatever sits at either end of it.
+   */
+  medianOdds: number;
+  /**
+   * Mean 1/odds across settled slips, as a percentage: how often those prices
+   * said they would land. Read against `winRate`, which counts the same slips.
+   * Not `100 / medianOdds` - the odds a group takes are spread, and the share of
+   * a spread is not the spread of a share.
+   */
+  meanImplied: number;
   /** Profit measured in stakes rather than money, so a €5 and a €500 slip weigh the same. */
   unitsPl: number;
   /**
@@ -87,27 +99,50 @@ interface Band {
 /** Cut points a reader recognises, coarsest first. */
 const STEPS = [1000, 500, 250, 100, 50, 25, 10, 5, 2.5, 1, 0.5, 0.25, 0.1, 0.05];
 
-/** The roundest number strictly inside the band, nearest to where the slips sit. */
-const splitPoint = (min: number, max: number, target: number): number | null => {
-  for (const step of STEPS) {
-    const inside: number[] = [];
-    for (let v = (Math.floor(min / step) + 1) * step; v < max; v += step) {
-      const rounded = Number(v.toFixed(2));
-      if (rounded > min && rounded < max) inside.push(rounded);
-    }
-    const nearest = inside.reduce<number | null>(
-      (best, v) => (best === null || Math.abs(v - target) < Math.abs(best - target) ? v : best),
-      null,
-    );
-    if (nearest !== null) return nearest;
-  }
-  return null;
-};
-
 /** A band nobody can act on: it holds this much of the period all by itself. */
 const CROWDED_SHARE = 0.3;
 /** Below this a split only makes two bands too small to read anything into. */
 const CROWDED_MIN = 12;
+/** Neither side of a cut may come out smaller than this, or the cut is not made. */
+const MIN_SIDE = 5;
+
+/**
+ * The roundest cut that actually breaks the crowd.
+ *
+ * Coarse steps are tried first, so the label stays a number a reader recognises.
+ * But roundness alone is not enough: in a 100–250 band where every slip sits near
+ * 120, a cut at 200 is the roundest available and leaves the crowd exactly where
+ * it was. So a step only counts if some cut on it leaves slips on both sides, and
+ * among those the most even one wins.
+ */
+const splitPoint = (
+  min: number,
+  max: number,
+  inside: readonly number[],
+  closed: Closed,
+): number | null => {
+  const below = (cut: number): number =>
+    inside.filter((v) => (closed === 'upper' ? v <= cut : v < cut)).length;
+  const room = inside.length - MIN_SIDE;
+  if (room < MIN_SIDE) return null;
+  const middle = inside.length / 2;
+  for (const step of STEPS) {
+    let best: number | null = null;
+    let bestN = 0;
+    for (let v = (Math.floor(min / step) + 1) * step; v < max; v += step) {
+      const cut = Number(v.toFixed(2));
+      if (cut <= min || cut >= max) continue;
+      const n = below(cut);
+      if (n < MIN_SIDE || n > room) continue;
+      if (best === null || Math.abs(n - middle) < Math.abs(bestN - middle)) {
+        best = cut;
+        bestN = n;
+      }
+    }
+    if (best !== null) return best;
+  }
+  return null;
+};
 
 const refine = (base: readonly Band[], values: readonly number[], closed: Closed): Band[] => {
   const holds = (band: Band, v: number): boolean =>
@@ -123,12 +158,16 @@ const refine = (base: readonly Band[], values: readonly number[], closed: Closed
     const inside = held[index];
     const band = bands[index];
     if (band === undefined || inside === undefined) break;
-    if (inside.length < CROWDED_MIN || inside.length < values.length * CROWDED_SHARE) break;
-    const median = inside[Math.floor(inside.length / 2)]!;
+    if (inside.length < CROWDED_MIN) break;
+    // Crowded against the period as a whole, or against the next-fullest band: a
+    // rung holding a fifth of the slips while every other holds a fiftieth is
+    // still the one rung hiding everything behind a single row.
+    const next = Math.max(...counts.filter((_, i) => i !== index), 0);
+    if (inside.length < values.length * CROWDED_SHARE && inside.length < next * 2) break;
     // An open-ended top band is cut against the biggest slip in it, since it has
     // no ceiling of its own to measure the middle against.
     const ceiling = Number.isFinite(band.max) ? band.max : inside[inside.length - 1]! + 0.01;
-    const cut = splitPoint(band.min, ceiling, median);
+    const cut = splitPoint(band.min, ceiling, inside, closed);
     if (cut === null) break;
     bands = [
       ...bands.slice(0, index),
@@ -270,6 +309,8 @@ export type SlipDimension =
 export type LegDimension =
   | 'sport'
   | 'league'
+  /** No tab of its own: what the league table is narrowed by. */
+  | 'country'
   | 'event'
   | 'marketType'
   | 'marketFamily'
@@ -414,6 +455,14 @@ export const keyForSlip = (bet: Bet, dimension: SlipDimension): string => {
   }
 };
 
+/** The middle value, or the midpoint of the two middles on an even count. */
+const median = (values: readonly number[]): number => {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const half = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[half]! : (sorted[half - 1]! + sorted[half]!) / 2;
+};
+
 const statsFor = (key: string, bets: readonly Bet[]): GroupStats => {
   const staked = bets.reduce((sum, bet) => sum + bet.stake, 0);
   const swings = bets.map((bet) => (bet.stake > 0 ? profitOf(bet) / bet.stake : 0));
@@ -433,7 +482,11 @@ const statsFor = (key: string, bets: readonly Bet[]): GroupStats => {
     profit,
     roi: decisiveStake === 0 ? 0 : (profit / decisiveStake) * 100,
     winRate,
-    averageOdds: bets.length === 0 ? 0 : bets.reduce((sum, bet) => sum + bet.odds, 0) / bets.length,
+    medianOdds: median(bets.map((bet) => bet.odds)),
+    meanImplied:
+      decisive.length === 0
+        ? 0
+        : (decisive.reduce((sum, bet) => sum + 1 / bet.odds, 0) / decisive.length) * 100,
     unitsPl: swings.reduce((sum, u) => sum + u, 0),
     topSwingShare: swing === 0 ? 0 : Math.max(...swings.map(Math.abs)) / swing,
     topMoneyShare:
