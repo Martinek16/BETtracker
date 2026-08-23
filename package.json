@@ -34,5 +34,13 @@
     "prettier": "^3.4.2",
     "typescript": "^5.7.2"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "pnpm@9.15.0",
+  "_comment_overrides": "Patched versions their own dependents pin too tightly to reach. Both are denial-of-service advisories in build tooling, so the exposure is a hostile file fed to our own lint or install, not anything a user runs. Drop an entry once the dependent widens its range.",
+  "pnpm": {
+    "overrides": {
+      "brace-expansion@<1.1.16": "^1.1.16",
+      "brace-expansion@>=3.0.0 <5.0.7": "^5.0.7",
+      "js-yaml@>=4.0.0 <4.3.1": "^4.3.1"
+    }
+  }
 }
