@@ -72,10 +72,15 @@ import type {
 } from '../messaging';
 
 /**
- * How long a run keeps the next one from starting. A bookmaker's site is a
- * single-page app that rewrites its URL on every click, and each of those used
- * to be worth a run - half an evening on the site meant a sync every thirty
- * seconds, each one re-walking the money. The alarm covers the rest.
+ * How long a captured session keeps the next run from starting. The site hands
+ * over the same token from every frame it has and again each time it re-issues
+ * one, which on a busy evening is a run every few seconds, each re-walking the
+ * money.
+ *
+ * Only the token repeat is held back by this. Opening the site reads whatever
+ * the clock says, because a document that has just loaded is the user asking;
+ * clicking around the site reads nothing at all, because `watchSite` looks
+ * instead. Held against both, a reload inside the five minutes read nothing.
  */
 const SYNC_DEBOUNCE_MS = 5 * 60_000;
 /** Open ids from the previous poll. In session storage because the MV3 worker dies. */
@@ -133,9 +138,6 @@ const markSynced = (connection: Connection): void => {
   void chrome.storage.session.set({ lastSyncAt });
 };
 
-/** Any session at this site that is worth re-reading right now. */
-const dueConnections = (bookmaker: Bookmaker): Connection[] =>
-  connectionsOf(bookmaker).filter(dueForSync);
 /**
  * Bookmakers that asked to be left alone, and until when. A throttle answered at
  * poll speed is a throttle that never ends: every refusal costs a request, and
@@ -450,9 +452,14 @@ const askOnceSignedIn = async (
   // no answer yet has neither its session nor the login it names recorded
   // anywhere. That is what makes the question a question.
   try {
-    if ((await identify(adapter, creds)) === null) return;
-  } catch {
-    return; // signed out; the site asks again when someone signs in
+    if ((await identify(adapter, creds)) === null) {
+      sayIdle(adapter.id, 'not asked about this site yet - the site did not name the account');
+      return;
+    }
+  } catch (err) {
+    // signed out; the site asks again when someone signs in
+    sayIdle(adapter.id, `not asked about this site yet - ${(err as Error).message}`);
+    return;
   }
   awaiting = { bookmaker: adapter.id, origin, creds };
   askAbout(adapter.id);
@@ -886,6 +893,27 @@ const apiBalances = new Set<string>();
 const saidNoTab = new Set<Bookmaker>();
 
 /**
+ * Why a site that was opened is not being read.
+ *
+ * Every one of these was a silent `return`, and a silent return is why a
+ * stalled extension and a working one look exactly alike from the outside: the
+ * site is open, the account is signed in, nothing appears, and nothing anywhere
+ * says which of the half-dozen conditions was the one that did not hold.
+ *
+ * Once per reason per bookmaker, because the page announces itself on every
+ * load. The set dies with the worker, which is the right span - a reason that
+ * still holds an hour later is worth saying again.
+ */
+const saidIdle = new Set<string>();
+
+const sayIdle = (bookmaker: Bookmaker, why: string): void => {
+  const key = `${bookmaker}:${why}`;
+  if (saidIdle.has(key)) return;
+  saidIdle.add(key);
+  log('info', bookmaker, why);
+};
+
+/**
  * How often the API balance is worth asking for. The panel polls the open bets
  * every eight seconds while a match is in play and used to re-read the balance
  * on every one of those beats; a balance that moved four seconds ago is not
@@ -1081,7 +1109,10 @@ const sync = async (mode: 'incremental' | 'full', only: Bookmaker | null = null)
         // on screen, so its records cannot have moved since the last run - and
         // reading it anyway is what put one site's failures into a run the user
         // started on the other one. Opening the tab sets off a run of its own.
-        if (!openSites.has(adapter.id)) continue;
+        if (!openSites.has(adapter.id)) {
+          sayIdle(adapter.id, 'skipped - no tab of the site is open');
+          continue;
+        }
         // Asked to be left alone until the backoff is up. Its stored history is
         // still served from the database; only the requests stop.
         if (cooling(adapter.id)) continue;
@@ -1204,12 +1235,21 @@ const lastActivityAt = new Map<string, number>();
  * One read of a single bookmaker's open slips, stored and announced. Cheap enough
  * to run the moment the money moves: it is the one request that tells the panel a
  * new slip exists, where the history walk tells it everything else as well.
+ *
+ * Answers whether a slip that was open at the last look has gone, which is a bet
+ * that settled - and a bet that settled has moved the money behind it. The
+ * caller decides what that is worth: a run already under way covers it anyway.
  */
-const readOpenNow = async ({ adapter, connection }: Live): Promise<void> => {
+const readOpenNow = async ({ adapter, connection }: Live): Promise<boolean> => {
   try {
     const account = await ensureAccount(adapter, connection);
-    if (account === null) return;
-    const { added } = await syncOpenBets(adapter, connection.creds, account);
+    if (account === null) return false;
+    const { bets, added } = await syncOpenBets(adapter, connection.creds, account);
+    // Per account: one account's slips going quiet must not read as another's.
+    const key = `${OPEN_IDS_KEY}:${accountKey(account)}`;
+    const previous: unknown = (await chrome.storage.session.get(key))[key];
+    const settled = disappearedBetIds(Array.isArray(previous) ? (previous as string[]) : [], bets);
+    await chrome.storage.session.set({ [key]: bets.map((b) => b.betId) });
     // The panel and the counter on its button both read the stored copy, so
     // neither knows about the slip until this says it landed.
     if (added > 0) {
@@ -1218,10 +1258,12 @@ const readOpenNow = async ({ adapter, connection }: Live): Promise<void> => {
         progress: { page: 0, totalNew: added, done: true, message: 'Open bets updated' },
       });
     }
+    return settled.length > 0;
   } catch (err) {
     // Not reported as a failure: the run started right after this one covers the
     // same ground and reports for itself.
     log('warn', adapter.id, `open bets not re-read: ${(err as Error).message}`);
+    return false;
   }
 };
 
@@ -1260,6 +1302,42 @@ const accountActivity = (connection: Connection): void => {
   })();
 };
 
+/** How often a site is looked at while the user is only moving around it. */
+const WATCH_MS = 30_000;
+const lastWatchAt = new Map<Bookmaker, number>();
+
+/**
+ * A look, not a read.
+ *
+ * A bookmaker's site is a single-page app that rewrites its URL on every click,
+ * and none of those clicks is the user asking for their history. Walking it for
+ * each one cost a full run per click, which is why the run had to be held behind
+ * a five-minute clock - and that clock then also sat on opening the site, so a
+ * reload read nothing at all.
+ *
+ * Two cheap readings instead, and neither has to judge anything. A slip that
+ * settles disappears from the open list, and money that moves changes the
+ * balance; either one calls `accountActivity`, which is what re-reads the
+ * history, the deposits and the rest.
+ */
+const watchSite = (bookmaker: Bookmaker): void => {
+  // A run already walking reads all of this and more, and reading the same
+  // endpoint with the same token twice over is how a site starts refusing both.
+  if (syncing || cooling(bookmaker)) return;
+  if (Date.now() - (lastWatchAt.get(bookmaker) ?? 0) < WATCH_MS) return;
+  lastWatchAt.set(bookmaker, Date.now());
+  const adapter = adapterFor(bookmaker);
+  if (adapter === null) return;
+  void (async () => {
+    for (const connection of connectionsOf(bookmaker)) {
+      if (await readOpenNow({ adapter, connection })) accountActivity(connection);
+      // Its own throttle, and it reports its own failures. A balance that moved
+      // raises the same escalation from inside `storeBalance`.
+      await importBalance({ adapter, connection });
+    }
+  })();
+};
+
 /** Last known open bets from IndexedDB, used whenever a live fetch isn't possible. */
 const storedOpenSnapshot = async (error: string): Promise<OpenBetsSnapshot> => ({
   bets: activeBets(await getPendingBets()),
@@ -1292,7 +1370,10 @@ const refreshOpen = async (): Promise<OpenBetsSnapshot> => {
     // most for and gains the least from: nothing can be placed, deposited or
     // cashed out at a site nobody is looking at, so its slips cannot have moved
     // since the last run. The stored ones below stand in, marked stale.
-    if (!openSites.has(adapter.id)) continue;
+    if (!openSites.has(adapter.id)) {
+      sayIdle(adapter.id, 'open bets not re-read - no tab of the site is open');
+      continue;
+    }
     if (cooling(adapter.id)) continue;
     const account = await ensureAccount(adapter, connection);
     if (account === null) continue;
@@ -1441,9 +1522,34 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
         // would help. The question waits for the session in `CREDENTIALS`.
         // Opening the site is the moment its data is worth re-reading: the user
         // is looking at the account, and the stored token is as fresh as it gets.
-        if (consent[message.bookmaker] === true && dueConnections(message.bookmaker).length > 0) {
-          void sync('incremental', message.bookmaker);
+        //
+        // Not held back by the sync clock. That clock is there to stop a
+        // single-page app re-reading itself on every click it makes, and a
+        // document that has just loaded is not one of those clicks - it is the
+        // user asking. Gated on it, a reload inside the five minutes read
+        // nothing at all and the account still went green, which is why the
+        // toolbar button was the only thing that ever worked.
+        //
+        // A session there is to read with, all the same: with none, `sync`
+        // reloads a tab to go looking for one, and doing that to the page that
+        // just announced itself is a page that reloads itself for ever.
+        if (consent[message.bookmaker] !== true) {
+          sayIdle(
+            message.bookmaker,
+            consent[message.bookmaker] === false
+              ? 'site opened; not read - this site is turned off in the extension'
+              : 'site opened; not read yet - waiting for an answer on whether to read it',
+          );
+          return;
         }
+        if (connectionsOf(message.bookmaker).length === 0) {
+          sayIdle(
+            message.bookmaker,
+            "site opened; no session captured yet - reading starts on the site's next authenticated request",
+          );
+          return;
+        }
+        void sync('incremental', message.bookmaker);
       });
       return false;
     }
@@ -1761,8 +1867,9 @@ chrome.tabs.onActivated.addListener(({ tabId }) => {
  * A single-page site changes its URL without ever loading a document again, so
  * the content script's one report at DOMContentLoaded is everything the
  * extension hears from a tab left open all evening. Watching the tab covers the
- * moves the page makes for itself; the debounce is the one SITE_DETECTED uses,
- * so a burst of route changes still costs a single run.
+ * moves the page makes for itself - as a look rather than a read, because a
+ * click around the site is not the user asking for their history. Opening the
+ * site is, and that arrives as SITE_DETECTED.
  */
 chrome.tabs.onUpdated.addListener((_tabId, change) => {
   if (change.url === undefined) return;
@@ -1770,8 +1877,7 @@ chrome.tabs.onUpdated.addListener((_tabId, change) => {
   if (bookmaker === null) return;
   whenReady(() => {
     if (consent[bookmaker] !== true) return;
-    if (dueConnections(bookmaker).length === 0) return;
-    void sync('incremental', bookmaker);
+    watchSite(bookmaker);
   });
 });
 
