@@ -56,9 +56,6 @@ export const PickSplitCard = ({
     [all, dimension, slots],
   );
 
-  // Every settled pick the split covers, not only the rows that fit: the count
-  // beside the title says what the card was read from.
-  const decided = all.reduce((sum, g) => sum + g.decided, 0);
   const best = [...groups]
     .filter((g) => g.decided >= MIN_ROWS_SAMPLE)
     .sort((a, b) => b.edgePp - a.edgePp)[0];
@@ -69,7 +66,6 @@ export const PickSplitCard = ({
       <DashboardCardHeading
         className="mb-2"
         title={title}
-        sample={`${String(decided)} picks`}
         action={
           best === undefined ? null : (
             <CardHeadline tone={tone} title={best.label}>

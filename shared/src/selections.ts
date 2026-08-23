@@ -1,5 +1,6 @@
 import type { Bet, BetLeg } from './types';
 import { flatUnitProfit, profitOf } from './calculations';
+import { canonicalCountry } from './countries';
 import { canonicalLeague } from './leagues';
 import { marketFamily, marketLine } from './markets';
 import { teamPicked } from './teams';
@@ -50,6 +51,22 @@ export const selectionsOf = (bets: readonly Bet[]): Selection[] =>
 const sportOf = (sel: Selection): string | null =>
   canonicalSport(sel.leg.sport ?? sel.bet.sport, sel.bet.bookmaker);
 
+/** An event that names two sides rather than a competition. */
+const FIXTURE = /\s(?:[-–—]|vs?\.?)\s/i;
+
+/**
+ * The competition a pick was made in. An outright hangs off no tournament at
+ * all - the book files "Eurovision Song Contest 2025" and "FIS World Cup Women
+ * 2024/2025" against the sport alone - so the event stands in where it names a
+ * competition rather than a fixture, and the sport where even that is missing.
+ * A row called "Unknown" tells the reader nothing they can act on.
+ */
+const leagueOf = (sel: Selection): string => {
+  const { event } = sel.leg;
+  const outright = event === null || FIXTURE.test(event) ? null : canonicalLeague(event);
+  return canonicalLeague(sel.leg.league) ?? outright ?? sportOf(sel) ?? 'Unknown';
+};
+
 /** The group a selection falls in, or null when the dimension does not apply to
  * it - a pick that names no team has no place in the team view. */
 export const legKeyOf = (sel: Selection, dimension: LegDimension): string | null => {
@@ -58,7 +75,9 @@ export const legKeyOf = (sel: Selection, dimension: LegDimension): string | null
     case 'sport':
       return sportOf(sel) ?? 'Unknown';
     case 'league':
-      return canonicalLeague(leg.league) ?? 'Unknown';
+      return leagueOf(sel);
+    case 'country':
+      return canonicalCountry(leg.country, leg.league);
     case 'event':
       return leg.event ?? 'Unknown';
     case 'marketType':
@@ -138,6 +157,16 @@ export interface SelectionStats {
    * leaving the row unmarked because it is not purely one.
    */
   sports: string[];
+  /** The countries the group is played in, the one it mostly is first. Empty
+   * where none of its picks were read with a country. */
+  countries: string[];
+  /**
+   * Where the group is played: the country it mostly is, `'International'` where
+   * it is spread too thin to name one, `null` where nothing placed it at all.
+   * Read from the whole vocabulary, so it is the same word whichever bookmaker
+   * the reader has picked.
+   */
+  country: string | null;
 }
 
 const isDecidedLeg = (leg: BetLeg): boolean => leg.status === 'won' || leg.status === 'lost';
@@ -154,22 +183,51 @@ const swingOf = (sel: Selection): number => {
   return 0;
 };
 
-/** The sports a group holds, the one it holds most of first. Ties break by name
- * so two runs over the same bets order them the same way. */
-const sportsIn = (group: readonly Selection[]): string[] => {
+/** The values a group holds and how many picks hold each, the commonest first.
+ * Ties break by name so two runs over the same bets order them the same way. */
+const heldIn = (
+  group: readonly Selection[],
+  of: (sel: Selection) => string | null,
+): [string, number][] => {
   const counts = new Map<string, number>();
   for (const sel of group) {
-    const sport = sportOf(sel);
-    if (sport !== null) counts.set(sport, (counts.get(sport) ?? 0) + 1);
+    const value = of(sel);
+    if (value !== null) counts.set(value, (counts.get(value) ?? 0) + 1);
   }
-  return [...counts]
-    .sort(([aSport, aPicks], [bSport, bPicks]) =>
-      bPicks - aPicks === 0 ? aSport.localeCompare(bSport) : bPicks - aPicks,
-    )
-    .map(([sport]) => sport);
+  return [...counts].sort(([aValue, aPicks], [bValue, bPicks]) =>
+    bPicks - aPicks === 0 ? aValue.localeCompare(bValue) : bPicks - aPicks,
+  );
 };
 
-const statsFor = (key: string, label: string, group: readonly Selection[]): SelectionStats => {
+/**
+ * How much of a group has to be one country before the group is called that
+ * country's. Serie A is Italy's with a handful of Brazilian picks behind it and
+ * Bundesliga is Germany's with a few Austrian; a tennis circuit is a fortnight
+ * in each of twenty countries and is honestly none of them.
+ */
+const DOMINANT = 0.6;
+
+const NOWHERE = 'International';
+
+const countryOf = (countries: readonly (readonly [string, number])[]): string | null => {
+  const located = countries.reduce((sum, [, picks]) => sum + picks, 0);
+  const first = countries[0];
+  if (first === undefined || located === 0) return null;
+  return first[1] / located >= DOMINANT ? first[0] : NOWHERE;
+};
+
+/**
+ * One group's figures. `group` is what the reader has in view and every number
+ * is counted over it; `named` is the same group read over every bookmaker, and
+ * only the words - the countries - come from there, so that narrowing the table
+ * to one book never changes what a row is called or which flag it flies.
+ */
+const statsFor = (
+  key: string,
+  label: string,
+  group: readonly Selection[],
+  named: readonly Selection[],
+): SelectionStats => {
   const singles = group.filter((sel) => sel.bet.legs.length <= 1);
   const decided = group.filter((sel) => isDecidedLeg(sel.leg));
   const won = decided.filter((sel) => sel.leg.status === 'won').length;
@@ -179,6 +237,7 @@ const statsFor = (key: string, label: string, group: readonly Selection[]): Sele
       ? 0
       : (decided.reduce((sum, sel) => sum + 1 / sel.odds, 0) / decided.length) * 100;
   const { low, high } = wilson(won, decided.length);
+  const countries = heldIn(named, (sel) => canonicalCountry(sel.leg.country, sel.leg.league));
   const swings = group.map(swingOf);
   const flatUnitsPl = swings.reduce((sum, u) => sum + u, 0);
   const swing = swings.reduce((sum, u) => sum + Math.abs(u), 0);
@@ -204,7 +263,9 @@ const statsFor = (key: string, label: string, group: readonly Selection[]): Sele
       0,
     ),
     topSwingShare: swing === 0 ? 0 : Math.max(...swings.map(Math.abs)) / swing,
-    sports: sportsIn(group),
+    sports: heldIn(group, sportOf).map(([sport]) => sport),
+    countries: countries.map(([country]) => country),
+    country: countryOf(countries),
   };
 };
 
@@ -241,11 +302,16 @@ const identityOf = (sel: Selection, dimension: LegDimension): string | null => {
   return SPORT_SCOPED.has(dimension) ? `${spelling(key)}${SCOPE}${sportOf(sel) ?? ''}` : key;
 };
 
-const statsByKey = (
+interface Bucket {
+  label: string;
+  group: Selection[];
+}
+
+const bucketsOf = (
   selections: readonly Selection[],
   dimension: LegDimension,
-): SelectionStats[] => {
-  const buckets = new Map<string, { label: string; group: Selection[] }>();
+): Map<string, Bucket> => {
+  const buckets = new Map<string, Bucket>();
   for (const sel of selections) {
     const key = legKeyOf(sel, dimension);
     const identity = identityOf(sel, dimension);
@@ -258,16 +324,67 @@ const statsByKey = (
       if (readsBetter(key, existing.label)) existing.label = key;
     }
   }
-
-  return [...buckets.entries()].map(([identity, { label, group }]) =>
-    statsFor(identity, label, group),
-  );
+  return buckets;
 };
 
+/**
+ * Where each competition is played, read over every bet: the same rule the row
+ * flies its flag by, applied per leg. A book began filing a country later than
+ * it filed the bets, so most of its older legs carry none - and a leg read
+ * before the field existed is still a leg of a competition played somewhere.
+ * Without this, asking for France answered with the handful of Ligue 1 picks
+ * that happened to be read late, not the season the row counts.
+ */
+const placesOf = (selections: readonly Selection[]): Map<string, string> => {
+  const places = new Map<string, string>();
+  for (const [identity, bucket] of bucketsOf(selections, 'league')) {
+    const country = countryOf(
+      heldIn(bucket.group, (sel) => canonicalCountry(sel.leg.country, sel.leg.league)),
+    );
+    if (country !== null) places.set(identity, country);
+  }
+  return places;
+};
+
+/** The country a pick is filed under: its own, or its competition's. */
+const placeOf = (sel: Selection, places: ReadonlyMap<string, string>): string | null =>
+  canonicalCountry(sel.leg.country, sel.leg.league) ??
+  places.get(identityOf(sel, 'league') ?? '') ??
+  null;
+
+const statsByKey = (
+  selections: readonly Selection[],
+  dimension: LegDimension,
+  vocabulary: readonly Selection[],
+): SelectionStats[] => {
+  const buckets = bucketsOf(selections, dimension);
+  const known = vocabulary === selections ? buckets : bucketsOf(vocabulary, dimension);
+
+  return [...buckets.entries()].map(([identity, own]) => {
+    const bucket = known.get(identity) ?? own;
+    return statsFor(identity, bucket.label, own.group, bucket.group);
+  });
+};
+
+/**
+ * The groups `bets` fall into. `vocabulary` is the wider set the words on the
+ * rows are read from - every bet rather than the ones the bookmaker filter
+ * leaves standing - so a competition keeps the same name and the same flag
+ * whichever book is picked, and a book that files no country for it still shows
+ * the country the other book filed.
+ */
 export const groupSelectionsBy = (
   bets: readonly Bet[],
   dimension: LegDimension,
-): SelectionStats[] => statsByKey(selectionsOf(bets), dimension);
+  vocabulary: readonly Bet[] = bets,
+): SelectionStats[] => {
+  const selections = selectionsOf(bets);
+  return statsByKey(
+    selections,
+    dimension,
+    vocabulary === bets ? selections : selectionsOf(vocabulary),
+  );
+};
 
 /**
  * The same grouping, further in: the selections left after entering every group
@@ -278,10 +395,17 @@ export const groupSelectionsWithin = (
   bets: readonly Bet[],
   within: readonly (readonly [LegDimension, string])[],
   child: LegDimension,
-): SelectionStats[] =>
-  statsByKey(
-    selectionsOf(bets).filter((sel) =>
-      within.every(([dimension, key]) => identityOf(sel, dimension) === key),
-    ),
-    child,
-  );
+  vocabulary: readonly Bet[] = bets,
+): SelectionStats[] => {
+  const places = within.some(([dimension]) => dimension === 'country')
+    ? placesOf(selectionsOf(vocabulary))
+    : new Map<string, string>();
+  const entered = (bet: readonly Bet[]): Selection[] =>
+    selectionsOf(bet).filter((sel) =>
+      within.every(([dimension, key]) =>
+        dimension === 'country' ? placeOf(sel, places) === key : identityOf(sel, dimension) === key,
+      ),
+    );
+  const selections = entered(bets);
+  return statsByKey(selections, child, vocabulary === bets ? selections : entered(vocabulary));
+};

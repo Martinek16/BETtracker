@@ -90,6 +90,38 @@ describe('grouping by team', () => {
     expect(groups.map((g) => g.sports)).toEqual([['Football'], ['Handball']]);
   });
 
+  it('says how much of a league is the one country it mostly is', () => {
+    // Serie A is Italy's; the Brazilian league sharing its name does not make
+    // the row international.
+    const italy = (event: string) =>
+      makeLeg({ sport: 'Football', league: 'Serie A', country: 'Italy', event });
+    const bets = [
+      makeBet({
+        legs: [
+          italy('Inter - Milan'),
+          italy('Roma - Lazio'),
+          italy('Napoli - Juventus'),
+          makeLeg({
+            sport: 'Football',
+            league: 'Serie A',
+            country: 'Brazil',
+            event: 'Flamengo - Santos',
+          }),
+        ],
+      }),
+    ];
+    const [group] = groupSelectionsBy(bets, 'league');
+    expect(group?.countries).toEqual(['Italy', 'Brazil']);
+    expect(group?.country).toBe('Italy');
+  });
+
+  it('says nothing of a country where a circuit visits twenty of them', () => {
+    const stop = (country: string) =>
+      makeLeg({ sport: 'Tennis', league: 'ATP', country, event: `${country} Open` });
+    const bets = [makeBet({ legs: [stop('France'), stop('Italy'), stop('Spain')] })];
+    expect(groupSelectionsBy(bets, 'league')[0]?.country).toBe('International');
+  });
+
   it('merges the same side written with and without its club word', () => {
     const bets = [
       makeBet({
@@ -122,6 +154,38 @@ describe('grouping by team', () => {
   });
 });
 
+describe('one vocabulary across the books', () => {
+  // One book files the competition with a country, spelled its own way; the
+  // other files neither. Narrowing the page to the second book used to rename
+  // the row and strip its flag, which is the same competition either way.
+  const both = [
+    makeBet({
+      bookmaker: 'stake',
+      legs: [makeLeg({ sport: 'Soccer', league: 'La Liga', country: 'Spain' })],
+    }),
+    makeBet({
+      bookmaker: 'bet-at-home',
+      legs: [makeLeg({ sport: 'Football', league: 'LaLiga 2025/2026' })],
+    }),
+  ];
+
+  it('keeps a row named and flagged the same whichever book is picked', () => {
+    const all = groupSelectionsBy(both, 'league');
+    for (const book of ['stake', 'bet-at-home'] as const) {
+      const only = both.filter((bet) => bet.bookmaker === book);
+      const [group] = groupSelectionsBy(only, 'league', both);
+      expect(group?.key).toBe(all[0]?.key);
+      expect(group?.label).toBe('La Liga');
+      expect(group?.country).toBe('Spain');
+    }
+  });
+
+  it('counts only what is in view, however wide the vocabulary is', () => {
+    const only = both.filter((bet) => bet.bookmaker === 'bet-at-home');
+    expect(groupSelectionsBy(only, 'league', both)[0]?.picks).toBe(1);
+  });
+});
+
 describe('groupSelectionsWithin', () => {
   it('splits one market family back into the lines it was built from', () => {
     const bets = [
@@ -149,6 +213,67 @@ describe('groupSelectionsWithin', () => {
     const lines = groupSelectionsWithin(bets, [['marketFamily', 'Totals']], 'marketLine');
     expect(lines.map((l) => l.key)).toEqual(['Total Over']);
     expect(lines[0]?.picks).toBe(2);
+  });
+
+  it('narrows a tour to the country it was asked about, not away from it', () => {
+    const stop = (country: string, event: string) =>
+      makeLeg({ sport: 'Tennis', league: `ATP ${event} 2026`, country, event });
+    const bets = [
+      makeBet({
+        legs: [
+          stop('United Kingdom', 'London'),
+          stop('United Kingdom', 'Nottingham'),
+          stop('France', 'Paris'),
+        ],
+      }),
+    ];
+    const [group] = groupSelectionsWithin(bets, [['country', 'United Kingdom']], 'league');
+    expect(group?.label).toBe('ATP');
+    expect(group?.picks).toBe(2);
+  });
+
+  it('counts a competition whole, however few of its picks were read with a country', () => {
+    const ligue1 = (country?: string) =>
+      makeLeg({
+        sport: 'Football',
+        league: 'Ligue 1',
+        ...(country === undefined ? {} : { country }),
+      });
+    const bets = [
+      makeBet({
+        legs: [
+          ligue1('France'),
+          ligue1(),
+          ligue1(),
+          makeLeg({ sport: 'Football', league: 'Serie A', country: 'Italy' }),
+        ],
+      }),
+    ];
+    const [group] = groupSelectionsWithin(bets, [['country', 'France']], 'league');
+    expect(group?.label).toBe('Ligue 1');
+    expect(group?.picks).toBe(3);
+  });
+
+  it('never files a pick under "Unknown" while the slip still says something', () => {
+    const bets = [
+      makeBet({
+        legs: [
+          // An outright: the book files it against no tournament at all.
+          makeLeg({
+            sport: 'Ski Jumping',
+            league: null,
+            event: 'Olympic Winter Games Large Hill Men 2026',
+          }),
+          // Not even an event that names a competition: the sport is what is left.
+          makeLeg({ sport: 'Ski Jumping', league: null, event: 'Prevc - Zajc' }),
+        ],
+      }),
+    ];
+    expect(
+      groupSelectionsBy(bets, 'league')
+        .map((g) => g.label)
+        .sort(),
+    ).toEqual(['Olympic Winter Games Large Hill Men', 'Ski Jumping']);
   });
 
   it('splits one line of a family into the sports that priced it', () => {
