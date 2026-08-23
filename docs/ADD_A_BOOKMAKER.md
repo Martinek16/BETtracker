@@ -401,7 +401,14 @@ nothing to copy anywhere.
 **Cashflow and Bonuses**
 
 - [ ] Deposits and withdrawals appear, or the site genuinely has no endpoint for them
+- [ ] A deposit reads as money in and a withdrawal as money out — not the other
+      way round, and not both the same way. Sites often report a withdrawal as a
+      negative number, and nothing in the tests can catch it being passed
+      straight through
+- [ ] The balance the extension shows is the balance the bookmaker shows you,
+      to the cent
 - [ ] Free bets and bonuses appear, or the same
+- [ ] A free bet is not also sitting in the list of deposits
 
 **Open bets**
 

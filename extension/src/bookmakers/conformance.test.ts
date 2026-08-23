@@ -67,6 +67,20 @@ describe.each(CASES)('$name records', ({ name, settled, open }) => {
     expect(new Set(all.map((b) => b.betId)).size).toBe(all.length);
   });
 
+  /**
+   * A bare `2026-08-23T18:32:50` parses, sorts and charts without complaint,
+   * and files a bet placed near midnight under the wrong day for every reader
+   * outside the contributor's own timezone.
+   */
+  it('stamps a zone on every date, so midnight means the same thing everywhere', () => {
+    const zoned = /(?:Z|[+-]\d{2}:?\d{2})$/;
+    for (const bet of all) {
+      expect(bet.placedAt, `${bet.betId}: placedAt carries no timezone`).toMatch(zoned);
+      if (bet.settledAt !== null) expect(bet.settledAt).toMatch(zoned);
+      if (bet.cashedOutAt !== null) expect(bet.cashedOutAt).toMatch(zoned);
+    }
+  });
+
   it('dates every bet, and settles only what has a result', () => {
     for (const bet of all) {
       expect(Number.isNaN(Date.parse(bet.placedAt))).toBe(false);
@@ -99,11 +113,37 @@ describe.each(CASES)('$name records', ({ name, settled, open }) => {
     }
   });
 
+  /**
+   * `actualReturn` is the payout with the stake inside it, not the profit. The
+   * two are indistinguishable on a win, which is what makes reporting profit
+   * here the mistake that survives review and doubles every total. A void is
+   * where they part company: the money came back and nothing was made, so a
+   * parser reporting profit lands on zero.
+   */
   it('agrees with itself about how the bet went', () => {
     for (const bet of all) {
       if (bet.status === 'won') expect(bet.actualReturn).toBeGreaterThan(0);
       if (bet.status === 'lost') expect(bet.actualReturn).toBe(0);
       if (bet.status === 'pending') expect(bet.actualReturn).toBe(0);
+      if (bet.status === 'void') {
+        expect(
+          bet.actualReturn,
+          `${bet.betId}: a void returned the stake, so actualReturn is the stake back - reporting profit here would read 0`,
+        ).toBeCloseTo(bet.stake, 2);
+      }
+    }
+  });
+
+  /**
+   * A free bet never passed through a deposit, so a wallet counting it as money
+   * out of pocket goes short by exactly this much on every bonus slip.
+   */
+  it('keeps a bonus stake inside the stake it is part of', () => {
+    for (const bet of all) {
+      if (bet.bonusStake === undefined) continue;
+      expect(Number.isFinite(bet.bonusStake)).toBe(true);
+      expect(bet.bonusStake).toBeGreaterThanOrEqual(0);
+      expect(bet.bonusStake).toBeLessThanOrEqual(bet.stake);
     }
   });
 

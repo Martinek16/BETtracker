@@ -286,11 +286,48 @@ assumptions the totals, the graphs and the database already make.
   and all of `stake`, `odds`, `potentialReturn`, `actualReturn` finite numbers.
 - `currency` matching `/^[A-Z]{3,5}$/`. Convert nothing yourself: the rate
   engine converts on the day the bet was placed.
+- `actualReturn` is **what came back, stake included** - not the profit. 0 on a
+  loss, the payout on a win, the stake on a void, the cash-out figure on a
+  cash-out. A parser that reports profit here passes every test in the repo and
+  then doubles every result the dashboard shows.
+- `bonusStake` is the part of `stake` that came out of the bonus wallet - a free
+  bet, a promotion. Leave it off where the site does not split the two; set it
+  and the wallet stops counting a free bet as money out of pocket.
+- Every timestamp is ISO 8601 **carrying its zone**: `2026-08-23T18:32:50Z` or
+  an explicit offset. A local-time string parses without complaint and then
+  files the bet under the wrong day.
 - `won` pays more than 0; `lost` and `pending` pay exactly 0.
 - `pending` has `settledAt === null`; a settled bet has `settledAt >= placedAt`.
 - `betType: 'single'` has exactly one leg, anything else more than one.
 - Open bets are `pending`; settled bets are `won`, `lost`, `void` or
   `cashed_out`.
+
+## What the money side must satisfy
+
+`samples.ts` hands over bets and nothing else, so no test in this repo has ever
+seen a transaction, a bonus or a balance. Everything below is convention alone.
+A wrong sign here reaches the dashboard unchallenged, and these are the ones
+that get got wrong.
+
+- **`Transaction.amount` is always positive.** The direction is `kind`, never
+  the sign. Sites report a withdrawal as `-50` often enough that passing the
+  number straight through is the natural mistake - and then the wallet adds what
+  it should subtract, so the balance is out by twice the amount.
+- **A bonus is not a transaction.** Bonus money is neither paid in nor taken
+  out, and whatever part of it turned real is already inside the balance;
+  recording a grant as a deposit counts it twice and corrupts the all-time
+  result. It goes to the bonus collector instead, with `grantedAmount` as the
+  face value and `currentAmount` as what is left in the bonus wallet now.
+- **`product`** says whether the money moved through the casino or the
+  sportsbook, where the site reports it. Left off, it counts as sportsbook.
+- **Convert nothing here either.** `sourceCurrency` and `fxRate` belong to the
+  rate engine and are never written by an adapter. Report the currency the money
+  actually moved in.
+
+Because none of this is tested, step 6 of
+[docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md) is the only thing standing
+between a sign error and somebody's totals. Read the money boxes as the work,
+not as the formality.
 
 ## Where an adapter goes wrong quietly
 
