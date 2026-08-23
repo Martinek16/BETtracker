@@ -3,6 +3,7 @@ import type { Bonus, Bookmaker, Transaction } from '@betanal/shared';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { useDashboard, type BalanceRow } from '@/context/dashboard-context';
 import { findAccount } from '@/data/accounts';
+import { useUpdateNotice } from '@/data/update';
 import { cn, formatAmount, formatMoney } from '@/lib/utils';
 
 interface Row {
@@ -334,6 +335,27 @@ const ClaimableChip = (): JSX.Element | null => {
   );
 };
 
+/**
+ * A newer release, for the copy that was installed from a folder and cannot go
+ * and get one. It sits beside the balance rather than over it: nothing here is
+ * broken, and a reader mid-way through their evening owes this no answer.
+ */
+const UpdateChip = (): JSX.Element | null => {
+  const notice = useUpdateNotice();
+  if (notice === null) return null;
+
+  return (
+    <a
+      href={notice.url}
+      target="_blank"
+      rel="noreferrer"
+      className="rounded-full bg-primary/15 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-primary transition-colors hover:bg-primary/25"
+    >
+      Version {notice.version} is out
+    </a>
+  );
+};
+
 export const AppHeader = ({ bare = false }: { bare?: boolean }): JSX.Element => {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
@@ -344,6 +366,7 @@ export const AppHeader = ({ bare = false }: { bare?: boolean }): JSX.Element => 
         </span>
         {!bare && (
           <div className="flex items-center gap-4">
+            <UpdateChip />
             <ClaimableChip />
             <BalanceControl />
           </div>
