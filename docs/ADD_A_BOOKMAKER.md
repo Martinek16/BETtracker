@@ -531,9 +531,14 @@ in the diff.
 Bookmakers change their API without telling anyone. When yours does, the sync
 stops and the numbers stay frozen on the last thing they knew.
 
+You will not have to work that out from the numbers. As long as your adapter
+reads its lists through `readList`, an answer it no longer recognises is an
+error rather than an empty page, and the account card says the site has changed
+and the folder needs an update.
+
 Record a fresh HAR, sanitise it, compare it to the fixtures in your folder, fix
-what moved, and refresh the fixtures. You are the person who will notice first,
-because you are the one using it.
+what moved, and refresh the fixtures. You are still the person who will notice
+first, because you are the one using it.
 
 ## Stuck
 

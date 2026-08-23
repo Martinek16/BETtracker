@@ -27,6 +27,7 @@ import { cn, formatDateTime, formatMoney } from '@/lib/utils';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { ConnectionLabel, Stat } from '@/pages/options/parts';
 import { isReleased } from '@bookmakers/released';
+import { needsAdapterUpdate } from '@bookmakers/shape';
 
 const AccountCard = ({
   account,
@@ -95,6 +96,15 @@ const AccountCard = ({
         <ConnectionLabel meta={meta} />
         <span>{meta?.lastSyncAt == null ? 'Never updated' : formatDateTime(meta.lastSyncAt)}</span>
       </div>
+
+      {needsAdapterUpdate(meta?.lastError) && (
+        <p className="border-t border-border/60 px-4 py-2.5 text-xs text-pending">
+          {account.name} answered in a shape this version does not recognise, so the run stopped
+          rather than write a figure it had guessed at. What is on screen is what was last read, and
+          it is not being added to. The site has changed its API and {account.name} needs an adapter
+          update.
+        </p>
+      )}
 
       <div className="border-t border-border/60 px-4 py-3">
         <div className="grid grid-cols-5 gap-2">

@@ -19,6 +19,7 @@ bookmakers/
   registry.ts           <- collector 2: adapters
   catalog.ts            <- collector 3: metadata for the dashboard
   samples.ts            <- the contract every folder's samples.ts implements
+  shape.ts              <- refuses an answer the folder no longer recognises
   conformance.test.ts   <- the rules every folder is held to
   privacy.test.ts       <- proves no folder sends anything anywhere
 ```
@@ -84,6 +85,41 @@ Keep it that way.
 | `samples.ts`     | Export `samples: Samples` - the folder's own parsed bets. See `../samples.ts`.|
 | `__fixtures__/`  | At least one sanitised `.json`, so the parser has something to be proven on.|
 | `logo.png`       | Served at `logos/<id>.png` by the Vite plugin. No path to register.         |
+
+## Read every list through `readList`
+
+The one failure this project cannot otherwise see is a wrong number nobody has a
+reason to doubt. A site renames the list its bets live in; the adapter looks
+where it always looked, finds nothing, and reports a page of no bets - which is
+exactly what the end of a history looks like. The walk stops, the run reports
+success, and the totals stay frozen at whatever they last were.
+
+The fixtures cannot catch that. They are a copy of how the site answered on the
+day the folder was written, so they go on passing long after the site has moved
+on. Only the live answer knows.
+
+So the list is read through `readList` from `../shape.ts`, which throws a
+`ShapeChangedError` for an answer that is not a list at all, and for a full page
+it could not read one field out of. An **empty** list still passes, because that
+is the end of a history and every paging loop reads it that way.
+
+```ts
+const { parsed, skipped } = readList(BOOKMAKER, 'bet list', json?.bets, (item) =>
+  normalizeBet(item as RawBet, accountId),
+);
+```
+
+The error carries a marker the dashboard looks for, so the account card can say
+the site has changed and the folder needs an update, rather than lumping it in
+with a dead session. The background run leaves `lastSyncAt` where it was: the
+app says the figures are old rather than presenting stale ones as current.
+
+Two things stay outside it. A list a `parseOne` legitimately filters - money
+movements drop the pending and cancelled ones, so a page of ten of those is
+normal - would trip the "read nothing out of it" rule for a healthy answer. And
+`parseOpen`, which is handed whatever body the page fetched for its own reasons,
+means only that the bridge caught a different request. Both return nothing and
+let the next relay try.
 
 ## Mirrors
 

@@ -43,8 +43,13 @@ Long histories are read backwards, one page at a time. Open the bookmaker and
 leave the tab a moment.
 
 **Why did an account stop updating?**
-The bookmaker signed you out. Open its site again and it picks up where it
-left off.
+Usually the bookmaker signed you out. Open its site again and it picks up where
+it left off.
+
+The other reason is the site changing its API. The account card says so in as
+many words, and the extension stops rather than write a figure it had guessed
+at - so what is on screen is old, not wrong. That one needs an adapter update,
+not another visit to the site.
 
 **Is casino play counted?**
 No. Only sports bets. Casino money shows up as a smaller balance.

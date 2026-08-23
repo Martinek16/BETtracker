@@ -49,6 +49,7 @@ import {
 } from '../../sync/sync';
 import { field } from '../types';
 import type { BookmakerAdapter, Credentials, SyncMode, SyncResult } from '../types';
+import { readList } from '../shape';
 
 const BOOKMAKER: Bookmaker = 'stake';
 const GRAPHQL_PATH = '/_api/graphql';
@@ -831,27 +832,27 @@ export const normalizeBet = (raw: RawBet, accountId: AccountId): Bet | null => {
   };
 };
 
-const parseBetPage = (
+/**
+ * An empty `sportBetList` is the end of the history and the walk above reads it
+ * as one. A *missing* one used to read the same way - which is why this goes
+ * through `readList`: the two answers mean opposite things, and telling them
+ * apart is the difference between "you have no older bets" and a total that
+ * quietly stopped growing.
+ */
+export const parseBetPage = (
   data: Record<string, unknown> | null,
   accountId: AccountId,
 ): { bets: Bet[]; skipped: number } => {
-  const list = (data?.user as { sportBetList?: unknown } | undefined)?.sportBetList;
-  if (!Array.isArray(list)) return { bets: [], skipped: 0 };
-
-  const bets: Bet[] = [];
-  let skipped = 0;
-  for (const item of list) {
-    const raw = (item as { bet?: unknown } | null)?.bet;
-    try {
-      const bet = raw === null || raw === undefined ? null : normalizeBet(raw as RawBet, accountId);
-      if (bet) bets.push(bet);
-      else skipped += 1;
-    } catch (err) {
-      skipped += 1;
-      log('warn', 'stake', `skipped unparseable bet: ${(err as Error).message}`);
-    }
-  }
-  return { bets, skipped };
+  const { parsed, skipped } = readList(
+    BOOKMAKER,
+    'bet list',
+    (data?.user as { sportBetList?: unknown } | undefined)?.sportBetList,
+    (item) => {
+      const raw = (item as { bet?: unknown } | null)?.bet;
+      return raw === null || raw === undefined ? null : normalizeBet(raw as RawBet, accountId);
+    },
+  );
+  return { bets: parsed, skipped };
 };
 
 // ── Deposits / withdrawals ───────────────────────────────────────────────────
