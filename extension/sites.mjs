@@ -1,13 +1,17 @@
 /**
  * Turns every bookmaker's `bookmaker.json` into the arrays the manifest needs.
  *
- * Only the addresses a bookmaker actually serves from - `sites`, never
- * `siteRanges`. A match pattern cannot wildcard anything but the leftmost label,
- * so a numbered mirror had to be guessed years ahead: the manifest carried 133
- * invented hostnames and every reader saw them as sites this extension reads.
- * Those are asked for one at a time instead, from the popup, on the page the
- * user is standing on. What is left here is the handful of real addresses, so
- * the site somebody actually opens is watched without them clicking anything.
+ * Every address a bookmaker serves from: the named ones in `sites`, and the
+ * numbered mirrors in `siteRanges` written out one by one. A match pattern
+ * cannot wildcard anything but the leftmost label, so `bah24.si` and
+ * `stake1001.com` have to be named or they are not matched at all.
+ *
+ * They were left out once, on the argument that a manifest naming a hundred
+ * hosts reads badly. What it cost was the whole extension in the countries
+ * where the plain address is blocked: the numbered mirror is the only address
+ * those users ever reach, no content script loaded on it, and so nothing was
+ * captured, nothing synced, and no amount of reloading changed that. A popup
+ * grant covered it in theory and in practice nobody found it.
  *
  * Each folder's `capture.ts` matches the same hosts with a regex at runtime and
  * is the narrower gate; this list only has to be wide enough to let the content
@@ -36,8 +40,17 @@ export const readCatalog = () =>
 
 const catalog = readCatalog();
 
+/** `{ prefix: 'bah', from: 20, to: 45, suffixes: ['si'] }` → `https://*.bah20.si/*`, … */
+const rangeMatches = ({ prefix, from, to, suffixes }) =>
+  Array.from({ length: to - from + 1 }, (_, i) => from + i).flatMap((n) =>
+    suffixes.map((suffix) => `https://*.${prefix}${n}.${suffix}/*`),
+  );
+
 /** The addresses a supported bookmaker really serves its site from. */
-export const SITE_MATCHES = catalog.flatMap((meta) => meta.sites ?? []);
+export const SITE_MATCHES = catalog.flatMap((meta) => [
+  ...(meta.sites ?? []),
+  ...(meta.siteRanges ?? []).flatMap(rangeMatches),
+]);
 
 /** The bookmakers' own API hosts, where those sit off the site's own domain. */
 export const BOOKMAKER_API_HOSTS = catalog.flatMap((meta) => meta.apiHosts ?? []);
