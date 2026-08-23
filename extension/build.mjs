@@ -45,7 +45,7 @@ await mkdir(outdir, { recursive: true });
 const common = {
   bundle: true,
   sourcemap: watch,
-  target: ['chrome111', 'firefox121'],
+  target: ['chrome111'],
   platform: 'browser',
   logLevel: 'info',
   define: { 'process.env.NODE_ENV': '"production"', __STORE_BUILD__: String(store) },
