@@ -9,6 +9,7 @@
     "$bookmakerApiHosts",
     "https://api.frankfurter.dev/*",
     "https://api.binance.com/*",
+    "https://api.github.com/*",
     "$sites"
   ],
   "content_scripts": [
