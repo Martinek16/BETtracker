@@ -41,27 +41,23 @@ const QUESTIONS: readonly { question: string; answer: string }[] = [
   {
     question: 'Why is an old bet missing?',
     answer:
-      'Your history is read backwards a page at a time, so a long one takes a few visits to come in fully. Open the bookmaker and leave the tab a moment.',
+      'History is read backwards a page at a time. Open the bookmaker and leave the tab a moment.',
   },
   {
     question: 'Why does an account stop updating?',
-    answer:
-      'The bookmaker signs you out after a while. Open its site again and the next check picks up where it left off.',
+    answer: 'The bookmaker signed you out. Open its site again and it carries on.',
   },
   {
     question: 'Can I track two accounts at one bookmaker?',
-    answer:
-      'Yes. Each login gets its own card under Accounts, and can be named or hidden on its own.',
+    answer: 'Yes. Each login gets its own card under Accounts.',
   },
   {
     question: 'Is casino play counted?',
-    answer:
-      'No. Only sports bets are records; money staked in a casino shows up merely as a smaller balance.',
+    answer: 'No. Only sports bets. Casino money shows up as a smaller balance.',
   },
   {
     question: 'How do I keep a copy?',
-    answer:
-      'Settings, Your data, Save. It writes one file of everything stored here - a copy for you, which cannot be loaded back in.',
+    answer: 'Settings, Your data, Save. One file of everything stored here.',
   },
 ];
 
@@ -133,51 +129,34 @@ export const AboutPage = (): JSX.Element => (
       <div className="flex flex-col gap-4 lg:col-span-2">
         <Section title="What this is">
           <Prose>
-            A private record of your own betting: every bookmaker you play at added up in one place
-            - what you won and lost, how often you were right, and which sports your money comes
-            from.
+            Your betting accounts added up in one place: what you won and lost, and where it came
+            from. A bookmaker only shows today's balance and the last few pages.
           </Prose>
-          <Prose>
-            A bookmaker shows you today's balance and a list going back a few pages, one account at
-            a time. Whether you are up or down over a year has no answer on screen. This gives it.
-          </Prose>
-          <Prose>
-            It looks backwards, never forwards. No tips, no predictions - it reports what already
-            happened and leaves what to do about it to you.
-          </Prose>
+          <Prose>It looks backwards, never forwards. No tips, no predictions.</Prose>
         </Section>
 
         <Section title="How it works">
           <Note icon={Eye}>
-            While you are signed in at a bookmaker, it reads your bets, payments and bonuses off
-            your account pages. It never signs in and never places a bet.
+            While you are signed in, it reads your bets and payments off your own account pages. It
+            never signs in and never places a bet.
           </Note>
           <Note icon={RefreshCw}>
-            It looks again every few minutes and picks up where it left off, so a long history fills
-            in over a few visits.
+            It picks up where it left off, so a long history fills in over a few visits.
           </Note>
-          <Note icon={Calculator}>
-            Every figure is counted from those records. A total that looks wrong means a record is
-            missing, never that the app guessed.
-          </Note>
+          <Note icon={Calculator}>Every figure is counted from those records, never guessed.</Note>
         </Section>
 
         <Section title="Your data">
           <Prose>
-            Stored: your bets - date, sport, teams, pick, odds, stake and result - plus deposits and
-            withdrawals, the bonuses your account was granted, and these settings.
+            Stored: bets, deposits, withdrawals, bonuses, these settings. Not stored: passwords,
+            card details, casino play.
           </Prose>
           <Prose>
-            Not stored: passwords, card details, casino play. It reads pages you already opened, so
-            it never sees a login.
-          </Prose>
-          <Prose>
-            All of it stays in this browser. No account, no server, nothing uploaded or sold - the
-            only address it calls itself is a public exchange-rate feed.
+            All of it stays in this browser. No account, no server, nothing uploaded or sold.
           </Prose>
           <Note icon={Lock}>
-            Clearing site data, uninstalling or switching computer starts you from nothing. The
-            backup under Settings, Your data is the only copy that survives.
+            Uninstalling or clearing site data starts you from nothing. The backup under Settings,
+            Your data is the only copy that survives.
           </Note>
         </Section>
 
@@ -213,17 +192,15 @@ export const AboutPage = (): JSX.Element => (
               <span className="ml-auto text-xs text-muted-foreground">{account.site}</span>
             </div>
           ))}
-          <Note icon={Globe}>
-            Their other addresses - country domains and numbered mirrors - work the same way.
-          </Note>
+          <Note icon={Globe}>Their country domains and numbered mirrors work the same way.</Note>
         </Section>
 
         <Questions />
 
         <Section title="Keep in mind">
           <Note icon={ArrowLeftRight}>
-            Other currencies are converted with daily reference rates, so totals can differ slightly
-            from what the bookmaker shows.
+            Other currencies use daily reference rates, so totals can differ slightly from the
+            bookmaker's.
           </Note>
           <Note icon={TriangleAlert}>
             For adults only. If gambling stops being something you control, your national helpline
