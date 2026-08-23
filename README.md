@@ -4,7 +4,7 @@
 
 <h1>BETtracker</h1>
 
-<h3>Every bookmaker you play at, in one view. On your own computer.</h3>
+<h3>Every account you play at, in one view. On your own computer.</h3>
 
 <p>
   <a href="https://microsoftedge.microsoft.com/addons/detail/bettracker/dofgloogkcigmpnkmoaefnejeffdbcmi">
@@ -40,6 +40,15 @@ from as many accounts as you play at, added up together across currencies.
 It lives in your browser and writes to your own disk. No account to make, no
 server, no subscription, nothing to switch on.
 
+**It reads two bookmakers today: bet-at-home and Stake.** Not a shortlist of
+the big names - the two the author plays at. A site is written from a recording
+of a real signed-in session there, so the list grows by who turns up, not by
+who is popular. Yours is quite possibly not read yet, and there is no partial
+support for anything else: it is these two or nothing. Adding one is a real
+thing you can do - [how, in detail](#add-your-bookmaker) - and it needs someone
+with an account at that site and a history worth recording. Better to know that
+now than after the install.
+
 ## Install
 
 | Browser | What to do | Worth knowing |
@@ -58,13 +67,23 @@ bet. [**How it works, screen by screen**](docs/HOW_IT_WORKS.md)
 
 ## Bookmakers it can read
 
+Two. This is the whole list.
+
 | Bookmaker | Bets | Balance | Money in and out | Bonuses |
 |:--|:-:|:-:|:-:|:-:|
 | <img src="extension/src/bookmakers/bet-at-home/logo.png" width="20" align="top"> [**bet-at-home**](extension/src/bookmakers/bet-at-home/) | Yes | Yes | Yes | Yes |
 | <img src="extension/src/bookmakers/stake/logo.png" width="20" align="top"> [**Stake**](extension/src/bookmakers/stake/) | Yes | Yes | Yes | Yes |
 
 Both work on all their addresses: country domains, numbered mirrors, and
-whatever they switch to next.
+whatever they switch to next. Anywhere else, the extension knows nothing and
+says so: it does not half-read a site it was never taught.
+
+Yours missing? Three ways forward, and none of them needs you to be a
+programmer: [add it](#add-your-bookmaker),
+[ask for it](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml),
+or record your own history at that site and hand the cleaned recording to
+somebody who will write the code -
+[how that split works](docs/ADD_A_BOOKMAKER.md#two-people-one-bookmaker).
 
 ## Your data never leaves
 
@@ -86,8 +105,13 @@ No. It only reads pages you have already opened, and never sees your password.
 </details>
 
 <details>
-<summary><b>How many bookmakers can I have at once?</b></summary><br>
-As many as it can read. They are added up together, and any one of them can be renamed, hidden or deleted on its own.
+<summary><b>My bookmaker is not one of the two. What now?</b></summary><br>
+Add it, ask for it, or record your history there and let somebody else write the code. The last one needs no terminal and no programming. <a href="docs/FAQ.md">The three routes, and what each costs you</a>.
+</details>
+
+<details>
+<summary><b>How many accounts can I have at once?</b></summary><br>
+As many as you like, at either of the two sites. They are added up together, and any one of them can be renamed, hidden or deleted on its own.
 </details>
 
 <details>
