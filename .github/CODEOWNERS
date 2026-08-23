@@ -1,6 +1,8 @@
-# Every path needs the owner's review by default. Combined with branch
-# protection on main, this is what actually keeps the core closed — the CI
-# guard only reports, a required review is what blocks.
+# Every path puts the owner on the review, so nothing lands unseen. What keeps
+# the core closed is write access, which nobody else has: an outside change
+# arrives from a fork and cannot merge itself. Review is not a required check —
+# requiring it on a repository with one maintainer only blocks that maintainer,
+# and the admin override it forces skips the CI gate along with it.
 *                                       @Martinek16
 
 # Named again so it is obvious in the review UI why these files are watched:
