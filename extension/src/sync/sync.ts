@@ -239,8 +239,13 @@ export const runCursorSync = async (
   // Walk old history newest→oldest, persisting the cursor after every page so
   // an interrupted run (MV3 SW termination, token expiry) resumes here instead
   // of restarting from "now" - which is why old history previously never loaded.
-  // `full` mode restarts the backfill from scratch.
-  if (mode === 'full')
+  // `full` mode restarts the backfill - but only one that believes it finished.
+  // A walk still in progress is resumed instead: Chromium stops the worker after
+  // minutes and a long history takes more than one lifetime to read, so an
+  // account made to start over on every attempt re-reads the same recent pages
+  // for ever and never reaches its oldest bets.
+  const started = await getBackfillState(cfg.account);
+  if (mode === 'full' && started.historyComplete)
     await setBackfillState(cfg.account, { oldestFetchedAt: null, historyComplete: false });
   let { oldestFetchedAt, historyComplete } = await getBackfillState(cfg.account);
 

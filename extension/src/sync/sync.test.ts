@@ -85,6 +85,32 @@ describe('runCursorSync account scope', () => {
     const cursor = String(fetchPage.mock.calls[0]?.[0]);
     expect(Date.parse(`${cursor}Z`)).toBeGreaterThan(Date.now() - 60_000);
   });
+
+  it('resumes a half-read history rather than restarting it on a full run', async () => {
+    // Chromium stops the worker after minutes and a long history takes longer
+    // than that, so a full run that began again every time would re-read the
+    // same recent pages for ever and never reach the oldest bets.
+    vi.mocked(shared.getBackfillState).mockResolvedValue({
+      oldestFetchedAt: '2020-01-01T00:00:00Z',
+      historyComplete: false,
+      betOffset: 0,
+      moneyComplete: false,
+      openBetsSeen: false,
+    });
+    vi.mocked(shared.getLatestPlacedAt).mockResolvedValue(null);
+    vi.mocked(shared.getPendingBets).mockResolvedValue([]);
+    vi.mocked(shared.putBets).mockResolvedValue(0);
+    vi.mocked(shared.setBackfillState).mockResolvedValue(undefined);
+
+    const fetchPage = vi.fn(async (_placedBefore: string) => ({
+      bets: [],
+      skipped: 0,
+      nextCursor: null,
+    }));
+    await runCursorSync({ account, fetchPage }, 'full', () => {});
+
+    expect(fetchPage.mock.calls[0]?.[0]).toBe('2020-01-01T00:00:00');
+  });
 });
 
 describe('syncTransactions window walk', () => {
