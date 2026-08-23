@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import {
   compareGroupKeys,
   formatOdds,
@@ -15,6 +15,7 @@ import {
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { ProfitBar } from '@/components/dashboard/profit-bar';
 import { useDashboard } from '@/context/dashboard-context';
+import { heldBack, useRankFloor } from '@/lib/held-back';
 import { usePersistedState } from '@/lib/persisted-state';
 import { cn, formatDateTime, formatMoney, formatPercent, symbolOf } from '@/lib/utils';
 
@@ -22,7 +23,7 @@ type SortKey =
   | 'key'
   | 'bets'
   | 'staked'
-  | 'averageOdds'
+  | 'medianOdds'
   | 'winRate'
   | 'roi'
   | 'unitsPl'
@@ -33,7 +34,7 @@ const SORT_KEYS: readonly SortKey[] = [
   'key',
   'bets',
   'staked',
-  'averageOdds',
+  'medianOdds',
   'winRate',
   'roi',
   'unitsPl',
@@ -66,12 +67,12 @@ const COL = {
   group: 'w-44 min-w-0 shrink-0',
   bar: 'hidden flex-1 lg:block',
   /* The column takes its share of the slack, the bar sits centred inside it -
-     filling the column edge to edge would park it against Staked and read as
+     filling the column edge to edge would park it against Slips and read as
      that column's own. */
   barInner: 'mx-auto w-full max-w-[22rem]',
   staked: 'w-20 shrink-0',
   count: 'w-14 shrink-0',
-  odds: 'w-14 shrink-0',
+  odds: 'w-20 shrink-0',
   wr: 'w-12 shrink-0',
   roi: 'w-14 shrink-0',
   units: 'w-16 shrink-0',
@@ -165,15 +166,19 @@ const GroupRow = ({
   recent,
   strip,
   showOdds,
+  thin,
   dimension,
   currency,
 }: {
   group: RankedGroup;
-  rank: number;
+  /** Null on a held-back row, which is not ranked with the rest. */
+  rank: number | null;
   maxAbs: number;
   recent: readonly Bet[];
   strip: StripView;
   showOdds: boolean;
+  /** Too few slips to be ranked with the rest, so the row is held back. */
+  thin: boolean;
   dimension: SlipDimension;
   currency: string;
 }): JSX.Element => {
@@ -183,14 +188,21 @@ const GroupRow = ({
   const label = dimension === 'stakeBand' ? `${group.key} ${symbolOf(currency)}` : group.key;
 
   return (
-    <li className="rounded-md border border-border/60 bg-card/40">
+    <li
+      className={cn(
+        'rounded-md border border-border/60 bg-card/40',
+        // Held back rather than hidden: it sits under the line that says why, and
+        // the plainer card keeps the ranked rows the ones the eye lands on.
+        thin && 'border-dashed bg-transparent',
+      )}
+    >
       <div className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
         {/* The gutter the header reserves, so the columns line up under it. */}
         <span className={COL.lead} />
         <span
           className={cn(COL.rank, 'text-[10px] font-medium tabular-nums text-muted-foreground')}
         >
-          {rank}.
+          {rank === null ? '' : `${rank}.`}
         </span>
         <span className={cn(COL.group, 'flex min-w-0 items-center gap-2')}>
           <span className="truncate text-sm font-medium" title={label}>
@@ -207,11 +219,6 @@ const GroupRow = ({
           </div>
         </div>
         <span
-          className={cn(COL.staked, 'text-center text-[11px] tabular-nums text-muted-foreground')}
-        >
-          {formatMoney(group.staked, currency)}
-        </span>
-        <span
           className={cn(COL.count, 'text-center text-[11px] tabular-nums text-muted-foreground')}
         >
           {group.bets}
@@ -220,11 +227,16 @@ const GroupRow = ({
           <span
             className={cn(COL.odds, 'text-center text-[11px] tabular-nums text-muted-foreground')}
           >
-            @{formatOdds(group.averageOdds, oddsFormat)}
+            @{formatOdds(group.medianOdds, oddsFormat)}
           </span>
         ) : null}
         <span className={cn(COL.wr, 'text-center text-[11px] tabular-nums text-muted-foreground')}>
           {formatPercent(group.winRate, 0)}
+        </span>
+        <span
+          className={cn(COL.staked, 'text-center text-[11px] tabular-nums text-muted-foreground')}
+        >
+          {formatMoney(group.staked, currency)}
         </span>
         <span className={cn(COL.roi, 'text-center text-[11px] tabular-nums text-muted-foreground')}>
           {formatPercent(group.roi, 0)}
@@ -254,14 +266,16 @@ export const SlipBreakdown = ({
   query,
   loading = false,
 }: SlipBreakdownProps): JSX.Element => {
-  // Every tab opens the same way, most-backed first, so moving between them does
-  // not also change what the list is saying. Any other order is a click away.
+  // Every tab opens in its own order - single before combo, small stake before
+  // large - because these groups are a sequence rather than a ranking, and a
+  // sequence read out of order says nothing about where the money goes. Any
+  // other order is a click on a heading away.
   const [sortKey, setSortKey] = usePersistedState<SortKey>(
     `analytics.slips.${dimension}.sortKey`,
-    'bets',
+    'key',
     SORT_KEYS,
   );
-  const [desc, setDesc] = usePersistedState(`analytics.slips.${dimension}.desc`, true);
+  const [desc, setDesc] = usePersistedState(`analytics.slips.${dimension}.desc`, false);
   const [strip, setStrip] = usePersistedState<StripView>(
     'analytics.slips.strip',
     'profit',
@@ -302,27 +316,48 @@ export const SlipBreakdown = ({
       .map((g) => ({ ...g, ranked: shrunkYield(g.bets, g.roi, globalYield) }));
   }, [bets, dimension]);
 
-  const groups = useMemo(() => {
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered =
-      q === '' ? allGroups : allGroups.filter((g) => g.key.toLowerCase().includes(q));
-    return [...filtered].sort((a, b) => {
-      const diff =
-        sortKey === 'key' ? compareGroupKeys(dimension, a.key, b.key) : a[sortKey] - b[sortKey];
-      // Two groups the same size are read best-first rather than in whatever
-      // order the grouping happened to build them, and the shrunk yield is what
-      // "best" means here - a lucky single slip does not head the tie.
-      if (diff === 0) return b.ranked - a.ranked;
-      return desc ? -diff : diff;
-    });
-  }, [allGroups, query, sortKey, desc, dimension]);
+    return q === '' ? allGroups : allGroups.filter((g) => g.key.toLowerCase().includes(q));
+  }, [allGroups, query]);
+
+  // Sorting by size is exempt: the reader asked for the small ones there, and by
+  // name the sequence is the whole point.
+  const thin = useRankFloor(filtered.length, sortKey === 'bets' || sortKey === 'key');
+
+  const groups = useMemo(
+    () =>
+      [...filtered].sort((a, b) => {
+        // A group too small to have proved anything sinks below the ones that
+        // have, whichever figure the table is sorted on. It stays on screen -
+        // hiding it would lose slips the totals above still count.
+        if (thin !== 0) {
+          const rank = Number(b.bets >= thin) - Number(a.bets >= thin);
+          if (rank !== 0) return rank;
+        }
+        const diff =
+          sortKey === 'key' ? compareGroupKeys(dimension, a.key, b.key) : a[sortKey] - b[sortKey];
+        // Two groups the same size are read best-first rather than in whatever
+        // order the grouping happened to build them, and the shrunk yield is what
+        // "best" means here - a lucky single slip does not head the tie.
+        if (diff === 0) return b.ranked - a.ranked;
+        return desc ? -diff : diff;
+      }),
+    [filtered, sortKey, desc, dimension, thin],
+  );
+
+  const shown = heldBack(groups, (g) => g.bets, thin);
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (allGroups.length === 0) {
     return <p className="text-sm text-muted-foreground">No data for this dimension.</p>;
   }
 
-  const maxAbs = Math.max(...allGroups.map((g) => Math.abs(g.profit)), 1);
+  // Read over the ranked rows, so the longest bar is the biggest result the
+  // reader can act on rather than one lucky slip flattening the rest.
+  const ranked = thin === 0 ? allGroups : allGroups.filter((g) => g.bets >= thin);
+  const scale = ranked.length > 0 ? ranked : allGroups;
+  const maxAbs = Math.max(...scale.map((g) => Math.abs(g.profit)), 1);
 
   // Clicking a column sorts by it; clicking the active column flips direction.
   const onSort = (key: SortKey): void => {
@@ -362,13 +397,6 @@ export const SlipBreakdown = ({
           {strip === 'profit' ? 'Loss / profit' : `Last ${RECENT} results`}
         </button>
         <SortHeaderCell
-          label="Staked"
-          sortKey="staked"
-          numeric
-          widthClass={COL.staked}
-          {...header('staked')}
-        />
-        <SortHeaderCell
           label="Slips"
           sortKey="bets"
           numeric
@@ -377,11 +405,11 @@ export const SlipBreakdown = ({
         />
         {showOdds ? (
           <SortHeaderCell
-            label="Odds"
-            sortKey="averageOdds"
+            label="Typical odds"
+            sortKey="medianOdds"
             numeric
             widthClass={COL.odds}
-            {...header('averageOdds')}
+            {...header('medianOdds')}
           />
         ) : null}
         <SortHeaderCell
@@ -390,6 +418,15 @@ export const SlipBreakdown = ({
           numeric
           widthClass={COL.wr}
           {...header('winRate')}
+        />
+        {/* Between what came back as a share of the stake and the money itself:
+            the stake is what both of those are measured against. */}
+        <SortHeaderCell
+          label="Staked"
+          sortKey="staked"
+          numeric
+          widthClass={COL.staked}
+          {...header('staked')}
         />
         <SortHeaderCell
           label="Return"
@@ -420,18 +457,30 @@ export const SlipBreakdown = ({
         <p className="px-3 py-2 text-sm text-muted-foreground">No groups match “{query}”.</p>
       ) : (
         <ul className="scroll-area min-h-0 flex-1 space-y-1.5 overflow-y-scroll">
-          {groups.map((group, i) => (
-            <GroupRow
-              key={group.key}
-              group={group}
-              rank={i + 1}
-              maxAbs={maxAbs}
-              recent={recentByKey.get(group.key) ?? []}
-              strip={strip}
-              showOdds={showOdds}
-              dimension={dimension}
-              currency={currency}
-            />
+          {shown.map(({ row: group, rank, small, opens }) => (
+            <Fragment key={group.key}>
+              {/* Where the ranked table ends and the rest begins, said in words:
+                  a row below this line is not a worse result, it is a row with
+                  too few slips to be one. */}
+              {opens ? (
+                <li className="flex items-center gap-2 px-3 pb-0.5 pt-3 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <span className="h-px w-4 bg-border" />
+                  <span className="shrink-0">Under {thin} slips</span>
+                  <span className="h-px flex-1 bg-border" />
+                </li>
+              ) : null}
+              <GroupRow
+                group={group}
+                rank={rank}
+                maxAbs={maxAbs}
+                recent={recentByKey.get(group.key) ?? []}
+                strip={strip}
+                showOdds={showOdds}
+                thin={small}
+                dimension={dimension}
+                currency={currency}
+              />
+            </Fragment>
           ))}
         </ul>
       )}
