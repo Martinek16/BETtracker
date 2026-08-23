@@ -131,8 +131,9 @@ that stop updating, what your bookmaker may think of it.
 
 # Add your bookmaker
 
-Missing yours? Add it yourself, in a few minutes. An AI coding tool - Claude
-Code, Cursor or similar - writes the code. You need an account at that
+Missing yours? Add it yourself. An AI coding tool - Claude Code, Cursor or
+similar - writes the code, so the typing is not the work; set aside an
+afternoon anyway, because the rest of it is. You need an account at that
 bookmaker, and a terminal:
 
 ```bash
@@ -146,22 +147,38 @@ pnpm add-bookmaker
 Nothing to fill in. The last line asks which bookmaker you are adding, then
 runs the rest of it:
 
-1. **You** record your bet history. BETtracker's own popup does it - **Record
-   this site**, click through your account, **Save recording**. Without it,
-   DevTools does the same: F12, Network tab, export the log with sensitive
-   data.
+1. **You** record your bet history - the slow part, and the part that decides
+   everything. BETtracker's own popup does it: **Record this site**, click
+   through your account, **Save recording**. Without it, DevTools does the
+   same: F12, Network tab, export the log with sensitive data. Page back far
+   enough to catch a win, a loss, a void, a cash-out and an accumulator;
+   whatever the recording never shows, the code gets wrong in silence.
 2. **The tool** strips your tokens out of that recording, cuts out the name and
    account number you gave it when it asked, writes the folder, runs the tests
    and builds.
-3. **You** load the extension and check the figures against the site. It lists
-   what the new bookmaker has proved and what is still untested, under
-   Options → Accounts → Add a bookmaker.
+3. **You** load the extension and check the figures against the site, screen by
+   screen. It lists what the new bookmaker has proved and what is still
+   untested, under Options → Accounts → Add a bookmaker - but a green line only
+   says a figure arrived, never that it is the right one.
 
 Signing in and saying whether the numbers are right are yours; nobody else can
 do either. It all goes into one folder, and nothing else in the project
 changes.
 
-[**Every step in detail**](docs/ADD_A_BOOKMAKER.md)
+## Two people, one bookmaker
+
+Steps 1 and 3 need an account at the site. Step 2 does not, and it is the only
+step that needs a terminal at all. So they can be two people.
+
+If you play somewhere the extension does not read but you have no interest in
+writing code, do step 1 and stop: record your history, run the one command that
+cleans the file, and attach the cleaned copy to a request. Somebody who has
+never had an account there can write the adapter from it. Come back for step 3
+when they have - nobody else can do it, and an adapter nobody checked gets
+merged marked untested, which on a money figure means "may be quietly wrong".
+
+[**Every step in detail**](docs/ADD_A_BOOKMAKER.md) &nbsp;·&nbsp;
+[**How the split works**](docs/ADD_A_BOOKMAKER.md#two-people-one-bookmaker)
 
 ## Other ways to help
 
@@ -169,7 +186,11 @@ changes.
   Fix the folder you use.
 - **No account at the site you want?**
   [Ask for it](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml)
-  - somebody who plays there may pick it up.
+  - somebody who plays there may pick it up. Or watch that same list for a
+  request with a cleaned recording attached and write the adapter from it,
+  which needs no account at all.
+- **An account, but no interest in code?** Record your history there and attach
+  the cleaned recording to a request. That is the half nobody else can do.
 - **A number looks wrong?** Open an
   [issue](https://github.com/Martinek16/BETtracker/issues/new?template=bug.yml).
   Wrong numbers are the only real failure here.

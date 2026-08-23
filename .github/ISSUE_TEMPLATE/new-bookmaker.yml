@@ -1,18 +1,24 @@
 name: Request a bookmaker
-description: Ask for a betting site to be supported, or claim one to work on yourself
+description: Ask for a betting site to be supported, offer a recording of one, or claim one to work on
 title: 'bookmaker: '
 labels: ['bookmaker', 'help wanted']
 body:
   - type: markdown
     attributes:
       value: |
-        Two things worth knowing before you fill this in:
+        Two jobs go into a bookmaker, and they can belong to two people.
+        **Someone with an account** records their own bet history there;
+        **someone with a checkout** writes the code from that recording, with no
+        account at the site at all. Either half on its own is worth opening this
+        for.
 
-        - **Nobody can add a site they do not have an account with.** Support is
-          written from a recording of a real signed-in session, so a request is
-          only useful if you or someone else is willing to capture one.
-        - **Never attach a HAR file to an issue.** It contains your live session
-          tokens. Issues are public and permanent.
+        - **A request with no recording is a note in a list.** Honest about what
+          it is: nothing happens until somebody who plays there turns up. Fill
+          it in anyway - that is how they find out you are waiting.
+        - **Never attach a raw HAR.** It carries your live session tokens, your
+          name and your account number, and an issue is public and permanent.
+          The `.sanitized.har` that `pnpm sanitize-har` writes is the one to
+          attach. Read it before you do; the cleaner is a net, not a guarantee.
 
   - type: input
     id: name
@@ -31,21 +37,67 @@ body:
     validations:
       required: true
 
-  - type: checkboxes
-    id: account
+  - type: dropdown
+    id: role
     attributes:
-      label: Do you have an account there?
+      label: Which half are you
       options:
-        - label: Yes, and I can capture a recording of my own bet history
-        - label: Yes, but I would rather someone else did the work
-        - label: No, I am only asking
+        - I have an account there and can record my history
+        - I have an account there but would rather someone else did the work
+        - I have no account there, but I will write the code from a recording
+        - Neither - I am only asking for the site
+    validations:
+      required: true
 
   - type: checkboxes
-    id: doing
+    id: recording
     attributes:
-      label: Are you writing it?
+      label: The recording
+      description: >
+        Skip this whole section if you have no account there. Everything in it
+        comes out of
+        [docs/ADD_A_BOOKMAKER.md](https://github.com/Martinek16/BETtracker/blob/main/docs/ADD_A_BOOKMAKER.md),
+        steps 1 and 2.
       options:
-        - label: I intend to open a pull request for this myself
+        - label: I have attached a `.sanitized.har`, not a raw one
+        - label: I opened the sanitised file and searched it for my own name and account number
+        - label: I paged back through several pages of settled bets, not just the first
+        - label: I opened my open bets, my balance, and my deposits and withdrawals
+        - label: I opened bonuses or free bets, or the site has none
+
+  - type: checkboxes
+    id: kinds
+    attributes:
+      label: What kinds of bet the recording actually contains
+      description: >
+        Tick only what is really in there. A missing kind gets the adapter
+        marked untested, which is fine. A kind ticked that is not in the
+        recording gets it written against a guess and quietly wrong, which is
+        the one failure this project cannot catch by itself.
+      options:
+        - label: A bet that won
+        - label: A bet that lost
+        - label: A void or cancelled bet
+        - label: An accumulator, with its legs visible
+        - label: A cashed-out bet
+        - label: A free bet or bonus stake
+        - label: A deposit and a withdrawal
+
+  - type: dropdown
+    id: verify
+    attributes:
+      label: Can you check the figures once it is written
+      description: >
+        Only somebody with an account there can say whether the numbers on
+        screen match the bookmaker's own pages. Tests cannot: an adapter can
+        parse every field cleanly and be wrong about all of them. An answer of
+        no is fine and changes only how the result is labelled.
+      options:
+        - Yes, load a build and check my own account against the site
+        - No
+        - Not applicable - I have no account there
+    validations:
+      required: true
 
   - type: textarea
     id: notes
@@ -53,7 +105,8 @@ body:
       label: Anything unusual about the site
       description: >
         Optional. Does it renumber its domain? Is the money history on a
-        different site than the bets? Does it need a phone confirmation to sign
+        different site than the bets? Does it draw your history inside an
+        iframe or over a WebSocket? Does it need a phone confirmation to sign
         in? These are the things that decide how much work it is.
     validations:
       required: false
