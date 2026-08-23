@@ -1,25 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Hourglass, PlugZap, X } from 'lucide-react';
-import type { Bonus, Bookmaker, Transaction } from '@betanal/shared';
+import { PlugZap, X } from 'lucide-react';
+import type { Bookmaker, Transaction } from '@betanal/shared';
 import { CATALOG, type BookmakerMeta } from '@bookmakers/catalog';
 import { isReleased } from '@bookmakers/released';
 import { AccountIcon } from '@/components/dashboard/account-icon';
-import {
-  getAllSyncMeta,
-  getBetCounts,
-  getSettings,
-  loadBonuses,
-  loadTransactions,
-} from '@/data/source';
+import { getAllSyncMeta, getBetCounts, getSettings, loadTransactions } from '@/data/source';
 
 /** How much each account held on the last visit, so arrivals can be counted. */
 const SEEN_COUNTS_KEY = 'betanal:seen-counts';
 /** Which bookmakers the build could read on the last visit, so a new one is news. */
 const SEEN_BOOKMAKERS_KEY = 'betanal:seen-bookmakers';
-/** The day the expiry warning last fired, so a slow bonus nags once, not hourly. */
-const EXPIRY_DAY_KEY = 'betanal:expiry-day';
-/** How close to its end a bonus has to be before it is worth interrupting for. */
-const EXPIRY_WARN_DAYS = 3;
 const VISIBLE_MS = 6000;
 
 /**
@@ -232,50 +222,6 @@ export const NewBookmakerToast = (): JSX.Element | null => {
         </Toast>
       ))}
     </>
-  );
-};
-
-/** A grant still carrying a balance whose own end date is close. */
-const expiringSoon = (bonus: Bonus): boolean => {
-  if (bonus.status !== 'active' || bonus.expiresAt === null || bonus.currentAmount <= 0)
-    return false;
-  const left = Date.parse(bonus.expiresAt) - Date.now();
-  return left > 0 && left <= EXPIRY_WARN_DAYS * 86_400_000;
-};
-
-/** States the expiry while it still matters to the figures, once a day at most. */
-export const BonusExpiryToast = (): JSX.Element | null => {
-  const [soon, setSoon] = useState<Bonus[]>([]);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    void Promise.all([loadBonuses(), getSettings()]).then(([bonuses, settings]) => {
-      if (!settings.expiryAlerts) return;
-      const today = new Date().toISOString().slice(0, 10);
-      if (localStorage.getItem(EXPIRY_DAY_KEY) === today) return;
-      const due = bonuses.filter(expiringSoon);
-      if (due.length === 0) return;
-      try {
-        localStorage.setItem(EXPIRY_DAY_KEY, today);
-      } catch {
-        /* private mode: the warning simply repeats next visit */
-      }
-      setSoon(due);
-      timer = setTimeout(() => setSoon([]), VISIBLE_MS);
-    });
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (soon.length === 0) return null;
-  const only = soon.length === 1 ? soon[0] : undefined;
-
-  return (
-    <Toast
-      icon={<Hourglass size={15} strokeWidth={1.75} className="text-primary" />}
-      title={only === undefined ? `${soon.length} bonuses expire soon` : 'A bonus expires soon'}
-    >
-      {only === undefined ? 'Open Bonuses to see which.' : only.name}
-    </Toast>
   );
 };
 

@@ -24,14 +24,14 @@ const version = (): string =>
     : chrome.runtime.getManifest().version;
 
 const Prose = ({ children }: { children: string }): JSX.Element => (
-  <p className="border-b border-border/60 py-3 text-sm leading-relaxed text-muted-foreground last:border-0">
+  <p className="border-b border-border/60 py-2 text-sm leading-relaxed text-muted-foreground last:border-0">
     {children}
   </p>
 );
 
 /** A footnote or caveat: smaller than body text, and marked by what it is about. */
 const Note = ({ icon: Icon, children }: { icon: LucideIcon; children: string }): JSX.Element => (
-  <div className="flex items-start gap-2.5 border-b border-border/60 py-2.5 last:border-0">
+  <div className="flex items-start gap-2.5 border-b border-border/60 py-2 last:border-0">
     <Icon size={13} className="mt-0.5 shrink-0 text-muted-foreground" />
     <p className="text-xs leading-relaxed text-muted-foreground">{children}</p>
   </div>
@@ -83,7 +83,7 @@ const Questions = (): JSX.Element => {
               type="button"
               onClick={() => setOpen(isOpen ? null : question)}
               aria-expanded={isOpen}
-              className="flex w-full items-center gap-2 py-2.5 text-left"
+              className="flex w-full items-center gap-2 py-2 text-left"
             >
               <ChevronRight
                 aria-hidden
@@ -206,7 +206,7 @@ export const AboutPage = (): JSX.Element => (
           {ACCOUNTS.map((account) => (
             <div
               key={account.id}
-              className="flex items-center gap-3 border-b border-border/60 py-2.5 text-sm last:border-0"
+              className="flex items-center gap-3 border-b border-border/60 py-2 text-sm last:border-0"
             >
               <AccountIcon bookmaker={account.id} className="h-5 w-5" />
               <span className="font-medium text-foreground">{account.name}</span>
