@@ -15,6 +15,13 @@ describe('bet-at-home adapter', () => {
     expect(page.nextCursor).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
+  it('reads where a competition is played off the venue', () => {
+    // The field the sport tree would hold it in arrives empty on every bet.
+    const countries = page.bets.flatMap((b) => b.legs.map((l) => l.country));
+    expect(countries).toContain('England');
+    expect(countries.every((c) => c !== undefined && c !== '')).toBe(true);
+  });
+
   it('maps single and accumulator bet types', () => {
     expect(page.bets.some((b) => b.betType === 'single')).toBe(true);
     const acc = page.bets.find((b) => b.betType === 'accumulator');

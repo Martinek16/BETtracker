@@ -67,6 +67,12 @@ export type BetType = 'single' | 'accumulator' | 'system';
 export interface BetLeg {
   sport: string | null;
   league: string | null;
+  /**
+   * Where the competition is played - "England", "Italy", or the book's word for
+   * one that belongs to no country ("International"). Absent on records read
+   * before it was stored.
+   */
+  country?: string;
   /** "Home vs Away" or a standalone event name. */
   event: string | null;
   /** Market type, e.g. "1X2", "Over/Under", "Match bet". */

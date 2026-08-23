@@ -712,9 +712,13 @@ const normalizeLeg = (raw: RawOutcome): BetLeg => {
   const tournament = fixture?.tournament ?? null;
   const startTime = toStringOrNull(fixture?.data?.startTime ?? null);
   const eventId = toStringOrNull(fixture?.id ?? null);
+  // The category a tournament sits under is where it is played: the Premier
+  // League under England, a major under International.
+  const country = toStringOrNull(tournament?.category?.name ?? null);
   return {
     sport: toStringOrNull(tournament?.category?.sport?.name ?? null),
     league: toStringOrNull(tournament?.name ?? null),
+    ...(country === null ? {} : { country }),
     event: toStringOrNull(fixture?.name ?? null),
     marketType: toStringOrNull(raw.market?.name ?? null),
     selection: toStringOrNull(raw.outcome?.name ?? null),

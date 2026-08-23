@@ -77,6 +77,13 @@ interface RawSelection {
   priceValue?: number | string | null;
   betBuilderOdds?: number | string | null;
   sportName?: string | null;
+  /**
+   * Where the competition is played - "England", "Italy", and "World" or
+   * "Europe" for the ones that belong to no country. Named for a venue, but the
+   * book fills it with the country: the branch the tournament hangs off in the
+   * sport tree, `sportParentName`, arrives empty on every bet.
+   */
+  venueName?: string | null;
   tournamentName?: string | null;
   eventName?: string | null;
   marketName?: string | null;
@@ -204,9 +211,11 @@ const normalizeLeg = (raw: RawSelection): BetLeg => {
     raw.priceValue == null || raw.betBuilderOdds == null
       ? null
       : toNumber(raw.betBuilderOdds, 0) || null;
+  const country = toStringOrNull(raw.venueName);
   return {
     sport: toStringOrNull(raw.sportName),
     league: toStringOrNull(raw.tournamentName),
+    ...(country === null ? {} : { country }),
     event: toStringOrNull(raw.eventName),
     marketType: toStringOrNull(raw.marketName) ?? toStringOrNull(raw.bettingTypeName),
     selection: toStringOrNull(raw.betName) ?? toStringOrNull(raw.shortBetName),
