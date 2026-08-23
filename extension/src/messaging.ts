@@ -11,7 +11,7 @@ import type {
   SyncMeta,
 } from '@betanal/shared';
 
-export { bookmakerForHost, bookmakerForRequests } from './bookmakers/capture';
+export { bookmakerForHost, bookmakerForRequests, sitePatternFor } from './bookmakers/capture';
 
 /** Tag used on window.postMessage between the MAIN-world inject and content script. */
 export const PAGE_BRIDGE_TAG = 'bettracker-bridge';
@@ -112,7 +112,12 @@ export interface OpenBetsSnapshot {
 export type ToBackground =
   | { type: 'CREDENTIALS'; credentials: Credentials }
   | { type: 'BANKING_CREDENTIALS'; banking: BankingCredentials }
-  | { type: 'LOGGED_OUT'; bookmaker: Bookmaker }
+  /**
+   * What the site's own page shows about being signed in. Sent whenever the
+   * answer changes, because a login form is replaced by an account menu without
+   * the page ever reloading.
+   */
+  | { type: 'PAGE_LOGIN'; bookmaker: Bookmaker; signedOut: boolean }
   | { type: 'BALANCE'; bookmaker: Bookmaker; balance: ScrapedBalance }
   | { type: 'OPEN_BETS'; bookmaker: Bookmaker; payload: unknown }
   /**
@@ -170,6 +175,14 @@ export interface AccountStatus {
   consent: boolean | undefined;
   /** True once the site's own authenticated call has been seen. */
   signedIn: boolean;
+  /**
+   * What the page itself last showed: true for a login form, false for an
+   * account menu, null where it has said neither. A session not yet captured is
+   * not the same as being signed out - the site's authenticated call is not made
+   * on every one of its pages - so this is what the "sign in first" line is
+   * allowed to rest on.
+   */
+  looksSignedOut: boolean | null;
   /** null until the extension has read this account at least once. */
   meta: SyncMeta | null;
   /**

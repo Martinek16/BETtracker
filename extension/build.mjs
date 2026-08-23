@@ -1,6 +1,7 @@
 import * as esbuild from 'esbuild';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { expandSites } from './sites.mjs';
 
 /**
  * A folder is only half of a bookmaker: it also has to be named in the capture
@@ -64,7 +65,8 @@ const targets = [
 const dashboardDist = '../dashboard/dist';
 
 const copyStatic = async () => {
-  await writeFile('dist/manifest.json', await readFile('manifest.json', 'utf8'));
+  const manifest = expandSites(JSON.parse(await readFile('manifest.json', 'utf8')));
+  await writeFile('dist/manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);
   await cp('src/popup/popup.html', 'dist/popup.html');
   if (existsSync('icons')) await cp('icons', 'dist/icons', { recursive: true });
   if (existsSync(dashboardDist)) {

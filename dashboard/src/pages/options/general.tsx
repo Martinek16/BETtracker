@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Check as CheckIcon, Download, Trash2 } from 'lucide-react';
 import {
   accountKey,
+  DEFAULT_SETTINGS,
   formatOdds,
+  MIN_PICKS_CHOICES,
   type AccountRef,
   type BalanceLayout,
   type BalanceSource,
@@ -101,7 +103,7 @@ const Setting = ({
   hint: string;
   children: ReactNode;
 }): JSX.Element => (
-  <div className="flex items-center justify-between gap-4 border-b border-border/60 py-3 last:border-0">
+  <div className="flex items-center justify-between gap-4 border-b border-border/60 py-2 last:border-0">
     <div className="min-w-0">
       <p className="text-sm font-medium text-foreground">{label}</p>
       <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
@@ -128,7 +130,7 @@ const SettingGroup = ({
   onToggle: (on: boolean) => void;
   children: ReactNode;
 }): JSX.Element => (
-  <div className="border-b border-border/60 py-3 last:border-0">
+  <div className="border-b border-border/60 py-2 last:border-0">
     <div className="flex items-center justify-between gap-4">
       <div className="min-w-0">
         <p className="text-sm font-medium text-foreground">{label}</p>
@@ -142,8 +144,16 @@ const SettingGroup = ({
   </div>
 );
 
+/** How many picks the analytics tables want before they rank a group. */
+const MIN_PICKS: readonly SegmentedOption<string>[] = MIN_PICKS_CHOICES.map((picks) => ({
+  value: String(picks),
+  label: picks === 1 ? 'All' : String(picks),
+  ...(picks === 1 ? { title: 'Rank every group, however few picks it holds' } : {}),
+}));
+
 const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
   const { settings, patch } = useSettings();
+  const minPicks = settings?.minPicks ?? DEFAULT_SETTINGS.minPicks;
   const currency = settings?.currency ?? 'EUR';
   const symbol = symbolOf(currency);
   const symbolPositions: readonly SegmentedOption<SymbolPosition>[] = [
@@ -218,6 +228,21 @@ const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
         />
       </Setting>
       <Setting
+        label="Picks before a group is ranked"
+        hint={
+          minPicks <= 1
+            ? 'Analytics ranks every group, down to the one you bet once.'
+            : `Analytics sorts a group under ${minPicks} picks last, so one lucky bet cannot top the table.`
+        }
+      >
+        <SegmentedToggle
+          className="text-xs"
+          value={String(minPicks)}
+          options={MIN_PICKS}
+          onChange={(picks) => void patch({ minPicks: Number(picks) })}
+        />
+      </Setting>
+      <Setting
         label="Number format"
         hint={
           settings?.numberFormat === 'us'
@@ -239,7 +264,12 @@ const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
 const AppearanceSection = (): JSX.Element => {
   const { settings, patch } = useSettings();
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const monoIcons = settings?.monoIcons ?? true;
+
+  const replayTour = (): void => {
+    void patch({ tourSeen: false }).then(() => navigate('/'));
+  };
 
   return (
     <Section title="Appearance" tour="settings-appearance">
@@ -255,6 +285,11 @@ const AppearanceSection = (): JSX.Element => {
         }
       >
         <Switch checked={monoIcons} onCheckedChange={(next) => void patch({ monoIcons: next })} />
+      </Setting>
+      <Setting label="Guided tour" hint="Walk through the dashboard again, page by page.">
+        <Button variant="outline" size="sm" onClick={replayTour}>
+          Replay
+        </Button>
       </Setting>
     </Section>
   );
@@ -324,31 +359,17 @@ const BalanceSection = ({ notify }: { notify: Notify }): JSX.Element => {
 };
 
 /**
- * Two subjects, each with its own heading switch, because that is the choice
- * people actually make: bonuses are worth an interruption or they are not. The
- * single rows under a heading are for narrowing it down afterwards.
+ * One heading switch over the messages the accounts send, with the single rows
+ * under it for narrowing that down afterwards.
  */
 const NotificationsSection = ({ notify }: { notify: Notify }): JSX.Element => {
   const { settings, patch } = useSettings();
 
-  const expiryAlerts = settings?.expiryAlerts ?? true;
   const syncAlerts = settings?.syncAlerts ?? true;
   const connectionAlerts = settings?.connectionAlerts ?? true;
 
   return (
     <Section title="Notifications" tour="settings-notifications">
-      <Setting
-        label="Bonus expiry"
-        hint="A note when a bonus balance already granted reaches its end date."
-      >
-        <Switch
-          checked={expiryAlerts}
-          onCheckedChange={(on) => {
-            void patch({ expiryAlerts: on });
-            notify(on ? 'Bonus messages are back on.' : 'Bonus messages are off.');
-          }}
-        />
-      </Setting>
       <SettingGroup
         label="Accounts"
         hint="Messages about what came in from a bookmaker, and what stopped coming in."
@@ -607,20 +628,9 @@ const storedSummary = (
 
 const DataSection = ({ notify }: { notify: Notify }): JSX.Element => {
   const { betCount, transactions, activeBookmakers, earliestRecord } = useDashboard();
-  const { patch } = useSettings();
-  const navigate = useNavigate();
-
-  const replayTour = (): void => {
-    void patch({ tourSeen: false }).then(() => navigate('/'));
-  };
 
   return (
     <Section title="Your data" tour="settings-data">
-      <Setting label="Guided tour" hint="Walk through the dashboard again, page by page.">
-        <Button variant="outline" size="sm" onClick={replayTour}>
-          Replay
-        </Button>
-      </Setting>
       <Setting
         label="Backup"
         hint="A copy of what is stored here, for you to keep. It cannot be loaded back in."

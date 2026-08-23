@@ -3,14 +3,14 @@ import { Crumbs, Section } from '@/pages/options/parts';
 
 /** One paragraph of the policy, in the same measure the About page reads at. */
 const Prose = ({ children }: { children: string }): JSX.Element => (
-  <p className="border-b border-border/60 py-3 text-sm leading-relaxed text-muted-foreground last:border-0">
+  <p className="border-b border-border/60 py-2 text-sm leading-relaxed text-muted-foreground last:border-0">
     {children}
   </p>
 );
 
 /** A named fact: what it is called, then what it means. */
 const Point = ({ term, children }: { term: string; children: string }): JSX.Element => (
-  <div className="border-b border-border/60 py-3 last:border-0">
+  <div className="border-b border-border/60 py-2 last:border-0">
     <p className="text-sm font-medium text-foreground">{term}</p>
     <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{children}</p>
   </div>

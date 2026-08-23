@@ -134,9 +134,10 @@ window.addEventListener('message', (event: MessageEvent) => {
   }
 });
 
-// Heuristic logged-out detection: bet-at-home shows a login/registration entry
-// point when no session exists. If we never capture credentials, the badge stays
-// gray (handled by the background's logged_out default).
+// Heuristic logged-out detection: a site shows a login/registration entry point
+// when no session exists, and an account menu when one does. Weak on its own,
+// which is why nothing is read on the strength of it - it only decides whether
+// the popup is allowed to tell someone to sign in.
 const looksLoggedOut = (): boolean => {
   const loginLink = document.querySelector(
     '[href*="login" i], [data-testid*="login" i], .login, #login',
@@ -145,6 +146,22 @@ const looksLoggedOut = (): boolean => {
     '[data-testid*="account" i], [class*="account" i], [href*="logout" i]',
   );
   return loginLink !== null && accountMenu === null;
+};
+
+/**
+ * Said again whenever it changes, not once at load. Sites sign in through a
+ * modal without navigating anywhere, so a page that showed a login form when it
+ * loaded goes on saying so for the rest of the visit - which is how an account
+ * that was plainly signed in kept being told to sign in.
+ */
+let lastSignedOut: boolean | null = null;
+
+const reportLogin = (): void => {
+  if (BOOKMAKER === null || !TOP) return;
+  const signedOut = looksLoggedOut();
+  if (signedOut === lastSignedOut) return;
+  lastSignedOut = signedOut;
+  send({ type: 'PAGE_LOGIN', bookmaker: BOOKMAKER, signedOut });
 };
 
 /**
@@ -184,7 +201,7 @@ const reportInitialState = (): void => {
   // Announce every visit: the background answers with the consent prompt the
   // first time it sees a site, and ignores it afterwards.
   send({ type: 'SITE_DETECTED', bookmaker: BOOKMAKER, origin: window.location.origin });
-  if (looksLoggedOut()) send({ type: 'LOGGED_OUT', bookmaker: BOOKMAKER });
+  reportLogin();
 };
 
 // ── Balance scraping ─────────────────────────────────────────────────────────
@@ -207,6 +224,9 @@ const scheduleScrape = (): void => {
   setTimeout(() => {
     scrapeScheduled = false;
     reportBalance();
+    // The same redraw that puts a balance on screen is the one that replaces the
+    // login link with the account menu.
+    reportLogin();
   }, 1500);
 };
 

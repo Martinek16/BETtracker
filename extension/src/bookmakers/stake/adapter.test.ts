@@ -49,6 +49,8 @@ describe('stake adapter', () => {
     expect(acc?.legs.every((l) => l.event !== null && l.odds !== null)).toBe(true);
     // A voided leg must not be reported as a loss on the slip's own breakdown.
     expect(acc?.legs.filter((l) => l.status === 'void').length).toBe(3);
+    // The category the tournament hangs off is where it is played.
+    expect(acc?.legs.map((l) => l.country)).toContain('England');
   });
 
   it('stamps ids and timestamps the rest of the app can rely on', () => {

@@ -30,9 +30,11 @@ export const connectionOf = (
   if (meta.lastStatus === 'syncing') return { tone: 'busy', label: 'Connecting…' };
   // Read before, but the site stopped identifying us. Nothing is broken and the
   // history is intact - it just stops growing until the site is opened again,
-  // which is a different answer from both "working" and "failed".
+  // which is a different answer from both "working" and "failed". Said as the
+  // one thing that fixes it: "stopped part-way - check the log" named no cause
+  // and pointed at a log that says nothing the user can act on.
   if (meta.lastStatus === 'logged_out') {
-    return { tone: 'stuck', label: 'Stopped part-way - check the log' };
+    return { tone: 'stuck', label: 'Sign in at the site to carry on reading' };
   }
   const age = now - Date.parse(meta.lastSyncAt);
   if (age > STALE_MS) {

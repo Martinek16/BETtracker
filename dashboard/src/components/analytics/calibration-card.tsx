@@ -37,14 +37,12 @@ export const CalibrationCard = ({ bets }: CalibrationCardProps): JSX.Element => 
 
   const over = groups.filter((g) => verdictOf(g) === 'over');
   const under = groups.filter((g) => verdictOf(g) === 'under');
-  const decided = groups.reduce((sum, g) => sum + g.decided, 0);
 
   return (
     <DashboardCard className="flex h-full flex-col p-3">
       <DashboardCardHeading
         className="mb-3"
         title="Which prices did you beat?"
-        sample={`${String(decided)} picks`}
         action={
           <CardHeadline tone={over.length > 0 ? 'profit' : under.length > 0 ? 'loss' : 'neutral'}>
             {/* The question asks which band you beat, so a band you lost to is

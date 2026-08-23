@@ -1,9 +1,55 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { createRequire } from 'node:module';
 import { readdirSync, readFileSync } from 'node:fs';
-import { fileURLToPath, URL } from 'node:url';
+import { fileURLToPath, pathToFileURL, URL } from 'node:url';
 
 const BOOKMAKERS_DIR = new URL('../extension/src/bookmakers/', import.meta.url);
+
+const FLAGS_DIR = new URL(
+  './flags/4x3/',
+  pathToFileURL(createRequire(import.meta.url).resolve('flag-icons/package.json')),
+);
+
+/**
+ * The four home nations fly their own flag under one country code, and every
+ * other subdivision flag in the set - a Spanish region, a US state, an island
+ * of Saint Helena - is one no competition is ever filed under.
+ */
+const SUBDIVISIONS = new Set(['gb-eng', 'gb-nir', 'gb-sct', 'gb-wls']);
+
+const flagFiles = (): string[] =>
+  readdirSync(FLAGS_DIR).filter((name) => {
+    const code = name.replace(/\.svg$/, '');
+    return name.endsWith('.svg') && (!code.includes('-') || SUBDIVISIONS.has(code));
+  });
+
+/**
+ * Serves each country's flag at `flags/<code>.svg`, straight out of the
+ * `flag-icons` package. Emitted as files rather than bundled: a flag is only
+ * fetched by the rows that show one, so the ones nobody bets on cost nothing
+ * beyond the disk they sit on.
+ */
+const countryFlagsPlugin = (): Plugin => ({
+  name: 'country-flags',
+  generateBundle() {
+    for (const name of flagFiles()) {
+      this.emitFile({
+        type: 'asset',
+        fileName: `flags/${name}`,
+        source: readFileSync(new URL(name, FLAGS_DIR)),
+      });
+    }
+  },
+  configureServer(server) {
+    server.middlewares.use((req, res, next) => {
+      const name = /^\/flags\/([a-z-]+\.svg)$/.exec(req.url ?? '')?.[1];
+      if (name === undefined || !flagFiles().includes(name)) return next();
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.end(readFileSync(new URL(name, FLAGS_DIR)));
+    });
+  },
+});
 
 /** Every `<bookmaker>/logo.png` that exists, keyed by the bookmaker's id. */
 const bookmakerLogos = (): { id: string; bytes: Buffer }[] =>
@@ -11,7 +57,12 @@ const bookmakerLogos = (): { id: string; bytes: Buffer }[] =>
     .filter((entry) => entry.isDirectory())
     .flatMap((entry) => {
       try {
-        return [{ id: entry.name, bytes: readFileSync(new URL(`${entry.name}/logo.png`, BOOKMAKERS_DIR)) }];
+        return [
+          {
+            id: entry.name,
+            bytes: readFileSync(new URL(`${entry.name}/logo.png`, BOOKMAKERS_DIR)),
+          },
+        ];
       } catch {
         return [];
       }
@@ -48,7 +99,7 @@ const bookmakerLogosPlugin = (): Plugin => ({
 // loaded from chrome-extension://<id>/dashboard/index.html.
 export default defineConfig({
   base: './',
-  plugins: [react(), bookmakerLogosPlugin()],
+  plugins: [react(), bookmakerLogosPlugin(), countryFlagsPlugin()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

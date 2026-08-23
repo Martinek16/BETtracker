@@ -78,6 +78,12 @@ interface DashboardContextValue {
    */
   allTransactions: Transaction[];
   allBonuses: Bonus[];
+  /**
+   * The window's bets, likewise untouched by the account toggle. What a league is
+   * called and which country it is played in is read from these, so narrowing the
+   * page to one book never renames a competition or takes its flag away.
+   */
+  allBets: Bet[];
   /** Bets stored in total, counted in the database rather than in `bets`. */
   betCount: number;
   periodBets: Bet[];
@@ -481,6 +487,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
         bonuses,
         allTransactions: data.transactions,
         allBonuses: data.bonuses,
+        allBets: data.bets,
         betCount: data.betCount,
         periodBets,
         currency: data.currency,

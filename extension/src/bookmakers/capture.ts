@@ -22,6 +22,19 @@ export const bookmakerForHost = (host: string): Bookmaker | null =>
   CAPTURE_RULES.find((rule) => rule.host.test(host))?.bookmaker ?? null;
 
 /**
+ * The site's whole domain as one match pattern, rather than the single address
+ * in the address bar. A bookmaker draws its sportsbook from frames on its own
+ * subdomains, and those frames are where the authenticated calls are made - a
+ * grant for `www.` alone leaves the account unreadable on a page that plainly
+ * shows it signed in. `*.` covers the bare domain too.
+ *
+ * ponytail: the last two labels, so a site on a multi-part TLD (`co.uk`) would
+ * be asked for too widely. None is served from one; narrow it when one is.
+ */
+export const sitePatternFor = (host: string): string =>
+  `https://*.${host.split('.').slice(-2).join('.')}/*`;
+
+/**
  * The same question asked of a page whose address means nothing to us: which
  * bookmaker made these requests. A mirror is only ever a new address in front of
  * the same platform, so its own calls give it away.

@@ -101,17 +101,24 @@ export interface AppSettings {
   showClaimable: boolean;
   /** Toast when a sync brings in bets the tracker did not have. */
   syncAlerts: boolean;
-  /** Toast when a granted bonus is within days of expiring unused. */
-  expiryAlerts: boolean;
   /** Toast when a connected account stopped syncing or signed itself out. */
   connectionAlerts: boolean;
   /** Figures switched off on the account page. Ids, not labels - labels change. */
   hiddenAccountStats: string[];
   /** What the user calls each account, keyed by account key. */
   accountNames: Record<string, string>;
+  /**
+   * How many picks a group needs before the analytics tables rank it among the
+   * rest. A row under it is still shown, at the bottom: one bet that happened to
+   * win is the top of a profit sort otherwise, and it is not a finding.
+   */
+  minPicks: number;
   /** The guided tour runs once, the first time the dashboard has bets to show. */
   tourSeen: boolean;
 }
+
+/** The thresholds the settings page offers. One is no threshold at all. */
+export const MIN_PICKS_CHOICES: readonly number[] = [1, 20, 50, 100];
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
@@ -127,10 +134,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   monoIcons: true,
   showClaimable: true,
   syncAlerts: true,
-  expiryAlerts: true,
   connectionAlerts: true,
   hiddenAccountStats: [],
   accountNames: {},
+  minPicks: 20,
   tourSeen: false,
 };
 
@@ -702,7 +709,12 @@ export const getSettings = async (): Promise<AppSettings> => {
   const db = await openDb();
   const row = await db.get('settings', 'app');
   if (row && typeof row.value === 'object' && row.value !== null) {
-    return { ...DEFAULT_SETTINGS, ...(row.value as Partial<AppSettings>) };
+    const stored = { ...DEFAULT_SETTINGS, ...(row.value as Partial<AppSettings>) };
+    // A threshold this build no longer offers would leave the settings page
+    // showing one figure while the tables sort by another.
+    return MIN_PICKS_CHOICES.includes(stored.minPicks)
+      ? stored
+      : { ...stored, minPicks: DEFAULT_SETTINGS.minPicks };
   }
   return DEFAULT_SETTINGS;
 };

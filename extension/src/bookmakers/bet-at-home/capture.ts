@@ -41,4 +41,13 @@ export const rule: CaptureRule = {
   },
 
   openBets: (url) => url.includes(EM_API) && OPEN_BETS_RE.test(url),
+
+  // The scraped header figure was the only sign this site gave that money had
+  // moved, and a deposit made in the cashier does not always redraw it: the
+  // money was in the account and not in the app until the page was reloaded.
+  // The cashier's own backend answers sooner - a request sent to it carrying a
+  // body is the user moving money, which is the only thing that page is for. A
+  // false positive costs one re-read the background already debounces; a false
+  // negative costs a deposit that surfaces ten minutes later.
+  activity: (url) => url.includes(BANKING_HOST),
 };

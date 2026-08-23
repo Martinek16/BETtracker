@@ -222,10 +222,12 @@ const SlipSection = ({
 
 const SelectionSection = ({
   bets,
+  allBets,
   currency,
   loading,
 }: {
   bets: readonly Bet[];
+  allBets: readonly Bet[];
   currency: string;
   loading: boolean;
 }): JSX.Element => {
@@ -257,6 +259,7 @@ const SelectionSection = ({
       <SelectionBreakdown
         key={dimension}
         bets={bets}
+        allBets={allBets}
         dimension={dimension}
         currency={currency}
         query={query}
@@ -268,6 +271,9 @@ const SelectionSection = ({
 
 interface BreakdownsViewProps {
   bets: readonly Bet[];
+  /** Every bet in the window, whatever the account toggle says - the vocabulary
+   * the league names and country flags are read from. */
+  allBets: readonly Bet[];
   unit: AnalysisUnit;
   currency: string;
   loading: boolean;
@@ -275,6 +281,7 @@ interface BreakdownsViewProps {
 
 export const BreakdownsView = ({
   bets,
+  allBets,
   unit,
   currency,
   loading,
@@ -285,7 +292,13 @@ export const BreakdownsView = ({
       title={unit === 'selections' ? 'Which picks came in' : 'Which slips paid'}
     />
     {unit === 'selections' ? (
-      <SelectionSection key="selections" bets={bets} currency={currency} loading={loading} />
+      <SelectionSection
+        key="selections"
+        bets={bets}
+        allBets={allBets}
+        currency={currency}
+        loading={loading}
+      />
     ) : (
       <SlipSection key="slips" bets={bets} currency={currency} loading={loading} />
     )}

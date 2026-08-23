@@ -127,6 +127,20 @@ describe('odds and stake bands cover the whole range', () => {
   });
 });
 
+describe('the price a group took', () => {
+  it('is not moved by one long punt', () => {
+    const priced = [1.8, 1.9, 2.0, 2.1, 50].map((odds) => makeBet({ odds, status: 'won' }));
+    expect(groupBy(priced, 'bookmaker')[0]!.medianOdds).toBe(2.0);
+  });
+
+  it('reads the promise off every price, not off the middle one', () => {
+    // Four evens shots and one 10.00: the prices promise (4 × 50% + 10%) / 5 = 42%,
+    // while the middle price on its own would claim 50%.
+    const priced = [2, 2, 2, 2, 10].map((odds) => makeBet({ odds, status: 'won' }));
+    expect(groupBy(priced, 'bookmaker')[0]!.meanImplied).toBeCloseTo(42, 6);
+  });
+});
+
 describe('bands cut to the slips they hold', () => {
   const staked = (amounts: number[]): Bet[] => amounts.map((stake) => makeBet({ stake }));
 
@@ -137,6 +151,24 @@ describe('bands cut to the slips they hold', () => {
       'stakeBand',
     ).map((g) => g.key);
     expect(keys.length).toBeGreaterThan(1);
+    expect(keys).not.toContain('100–250');
+  });
+
+  it('cuts where the slips sit, not at the roundest number in the band', () => {
+    // Twenty slips between 110 and 129: 200 is the roundest cut in the 100–250
+    // band and would leave all twenty on one side of it.
+    const keys = groupBy(
+      staked(Array.from({ length: 20 }, (_, i) => 110 + i)),
+      'stakeBand',
+    ).map((g) => g.key);
+    expect(keys).toContain('100–120');
+  });
+
+  it('splits a band that dwarfs the rest without holding a third of them', () => {
+    // Fifteen slips in one band against one slip in each of six others: under a
+    // third of the period, and still the only row worth cutting.
+    const amounts = [...Array.from({ length: 15 }, (_, i) => 110 + i), 2, 7, 30, 60, 300, 700];
+    const keys = groupBy(staked(amounts), 'stakeBand').map((g) => g.key);
     expect(keys).not.toContain('100–250');
   });
 

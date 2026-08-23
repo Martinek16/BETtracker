@@ -2,6 +2,7 @@ export * from './types';
 export * from './active-bets';
 export * from './benchmarks';
 export * from './calculations';
+export * from './countries';
 export * from './dimensions';
 export * from './discipline';
 export * from './findings';

@@ -4,7 +4,7 @@ import { GeneralSlips } from '@/components/analytics/general-slips';
 import { useDashboard } from '@/context/dashboard-context';
 
 export const AnalyticsPage = (): JSX.Element => {
-  const { periodBets, loading, analysisUnit, analyticsView } = useDashboard();
+  const { periodBets, allBets, loading, analysisUnit, analyticsView } = useDashboard();
   const currency = periodBets[0]?.currency ?? 'EUR';
 
   return (
@@ -12,6 +12,7 @@ export const AnalyticsPage = (): JSX.Element => {
       {analyticsView === 'breakdowns' ? (
         <BreakdownsView
           bets={periodBets}
+          allBets={allBets}
           unit={analysisUnit}
           currency={currency}
           loading={loading}

@@ -1,5 +1,5 @@
 import type { Bookmaker, ConnectionTone } from '@betanal/shared';
-import { bookmakerForHost, bookmakerForRequests, PANEL_MESSAGE } from '../messaging';
+import { bookmakerForHost, bookmakerForRequests, sitePatternFor, PANEL_MESSAGE } from '../messaging';
 import { metaFor } from '../bookmakers/catalog';
 import { recordOffer, type AddingSite } from './record-offer';
 import type { SaveResult } from '../inject/recorder';
@@ -95,17 +95,28 @@ const setConsent = (bookmaker: Bookmaker, enabled: boolean): Promise<unknown> =>
 const viewFor = (account: AccountStatus, pending: Bookmaker | null): View => {
   const { bookmaker, bets, connection, name } = account;
 
-  // Nobody is signed in at this site, so there is nothing to say about an account
-  // yet - not whether to add it, not how much of it is stored, and not how its
-  // reading is going. The mark, the name and the one thing that has to happen
-  // first. Asked before the consent question on purpose: that question is raised
-  // by a session arriving, and putting it on a login form is asking about
-  // nothing. `pending` is the exception, because the background only sets it
-  // once a session is in hand. Declined sites are answered further down.
-  if (!account.signedIn && account.consent !== false && pending !== bookmaker) {
+  // Nothing has ever been read here and no session says who is on the page, so
+  // there is nothing to report and nothing to add - only the one thing that has
+  // to happen first. Asked before the consent question on purpose: that question
+  // is raised by a session arriving, and putting it on a login form is asking
+  // about nothing. `pending` is the exception, because the background only sets
+  // it once a session is in hand. Declined sites are answered further down.
+  //
+  // An account already read is a different case entirely, and used to get this
+  // same notice: its history is stored and its state is in `connection`, and a
+  // page that has simply not made the site's authenticated call yet - most of
+  // them do not - is no reason to hide all of that behind a login line.
+  const nothingKnown = account.knownAccounts === 0 && account.meta === null;
+  if (!account.signedIn && nothingKnown && account.consent !== false && pending !== bookmaker) {
     return {
       tone: 'idle',
-      state: `Sign in to ${name} to read your bets.`,
+      // The page is showing an account rather than a login form, so the session
+      // is coming; telling this user to sign in would be both wrong and
+      // unactionable, since they already have.
+      state:
+        account.looksSignedOut === false
+          ? `Waiting for ${name} to hand over your session.`
+          : `Sign in to ${name} to read your bets.`,
       primary: null,
       secondary: null,
       quiet: true,
@@ -158,8 +169,9 @@ const viewFor = (account: AccountStatus, pending: Bookmaker | null): View => {
 
   // A connected account with nothing stored is already being read whole: the
   // background starts that the moment it has a session, so this is a state to
-  // report rather than a button to press.
-  if (bets === 0 && connection.tone !== 'failed') {
+  // report rather than a button to press. Only while there is a session - with
+  // none, nothing is reading and the spinner would turn for ever.
+  if (bets === 0 && account.signedIn && connection.tone !== 'failed') {
     return { tone: 'busy', state: 'Reading your bets…', primary: null, secondary: null };
   }
 
@@ -745,7 +757,10 @@ const renderSiteOffer = (bookmaker: Bookmaker, name: string, origin: string): vo
     // One dialogue, not two: an adapter that reads its bets off another backend
     // is dead without that host, and asking for it later would be a second
     // prompt about a site the user has already said yes to.
-    const origins = [`${origin}/*`, ...(metaFor(bookmaker)?.apiHosts ?? [])];
+    const origins = [
+      sitePatternFor(new URL(origin).host),
+      ...(metaFor(bookmaker)?.apiHosts ?? []),
+    ];
     // The grant has to answer this click: Chrome refuses an origin request that
     // does not come from a user gesture.
     void chrome.permissions.request({ origins }).then(async (granted) => {

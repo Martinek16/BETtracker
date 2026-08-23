@@ -3,16 +3,45 @@ import { formatDateTime } from '@/lib/utils';
 
 export const formatLegEvent = (leg: BetLeg): string => leg.event ?? '—';
 
+/** Words that say the shape of the bet rather than what it is on. */
+const MARKET_NOISE =
+  /^(?:total|totals|match|matchbet|bet|bets|player|players|team|teams|full|regular|time|the|a|of|to|in|on|at|and|&|or|over|under|over\/under|o\/u|1x2|moneyline|money|line|result|winner|[+-]?\d[\d.:,+-]*)$/i;
+
+const WORD = /[^\p{L}\p{N}/]+/gu;
+
 /**
- * Market and pick together: "Over 2.5" on its own never says whether it is
- * goals, corners or cards, so the market name is kept unless it only repeats
- * what the pick already spells out.
+ * What the line is counted in - goals, corners, cards, shots - taken from the
+ * market name and stripped of everything the selection already says.
+ */
+const marketSubject = (marketType: string, selection: string): string => {
+  const said = new Set(selection.toLowerCase().replace(WORD, ' ').split(' ').filter(Boolean));
+  const words = marketType.trim().split(/\s+/);
+  const informative = words.map((word) => {
+    const bare = word.toLowerCase().replace(WORD, '');
+    return bare !== '' && !MARKET_NOISE.test(bare) && !said.has(bare);
+  });
+  const first = informative.indexOf(true);
+  if (first === -1) return '';
+  return words.slice(first, informative.lastIndexOf(true) + 1).join(' ');
+};
+
+/** Which way a priced line was taken; the subject belongs in front of it. */
+const DIRECTION = /\b(?:over|under)\b/i;
+
+/**
+ * What was backed, in the punter's own words. "Over 1.5" alone never says
+ * whether it is goals, corners or cards, so a priced line gets its subject
+ * spliced in - but only the part of the market name the selection is missing.
  */
 export const pickLabel = (marketType: string | null, selection: string | null): string => {
   if (!selection) return marketType ?? '—';
   if (!marketType) return selection;
-  if (selection.includes(marketType) || marketType.includes(selection)) return selection;
-  return `${selection} · ${marketType}`;
+  const at = DIRECTION.exec(selection);
+  if (at === null) return selection;
+  const subject = marketSubject(marketType, selection);
+  if (subject === '') return selection;
+  const before = selection.slice(0, at.index);
+  return `${before}${before.endsWith(' ') || before === '' ? '' : ' '}${subject} ${selection.slice(at.index)}`;
 };
 
 export const formatLegSelection = (leg: BetLeg, oddsFormat?: OddsFormat): string => {

@@ -39,7 +39,6 @@ export const VerdictCard = ({ bets }: { bets: readonly Bet[] }): JSX.Element => 
       <DashboardCardHeading
         className="mb-3"
         title="Did your picks beat the price?"
-        sample={`${String(picks.decided)} picks`}
         action={
           <CardHeadline tone={!beatsPrice ? 'neutral' : edgePp >= 0 ? 'profit' : 'loss'}>
             {!beatsPrice ? 'Too close' : edgePp >= 0 ? 'Yes' : 'No'}
