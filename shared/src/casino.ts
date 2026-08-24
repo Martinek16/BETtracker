@@ -227,10 +227,6 @@ const groupBy = (
 export const casinoByGame = (rounds: readonly CasinoRound[]): CasinoGroup[] =>
   groupBy(rounds, (round) => round.game);
 
-/** One row per kind of casino: the site's own word for it, never a guess. */
-export const casinoByKind = (rounds: readonly CasinoRound[]): CasinoGroup[] =>
-  groupBy(rounds, (round) => round.kind);
-
 export interface CasinoSession {
   startedAt: string;
   endedAt: string;

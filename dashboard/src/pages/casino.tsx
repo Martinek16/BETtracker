@@ -2,15 +2,14 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   accountKey,
   casinoByGame,
-  casinoByKind,
   casinoRoundCurve,
   casinoRoundTotals,
   casinoSessions,
   convertRounds,
   roundNet,
-  type CasinoGroup,
   type CasinoKind,
   type CasinoRound,
+  type CasinoRoundTotals,
 } from '@betanal/shared';
 import {
   ArrowUpDown,
@@ -42,7 +41,7 @@ import { useDashboard } from '@/context/dashboard-context';
 import { findAccount, useAllKnownAccounts } from '@/data/accounts';
 import { getRates, loadCasinoRounds } from '@/data/source';
 import { rangeCutoff, rangeEnd } from '@/lib/chart-data';
-import { cn, formatDate, formatMoney, formatPercent, formatTime } from '@/lib/utils';
+import { cn, formatDate, formatMoney, formatPercent, formatTime, symbolOf } from '@/lib/utils';
 
 /**
  * The rounds a site wrote down one by one, priced in the display currency. Empty
@@ -62,13 +61,6 @@ const useRounds = (currency: string): CasinoRound[] => {
   }, [currency]);
 
   return rounds;
-};
-
-const KIND_NAMES: Record<CasinoKind, string> = {
-  originals: 'The site’s own games',
-  slots: 'Slots',
-  live: 'Live tables',
-  provider: 'Other studios',
 };
 
 const KIND_ICONS: Record<CasinoKind, LucideIcon> = {
@@ -126,6 +118,39 @@ const signTone = (value: number): 'profit' | 'loss' | 'neutral' =>
 const toneClass = (value: number | null): string =>
   value === null || value === 0 ? 'text-foreground' : value > 0 ? 'text-profit' : 'text-loss';
 
+/**
+ * The stake ladder. A round is grouped by what it cost rather than by what it
+ * was played on, which is the only grouping that answers whether the money went
+ * on the big bets or was ground away by the small ones.
+ */
+const STAKE_BANDS = [1, 5, 20, 100] as const;
+
+interface StakeBand extends GroupRow {
+  /** The band's floor, which is also the order the ladder is read in. */
+  floor: number;
+}
+
+const stakeBands = (rounds: readonly CasinoRound[], currency: string): StakeBand[] => {
+  const symbol = symbolOf(currency);
+  const floorOf = (stake: number): number =>
+    STAKE_BANDS.reduce((floor, top) => (stake >= top ? top : floor), 0);
+  const labelOf = (floor: number): string => {
+    const top = STAKE_BANDS.find((band) => band > floor);
+    if (floor === 0) return `under ${symbol}${STAKE_BANDS[0]}`;
+    return top === undefined ? `${symbol}${floor} and up` : `${symbol}${floor} – ${symbol}${top}`;
+  };
+
+  const buckets = new Map<number, CasinoRound[]>();
+  for (const round of rounds) {
+    const floor = floorOf(round.stake);
+    buckets.set(floor, [...(buckets.get(floor) ?? []), round]);
+  }
+
+  return [...buckets]
+    .map(([floor, group]) => ({ ...casinoRoundTotals(group), floor, label: labelOf(floor) }))
+    .sort((a, b) => a.floor - b.floor);
+};
+
 type GroupSort = 'label' | 'rounds' | 'staked' | 'returned' | 'rtp';
 
 const GROUP_COLUMNS: readonly { key: GroupSort; label: string; width: string }[] = [
@@ -162,39 +187,47 @@ const SortHead = ({
   </button>
 );
 
+/** Anything the round totals can be grouped into and read as a row. */
+type GroupRow = CasinoRoundTotals & { label: string };
+
 /**
- * One of the two breakdowns, sorted by whichever column was last clicked. Both
- * hold the same figures over different groupings, so they are one table read
- * twice rather than two tables kept in step by hand.
+ * One of the breakdowns, sorted by whichever column was last clicked. They hold
+ * the same figures over different groupings, so they are one table read twice
+ * rather than two tables kept in step by hand.
  */
-const GroupTable = ({
+const GroupTable = <T extends GroupRow>({
   title,
   nameLabel,
   groups,
   nameOf,
   iconOf,
   titleOf,
+  compareLabel,
   currency,
 }: {
   title: string;
   nameLabel: string;
-  groups: readonly CasinoGroup[];
-  nameOf: (group: CasinoGroup) => string;
-  iconOf: (group: CasinoGroup) => LucideIcon;
-  titleOf: (group: CasinoGroup) => string | undefined;
+  groups: readonly T[];
+  nameOf: (group: T) => string;
+  /** Left off where the rows are bands rather than things with a face. */
+  iconOf?: (group: T) => LucideIcon;
+  titleOf: (group: T) => string | undefined;
+  /** How the name column orders, where alphabetical would be the wrong order. */
+  compareLabel?: (a: T, b: T) => number;
   currency: string;
 }): JSX.Element => {
   const [sort, setSort] = useState<GroupSort>('staked');
   const [desc, setDesc] = useState(true);
 
   const sorted = useMemo(() => {
-    const value = (group: CasinoGroup): number =>
+    const value = (group: T): number =>
       sort === 'label' ? 0 : sort === 'rtp' ? (group.rtp ?? -1) : group[sort];
+    const byLabel = compareLabel ?? ((a: T, b: T): number => nameOf(a).localeCompare(nameOf(b)));
     return [...groups].sort((a, b) => {
-      const diff = sort === 'label' ? nameOf(a).localeCompare(nameOf(b)) : value(a) - value(b) || 0;
+      const diff = sort === 'label' ? byLabel(a, b) : value(a) - value(b) || 0;
       return desc ? -diff : diff;
     });
-  }, [groups, sort, desc, nameOf]);
+  }, [groups, sort, desc, nameOf, compareLabel]);
 
   const click = (key: GroupSort) => (): void => {
     setDesc(key === sort ? !desc : key !== 'label');
@@ -206,7 +239,7 @@ const GroupTable = ({
       <DashboardCardHeading className="mb-2" title={title} />
       {/* Reserves the body's scrollbar gutter so the columns stay aligned. */}
       <Row className={cn(HEAD, 'scroll-gutter overflow-y-scroll pr-2')}>
-        <span className="w-3 shrink-0" />
+        {iconOf && <span className="w-3 shrink-0" />}
         <SortHead
           label={nameLabel}
           width="flex-1 !justify-start"
@@ -227,10 +260,10 @@ const GroupTable = ({
       </Row>
       <div className="scroll-area min-h-0 flex-1 overflow-y-auto pr-2">
         {sorted.map((group) => {
-          const Icon = iconOf(group);
+          const Icon = iconOf?.(group);
           return (
             <Row key={group.label} className={ROW}>
-              <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
+              {Icon && <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />}
               <span className="flex-1 truncate first-letter:uppercase" title={titleOf(group)}>
                 {nameOf(group)}
               </span>
@@ -295,7 +328,7 @@ export const CasinoPage = (): JSX.Element => {
   const played = useMemo(() => casinoRoundTotals(rounds), [rounds]);
   const curve = useMemo(() => casinoRoundCurve(rounds), [rounds]);
   const games = useMemo(() => casinoByGame(rounds), [rounds]);
-  const kinds = useMemo(() => casinoByKind(rounds), [rounds]);
+  const bands = useMemo(() => stakeBands(rounds, currency), [rounds, currency]);
   const sessions = useMemo(() => casinoSessions(rounds), [rounds]);
 
   const money = (value: number | null): string =>
@@ -386,12 +419,14 @@ export const CasinoPage = (): JSX.Element => {
               currency={currency}
             />
             <GroupTable
-              title="By type"
-              nameLabel="Type"
-              groups={kinds}
-              nameOf={(group) => KIND_NAMES[group.kind]}
-              iconOf={(group) => KIND_ICONS[group.kind]}
-              titleOf={(group) => `${formatPercent(group.share * 100, 0)} of the turnover`}
+              title="By stake"
+              nameLabel="Stake"
+              groups={bands}
+              nameOf={(group) => group.label}
+              titleOf={(group) =>
+                `${formatPercent((group.staked / played.staked) * 100, 0)} of the turnover`
+              }
+              compareLabel={(a, b) => a.floor - b.floor}
               currency={currency}
             />
           </div>
