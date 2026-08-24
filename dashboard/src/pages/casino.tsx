@@ -128,15 +128,17 @@ const toneClass = (value: number | null): string =>
 
 /**
  * Rounds enough for a band to say something rather than describe one evening,
- * and the most bands worth reading at once.
+ * the most bands worth reading at once, and the share of the play beyond which
+ * a single row stops telling you anything about where the money went.
  */
-const MIN_BAND_ROUNDS = 15;
-const MAX_BANDS = 8;
+const MIN_BAND_ROUNDS = 12;
+const MAX_BANDS = 10;
+const MAX_BAND_SHARE = 0.25;
 
-/** The marks a stake is actually chosen at: 1, 2, 5 and their decades. */
-const STAKE_MARKS: readonly number[] = [
-  0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000,
-];
+/** The marks a stake is chosen at: 1, 1.5, 2, 3, 5, 7 and their decades. */
+const STAKE_MARKS: readonly number[] = [-1, 0, 1, 2, 3, 4].flatMap((power) =>
+  [1, 1.5, 2, 3, 5, 7].map((step) => Number((step * 10 ** power).toFixed(2))),
+);
 
 interface StakeBand extends GroupRow {
   /** Where the band starts, which is also the order the ladder is read in. */
@@ -149,14 +151,15 @@ interface StakeBand extends GroupRow {
  * on the big rounds or was ground away by the small ones.
  *
  * The rungs stand at round prices, because that is where stakes are chosen, but
- * which of them are used depends on the play: a rung is only cut where enough
- * rounds sit above it to make the row worth reading, so a thin stretch of the
- * ladder stays one wide band and a busy one is split as finely as the marks go.
+ * which of them are used depends on the play. A rung below too few rounds is
+ * swallowed so no row is too thin to read; a rung is kept, even below the usual
+ * count, where the next one would leave a row holding a quarter of the play.
  */
 const stakeBands = (rounds: readonly CasinoRound[], currency: string): StakeBand[] => {
   if (rounds.length === 0) return [];
   const symbol = symbolOf(currency);
-  const money = (value: number): string => `${symbol}${formatNumber(value, value < 1 ? 2 : 0)}`;
+  const money = (value: number): string =>
+    `${symbol}${formatNumber(value, Number.isInteger(value) ? 0 : 2)}`;
   const label = (floor: number, ceiling: number | null): string =>
     ceiling === null
       ? floor === 0
@@ -167,9 +170,11 @@ const stakeBands = (rounds: readonly CasinoRound[], currency: string): StakeBand
         : `${money(floor)} – ${money(ceiling)}`;
 
   const sorted = [...rounds].sort((a, b) => a.stake - b.stake);
-  const minRounds = Math.max(MIN_BAND_ROUNDS, Math.ceil(sorted.length / MAX_BANDS));
+  const target = Math.max(MIN_BAND_ROUNDS, Math.ceil(sorted.length / MAX_BANDS));
+  const ceilingRounds = Math.ceil(sorted.length * MAX_BAND_SHARE);
 
-  const bands: { floor: number; ceiling: number | null; group: CasinoRound[] }[] = [];
+  // One bucket per rung the play actually reaches, before any of them are merged.
+  const buckets: { floor: number; ceiling: number | null; group: CasinoRound[] }[] = [];
   let floor = 0;
   let group: CasinoRound[] = [];
   let mark = 0;
@@ -177,25 +182,39 @@ const stakeBands = (rounds: readonly CasinoRound[], currency: string): StakeBand
     while (mark < STAKE_MARKS.length && round.stake >= (STAKE_MARKS[mark] ?? 0)) {
       const crossed = STAKE_MARKS[mark] ?? 0;
       mark += 1;
-      // A mark only becomes a boundary once the band below it has enough rounds;
-      // otherwise it is swallowed, and an empty band just slides up to it.
-      if (group.length >= minRounds) {
-        bands.push({ floor, ceiling: crossed, group });
+      if (group.length > 0) {
+        buckets.push({ floor, ceiling: crossed, group });
         group = [];
-        floor = crossed;
-      } else if (group.length === 0) {
-        floor = crossed;
       }
+      floor = crossed;
     }
     group.push(round);
   }
+  buckets.push({ floor, ceiling: null, group });
 
+  const bands: typeof buckets = [];
+  for (const bucket of buckets) {
+    const open = bands[bands.length - 1];
+    const merged = open === undefined ? 0 : open.group.length + bucket.group.length;
+    const keepOpen =
+      open !== undefined &&
+      open.group.length < target &&
+      (merged <= ceilingRounds || open.group.length < MIN_BAND_ROUNDS);
+    if (keepOpen && open) {
+      open.group = [...open.group, ...bucket.group];
+      open.ceiling = bucket.ceiling;
+    } else {
+      bands.push({ ...bucket });
+    }
+  }
+
+  // A thin last band is the tail of the one below it, not a row of its own.
   const last = bands[bands.length - 1];
-  if (group.length >= minRounds || last === undefined) {
-    bands.push({ floor, ceiling: null, group });
-  } else {
-    last.ceiling = null;
-    last.group = [...last.group, ...group];
+  const previous = bands[bands.length - 2];
+  if (last && previous && last.group.length < MIN_BAND_ROUNDS) {
+    previous.group = [...previous.group, ...last.group];
+    previous.ceiling = last.ceiling;
+    bands.pop();
   }
 
   return bands.map((band) => ({
