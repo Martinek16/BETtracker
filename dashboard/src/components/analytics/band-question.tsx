@@ -3,10 +3,8 @@ import { groupBy, roi, shrunkYield, type Bet, type SlipDimension } from '@betana
 import { CardNote } from '@/components/analytics/card-note';
 import { QuestionCard } from '@/components/analytics/question-card';
 import { RankedBars } from '@/components/analytics/ranked-bars';
+import { useMinPicks } from '@/lib/held-back';
 import { formatMoney, formatPercent } from '@/lib/utils';
-
-/** A band needs this many slips before it is allowed to carry the answer. */
-const MIN_ROWS_SAMPLE = 10;
 
 interface BandQuestionProps {
   bets: readonly Bet[];
@@ -41,6 +39,7 @@ export const BandQuestion = ({
   note,
   slots = 5,
 }: BandQuestionProps): JSX.Element => {
+  const minBets = useMinPicks();
   const rows = useMemo(() => {
     const overall = roi(bets);
     return groupBy(bets, dimension)
@@ -58,7 +57,7 @@ export const BandQuestion = ({
       }));
   }, [bets, currency, dimension, order]);
 
-  const solid = rows.filter((r) => r.sample >= MIN_ROWS_SAMPLE);
+  const solid = rows.filter((r) => r.sample >= minBets);
   const best = order === undefined ? solid[0] : [...solid].sort((a, b) => b.value - a.value)[0];
   // Nothing has enough slips yet: still name the front runner, but say it is thin.
   const leader = best ?? [...rows].sort((a, b) => b.value - a.value)[0];
@@ -79,13 +78,13 @@ export const BandQuestion = ({
           columns={[bandColumn, 'Return', 'Slips']}
           noteColumn="Profit"
           formatValue={(v) => formatPercent(v, 0)}
-          lowSample={MIN_ROWS_SAMPLE}
+          lowSample={minBets}
           slots={slots}
         />
       )}
       <CardNote>
         {best === undefined && leader !== undefined
-          ? `No band has ${String(MIN_ROWS_SAMPLE)} slips yet, so this is a front runner rather than an answer. ${note}`
+          ? `No band has ${String(minBets)} slips yet, so this is a front runner rather than an answer. ${note}`
           : note}
       </CardNote>
     </QuestionCard>

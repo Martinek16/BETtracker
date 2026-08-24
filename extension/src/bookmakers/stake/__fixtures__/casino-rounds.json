@@ -1,0 +1,117 @@
+{
+  "data": {
+    "user": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "houseBetList": [
+        {
+          "id": "8e1f8d4c-f002-4749-8f21-ad30bbac2689",
+          "iid": "house:444534694155",
+          "type": "crash",
+          "scope": "house",
+          "game": { "name": "crash", "icon": "stake-game-crash", "slug": "crash" },
+          "bet": {
+            "id": "8e1f8d4c-f002-4749-8f21-ad30bbac2689",
+            "payoutMultiplier": 1.2,
+            "amount": 0.33574873,
+            "payout": 0.402898476,
+            "currency": "sol",
+            "result": "autocashout",
+            "updatedAt": "Sat, 31 Jan 2026 19:42:39 GMT",
+            "cashoutAt": 1.2
+          }
+        },
+        {
+          "id": "17c74522-fbb8-4715-8477-e158370554e2",
+          "iid": "house:444311724348",
+          "type": "crash",
+          "scope": "house",
+          "game": { "name": "crash", "icon": "stake-game-crash", "slug": "crash" },
+          "bet": {
+            "id": "17c74522-fbb8-4715-8477-e158370554e2",
+            "payoutMultiplier": 0,
+            "amount": 0.12265261,
+            "payout": 0,
+            "currency": "ltc",
+            "result": "busted",
+            "updatedAt": "Sat, 31 Jan 2026 03:08:35 GMT",
+            "cashoutAt": 1.5
+          }
+        },
+        {
+          "id": "22222222-2222-2222-2222-222222222222",
+          "type": "softswiss",
+          "scope": "house",
+          "game": { "name": "Sweet Bonanza", "slug": "sweet-bonanza" },
+          "bet": {
+            "id": "22222222-2222-2222-2222-222222222222",
+            "amount": 0.5,
+            "payout": 0,
+            "payoutMultiplier": 0,
+            "currency": "ltc",
+            "updatedAt": "Sat, 31 Jan 2026 19:50:02 GMT"
+          }
+        },
+        {
+          "id": "33333333-3333-3333-3333-333333333333",
+          "type": "evolution",
+          "scope": "house",
+          "game": { "name": "Lightning Roulette", "slug": "lightning-roulette" },
+          "bet": {
+            "id": "33333333-3333-3333-3333-333333333333",
+            "amount": 2,
+            "payout": 5,
+            "payoutMultiplier": 2.5,
+            "currency": "ltc"
+          }
+        },
+        {
+          "id": "44444444-4444-4444-4444-444444444444",
+          "type": "thirdparty",
+          "scope": "house",
+          "game": { "name": "Wanted Dead or a Wild", "slug": "wanted-dead-or-a-wild" },
+          "bet": {
+            "id": "44444444-4444-4444-4444-444444444444",
+            "amount": 1,
+            "payout": 0,
+            "payoutMultiplier": 0,
+            "currency": "ltc",
+            "updatedAt": "Sat, 31 Jan 2026 21:30:00 GMT",
+            "game": {
+              "name": "Wanted Dead or a Wild",
+              "provider": { "name": "Hacksaw Gaming" }
+            }
+          }
+        },
+        {
+          "id": "55555555-5555-5555-5555-555555555555",
+          "type": "crash",
+          "scope": "house",
+          "game": { "name": "crash", "icon": "stake-game-crash", "slug": "crash" },
+          "bet": {
+            "id": "55555555-5555-5555-5555-555555555555",
+            "active": true,
+            "amount": 0.1,
+            "payout": 0,
+            "payoutMultiplier": 0,
+            "currency": "sol",
+            "updatedAt": "Sat, 31 Jan 2026 21:31:00 GMT"
+          }
+        },
+        {
+          "id": "66666666-6666-6666-6666-666666666666",
+          "type": "racebook",
+          "scope": "house",
+          "game": { "name": "Horse Racing", "slug": "horse-racing" },
+          "bet": {
+            "id": "66666666-6666-6666-6666-666666666666",
+            "amount": 1,
+            "payout": 0,
+            "payoutMultiplier": 0,
+            "currency": "ltc",
+            "updatedAt": "Sat, 31 Jan 2026 22:00:00 GMT"
+          }
+        }
+      ]
+    }
+  }
+}

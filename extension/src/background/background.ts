@@ -731,6 +731,29 @@ const rememberMoneyCheck = async (account: AccountRef): Promise<void> => {
 };
 
 /**
+ * Casino rounds, where the site records them. Best-effort on purpose: the casino
+ * is an extra reading on top of the wallet, and losing it must never cost the
+ * bets and the money that already came in.
+ */
+const importCasino = async ({ adapter, connection }: Live, full: boolean): Promise<void> => {
+  if (adapter.syncCasino === undefined) return;
+  const account = await ensureAccount(adapter, connection);
+  if (account === null) return;
+  try {
+    const imported = await adapter.syncCasino(connection.creds, account, full);
+    if (imported > 0) log('info', adapter.id, `${imported} casino rounds imported`);
+  } catch (err) {
+    if (err instanceof RelayUnavailableError) return;
+    if (err instanceof RateLimitedError) {
+      startCooldown(adapter.id, err.retryAfterMs, err.message);
+      return;
+    }
+    if (err instanceof SessionExpiredError) throw err;
+    log('warn', adapter.id, `casino rounds unreadable: ${(err as Error).message}`);
+  }
+};
+
+/**
  * Deposits, withdrawals and bonuses. Some sites need a second session that is
  * only seen once the user opens their account pages, so this is always
  * best-effort: money failing must never fail the bet sync that already
@@ -1160,6 +1183,7 @@ const sync = async (mode: 'incremental' | 'full', only: Bookmaker | null = null)
           const moneyError = await importMoney({ adapter, connection }, depth === 'full');
           if (moneyError !== null)
             failures.push(`${nameOf(adapter.id)} transactions: ${moneyError}`);
+          await importCasino({ adapter, connection }, depth === 'full');
         } catch (err) {
           if (err instanceof RelayUnavailableError) {
             // Not a failure of the account: there is simply no tab of the site

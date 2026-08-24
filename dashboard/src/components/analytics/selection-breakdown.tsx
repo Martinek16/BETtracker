@@ -10,9 +10,9 @@ import {
 } from '@betanal/shared';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, ListFilter } from 'lucide-react';
+import { CountryFlag } from '@/components/dashboard/country-flag';
 import { sportIconFor } from '@/components/dashboard/live-score';
 import { ProfitBar } from '@/components/dashboard/profit-bar';
-import { flagUrl } from '@/lib/country-flags';
 import { heldBack, useRankFloor } from '@/lib/held-back';
 import { usePersistedState } from '@/lib/persisted-state';
 import { cn, formatMoney, formatPercent } from '@/lib/utils';
@@ -71,18 +71,6 @@ const sportOfRow = (dimension: LegDimension, stats: SelectionStats): string | nu
   if (!SPORT_COLUMN.has(dimension)) return null;
   return stats.sports[0] ?? null;
 };
-
-/**
- * A country as its flag. Written out, the name would be a column as wide as the
- * ones it sits beside, and the emoji flag Windows ships no glyph for draws as
- * two letters, so the picture is a file of its own.
- *
- * A group that is no country - "International", "Esports" - flies a world map,
- * a file of the same shape and size as the rest so the column stays a column.
- */
-const CountryFlag = ({ country }: { country: string }): JSX.Element => (
-  <img src={flagUrl(countryCodeOf(country) ?? 'world')} alt="" className="h-3 w-4 shrink-0" />
-);
 
 const COL = {
   rank: 'w-8 shrink-0',

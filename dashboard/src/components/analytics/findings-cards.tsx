@@ -4,6 +4,7 @@ import { RankedBars, type RankedRow } from '@/components/analytics/ranked-bars';
 import { StakeSparkline } from '@/components/charts/mini-charts';
 import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
 import { useDashboard } from '@/context/dashboard-context';
+import { useMinPicks } from '@/lib/held-back';
 import { cn, compactMoney, formatMoney, symbolOf } from '@/lib/utils';
 
 interface LeaksCardProps {
@@ -11,8 +12,6 @@ interface LeaksCardProps {
   currency: string;
 }
 
-/** Below this a row is drawn muted: the figure is real, the pattern is not yet. */
-const READABLE_SAMPLE = 10;
 /** Slips a segment needs before it is offered as a leak at all. */
 const MIN_SEGMENT = 5;
 /** Segments named at once. */
@@ -49,6 +48,7 @@ const toRow =
  */
 export const LeaksCard = ({ bets, currency }: LeaksCardProps): JSX.Element => {
   const { transactions } = useDashboard();
+  const minBets = useMinPicks();
 
   const leaks = useMemo(() => {
     const solid = habitLeaks(bets, MIN_SEGMENT, SLOTS);
@@ -99,7 +99,7 @@ export const LeaksCard = ({ bets, currency }: LeaksCardProps): JSX.Element => {
               formatValue={(v) => formatMoney(1 + v, currency)}
               noteColumn="Units"
               extraColumn="Cost"
-              lowSample={READABLE_SAMPLE}
+              lowSample={minBets}
             />
           </>
         )}

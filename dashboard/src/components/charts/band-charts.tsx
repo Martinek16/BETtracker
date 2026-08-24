@@ -19,10 +19,8 @@ import {
 } from '@betanal/shared';
 import { ChartEmpty } from '@/components/charts/chart-empty';
 import { ChartFrame, ChartTooltip } from '@/components/charts/chart-frame';
+import { useMinPicks } from '@/lib/held-back';
 import { formatMoney, formatPercent } from '@/lib/utils';
-
-/** Under this a band is drawn faded: the figure is real, the pattern is not yet. */
-const MIN_SAMPLE = 10;
 
 interface Row extends GroupStats {
   thin: boolean;
@@ -76,13 +74,14 @@ const bandsOf = (
   bets: readonly Bet[],
   by: (g: GroupStats) => number,
   dimension: SlipDimension,
+  minBets: number,
 ): Row[] =>
   groupBy(decisiveBets(bets), dimension)
     .filter((g) => g.bets > 0)
     .sort((a, b) => by(a) - by(b))
     .map((g) => ({
       ...g,
-      thin: g.bets < MIN_SAMPLE,
+      thin: g.bets < minBets,
       // A price of 2.50 claims 40%: the gap to what actually landed is the only
       // reading here that money cannot fake.
       gap: g.winRate - g.meanImplied,
@@ -93,9 +92,12 @@ const Bars = ({
   dataKey,
   guides,
   lines,
+  minBets,
 }: {
   data: readonly Row[];
   dataKey: 'roi' | 'gap';
+  /** Slips a band needs before its bar is drawn at full strength. */
+  minBets: number;
   /** Horizontal marks the bars are read against, solid unless dashed. */
   guides: readonly { y: number; dashed?: boolean }[];
   lines: (row: Row) => readonly string[];
@@ -122,7 +124,7 @@ const Bars = ({
             lines={(row) => [
               ...lines(row),
               ...(row.thin
-                ? [`Under ${String(MIN_SAMPLE)} slips - a figure, not yet a pattern.`]
+                ? [`Under ${String(minBets)} slips - a figure, not yet a pattern.`]
                 : []),
             ]}
           />
@@ -150,7 +152,11 @@ export const OddsPnlChart = ({
   bets: readonly Bet[];
   currency: string;
 }): JSX.Element => {
-  const data = useMemo(() => bandsOf(bets, (g) => g.medianOdds, 'slipOdds'), [bets]);
+  const minBets = useMinPicks();
+  const data = useMemo(
+    () => bandsOf(bets, (g) => g.medianOdds, 'slipOdds', minBets),
+    [bets, minBets],
+  );
 
   return (
     <ChartFrame
@@ -174,6 +180,7 @@ export const OddsPnlChart = ({
         />
       ) : (
         <Bars
+          minBets={minBets}
           data={data}
           dataKey="gap"
           guides={[{ y: 0 }]}
@@ -196,7 +203,11 @@ export const LegCountChart = ({
   bets: readonly Bet[];
   currency: string;
 }): JSX.Element => {
-  const data = useMemo(() => bandsOf(bets, (g) => Number.parseInt(g.key, 10), 'legCount'), [bets]);
+  const minBets = useMinPicks();
+  const data = useMemo(
+    () => bandsOf(bets, (g) => Number.parseInt(g.key, 10), 'legCount', minBets),
+    [bets, minBets],
+  );
 
   return (
     <ChartFrame
@@ -215,6 +226,7 @@ export const LegCountChart = ({
         />
       ) : (
         <Bars
+          minBets={minBets}
           data={data}
           dataKey="roi"
           guides={[{ y: 0 }, { y: -TYPICAL_BOOKMAKER_MARGIN_PCT, dashed: true }]}
@@ -241,9 +253,10 @@ export const StakeOutcomeChart = ({
   bets: readonly Bet[];
   currency: string;
 }): JSX.Element => {
+  const minBets = useMinPicks();
   const data = useMemo(
-    () => bandsOf(bets, (g) => (g.bets === 0 ? 0 : g.staked / g.bets), 'stakeBand'),
-    [bets],
+    () => bandsOf(bets, (g) => (g.bets === 0 ? 0 : g.staked / g.bets), 'stakeBand', minBets),
+    [bets, minBets],
   );
 
   return (
@@ -263,6 +276,7 @@ export const StakeOutcomeChart = ({
         />
       ) : (
         <Bars
+          minBets={minBets}
           data={data}
           dataKey="roi"
           guides={[{ y: 0 }, { y: -TYPICAL_BOOKMAKER_MARGIN_PCT, dashed: true }]}

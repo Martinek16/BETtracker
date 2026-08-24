@@ -127,6 +127,13 @@ export interface BookmakerAdapter {
   /** True when `syncMoney` cannot run without the second session. */
   readonly needsBankingSession?: boolean;
   /**
+   * Casino rounds, one row per spin, for the few sites that record them. Most do
+   * not, and there the casino is only ever visible as the gap in the wallet - so
+   * this is omitted rather than faked. `deep` walks the whole history; a shallow
+   * run stops at the first page in which nothing was new. Returns rounds added.
+   */
+  syncCasino?(creds: Credentials, account: AccountRef, deep: boolean): Promise<number>;
+  /**
    * Balance read from the API, for sites where the page DOM doesn't show it.
    * `banking` is the same second session `syncMoney` gets: at some sites the
    * wallet lives on the account backend, not the sportsbook one.

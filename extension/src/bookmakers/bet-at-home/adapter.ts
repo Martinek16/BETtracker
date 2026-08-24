@@ -35,6 +35,7 @@ import { getBackfillState, log, putBonus, putTransaction, setBackfillState } fro
 import { authedJson, nowCursor, runCursorSync, SessionExpiredError } from '../../sync/sync';
 import { field } from '../types';
 import type { BankingCredentials, BookmakerAdapter, Credentials, SettledPage } from '../types';
+import { readList } from '../shape';
 
 /** Stamped on every record this file produces, so the account is never in doubt. */
 const BOOKMAKER: Bookmaker = 'bet-at-home';
@@ -298,30 +299,27 @@ export const normalizeBet = (raw: RawBet, accountId: AccountId): Bet | null => {
   };
 };
 
-const parseArray = (json: unknown, accountId: AccountId): { bets: Bet[]; skipped: number } => {
-  // The settled-bets endpoint returns a bare array; tolerate an envelope too.
-  const arr: unknown = Array.isArray(json)
+/** The rows themselves. The endpoint returns a bare array; tolerate an envelope too. */
+const betRows = (json: unknown): unknown =>
+  Array.isArray(json)
     ? json
     : typeof json === 'object' && json !== null
       ? ((json as Record<string, unknown>).bets ??
         (json as Record<string, unknown>).items ??
         (json as Record<string, unknown>).data)
-      : null;
-  if (!Array.isArray(arr)) return { bets: [], skipped: 0 };
+      : json;
 
-  const bets: Bet[] = [];
-  let skipped = 0;
-  for (const item of arr) {
-    try {
-      const bet = normalizeBet(item as RawBet, accountId);
-      if (bet) bets.push(bet);
-      else skipped += 1;
-    } catch (err) {
-      skipped += 1;
-      log('warn', 'bet-at-home', `skipped unparseable bet: ${(err as Error).message}`);
-    }
-  }
-  return { bets, skipped };
+/**
+ * An empty array is the end of the history, and the cursor engine reads it as
+ * one. Anything that is not an array at all used to read the same way, which
+ * meant a renamed envelope stopped the walk and reported a clean finish -
+ * `readList` is what separates the two now.
+ */
+const parseArray = (json: unknown, accountId: AccountId): { bets: Bet[]; skipped: number } => {
+  const { parsed, skipped } = readList(BOOKMAKER, 'bet list', betRows(json), (item) =>
+    normalizeBet(item as RawBet, accountId),
+  );
+  return { bets: parsed, skipped };
 };
 
 // ── Banking (deposits / withdrawals) ─────────────────────────────────────────
@@ -573,8 +571,25 @@ const betsUrl = (creds: Credentials, path: string, placedBefore: string): URL =>
   return u;
 };
 
-const parseOpenBets = (json: unknown, account: AccountRef): Bet[] =>
-  parseArray(json, account.accountId).bets.map((b) => ({ ...b, status: 'pending' as BetStatus }));
+/**
+ * Deliberately not guarded the way the settled walk is. This body is whatever
+ * the page fetched for its own reasons and the bridge happened to relay, not an
+ * answer to a request we made - so a shape we do not know means the bridge
+ * caught something else, and says nothing about the site having changed. The
+ * shared contract is to return nothing and let the next relay try.
+ */
+const parseOpenBets = (json: unknown, account: AccountRef): Bet[] => {
+  const rows = betRows(json);
+  if (!Array.isArray(rows)) return [];
+  return rows.flatMap((item) => {
+    try {
+      const bet = normalizeBet(item as RawBet, account.accountId);
+      return bet === null ? [] : [{ ...bet, status: 'pending' as BetStatus }];
+    } catch {
+      return [];
+    }
+  });
+};
 
 export const parseSettled = (json: unknown, accountId: AccountId): SettledPage => {
   const { bets, skipped } = parseArray(json, accountId);

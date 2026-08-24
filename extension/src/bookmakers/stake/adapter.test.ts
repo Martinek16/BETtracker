@@ -1,14 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import fixture from './__fixtures__/bets.json';
 import walletFixture from './__fixtures__/wallet.json';
+import casinoFixture from './__fixtures__/casino-rounds.json';
 import { RateLimitedError } from '../../sync/sync';
 import { sampleRef } from '../samples';
 import {
   couponBonus,
   fetchBaseRates,
   normalizeBet,
+  normalizeRound,
   parseBalance,
-  parseWagered,
+  parseScopedTotals,
   stake,
 } from './adapter';
 
@@ -155,44 +157,50 @@ describe('stake bet products other than SportBet', () => {
 });
 
 describe('stake coupons', () => {
+  // A row off /transactions/bonuses, where the site labels this type "Coupon".
   const claim = {
-    amount: 5,
-    currency: 'ltc',
-    claimedAt: '2026-07-01T10:00:00Z',
-    redeemed: true,
-    bonusCode: { id: 'c1', code: 'WELCOME', expiresAt: '2026-09-01T00:00:00Z' },
+    id: '4a6b726e-e8e7-4df5-aed2-ddedb7f78f6f',
+    type: 'bonusCode',
+    currency: 'sol',
+    amount: 0.00039720000476640006,
+    createdAt: 'Sat, 08 Aug 2026 13:09:44 GMT',
   };
 
-  it('keys a redeemed code by the code it was claimed from', () => {
+  it('writes a coupon payment as money already received, like rakeback', () => {
     const bonus = couponBonus(claim, 'acc-1');
-    expect(bonus?.id).toBe('stake-coupon-c1');
-    expect(bonus?.name).toBe('WELCOME');
+    expect(bonus?.id).toBe('stake-coupon-4a6b726e-e8e7-4df5-aed2-ddedb7f78f6f');
+    expect(bonus?.name).toBe('Coupon');
     expect(bonus?.status).toBe('released');
-    expect(bonus?.currency).toBe('LTC');
+    expect(bonus?.currency).toBe('SOL');
+    expect(bonus?.wageringRequired).toBe(0);
+    // The ledger dates rows the way HTTP does, not the way the rest of the app reads.
+    expect(bonus?.grantedAt).toBe('2026-08-08T13:09:44.000Z');
   });
 
-  it('holds an unredeemed claim as still active, and drops a claim with no code', () => {
-    expect(couponBonus({ ...claim, redeemed: false }, 'acc-1')?.status).toBe('active');
-    expect(couponBonus({ ...claim, bonusCode: null }, 'acc-1')).toBeNull();
+  it('names a drop apart from a code, and drops a row that paid nothing', () => {
+    expect(couponBonus({ ...claim, type: 'bonusDrop' }, 'acc-1')?.name).toBe('Coupon drop');
+    expect(couponBonus({ ...claim, amount: 0 }, 'acc-1')).toBeNull();
   });
 });
 
-describe('stake wagered totals', () => {
-  it('sums turnover per product and leaves an unknown scope out', () => {
-    // Coin amounts differ wildly in worth, so only `betValue` may be added up.
-    const wagered = parseWagered([
-      { betAmount: 33.67, betValue: 4238.57, currency: 'ltc', scope: 'house' },
-      { betAmount: 28.46, betValue: 3269.35, currency: 'ltc', scope: 'sport' },
-      { betAmount: 149.5, betValue: 47.8, currency: 'doge', scope: 'sport' },
-      { betAmount: 1, betValue: 999, currency: 'btc', scope: 'poker' },
+describe('stake scoped totals', () => {
+  it('sums turnover and result per product and leaves an unknown scope out', () => {
+    // Coin amounts differ wildly in worth, so only the priced fields may be added up.
+    const totals = parseScopedTotals([
+      { betAmount: 33.67, betValue: 4238.57, profitValue: -612.4, currency: 'ltc', scope: 'house' },
+      { betAmount: 28.46, betValue: 3269.35, profitValue: 118.2, currency: 'ltc', scope: 'sport' },
+      { betAmount: 149.5, betValue: 47.8, profitValue: -12.05, currency: 'doge', scope: 'sport' },
+      { betAmount: 1, betValue: 999, profitValue: 999, currency: 'btc', scope: 'poker' },
     ]);
-    expect(wagered?.casino).toBeCloseTo(4238.57);
-    expect(wagered?.sports).toBeCloseTo(3317.15);
+    expect(totals?.wagered?.casino).toBeCloseTo(4238.57);
+    expect(totals?.wagered?.sports).toBeCloseTo(3317.15);
+    expect(totals?.result?.casino).toBeCloseTo(-612.4);
+    expect(totals?.result?.sports).toBeCloseTo(106.15);
   });
 
-  it('reports no turnover rather than zero when the site sends none', () => {
-    expect(parseWagered([])).toBeUndefined();
-    expect(parseWagered(null)).toBeUndefined();
+  it('reports nothing rather than zero when the site sends none', () => {
+    expect(parseScopedTotals([])).toBeUndefined();
+    expect(parseScopedTotals(null)).toBeUndefined();
   });
 });
 
@@ -359,5 +367,39 @@ describe('stake GraphQL failures', () => {
     answers({ data: null, errors: [{ message: 'Cannot query field baseRate.' }] });
     expect((await fetchBaseRates(creds)).get('LTC')).toBe(110);
     clock.mockRestore();
+  });
+});
+
+describe('casino rounds', () => {
+  const raw = casinoFixture.data.user.houseBetList;
+  const rounds = raw.flatMap((entry) => normalizeRound(entry, 'acc-1') ?? []);
+
+  it('keeps only the rounds it can state a result for', () => {
+    // Seven rows in, four out: one round is still running, one is the racebook,
+    // which is not a casino at all, and the live table names no clock of its own.
+    expect(rounds).toHaveLength(4);
+    expect(rounds.map((r) => r.game)).not.toContain('Horse Racing');
+    expect(rounds.map((r) => r.game)).not.toContain('Lightning Roulette');
+  });
+
+  it('reads the kind off the type Stake puts on the round', () => {
+    expect(rounds.map((r) => r.kind)).toEqual(['originals', 'originals', 'slots', 'provider']);
+  });
+
+  it('keeps the round in the coin it was played in', () => {
+    expect(rounds[0]?.currency).toBe('SOL');
+    expect(rounds[0]?.stake).toBeCloseTo(0.33574873);
+    expect(rounds[0]?.payout).toBeCloseTo(0.402898476);
+  });
+
+  it('names the studio where Stake names one', () => {
+    // Only an outside studio's round carries a provider, and it carries it on
+    // the round rather than on the game.
+    expect(rounds[3]?.provider).toBe('Hacksaw Gaming');
+    expect(rounds[0]?.provider).toBeNull();
+  });
+
+  it('dates the round by the site clock, as an ISO timestamp', () => {
+    expect(rounds[0]?.playedAt).toBe('2026-01-31T19:42:39.000Z');
   });
 });

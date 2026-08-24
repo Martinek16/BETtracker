@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { habitLeaks, selectionLeaks } from './habits';
+import { habitLeaks, marginEdges, selectionLeaks } from './habits';
 import { makeBet, makeLeg } from './__fixtures__/make-bet';
 import type { Bet } from './types';
 
@@ -230,5 +230,54 @@ describe('selectionLeaks', () => {
       unitsPerBet: 1,
       driven: false,
     });
+  });
+});
+
+/** Singles at even money, so every pick is priced at 50% and par is 47.6%. */
+const evenPicks = (sport: string, count: number, wins: number): Bet[] =>
+  Array.from({ length: count }, (_, i) =>
+    makeBet({
+      sport,
+      odds: 2,
+      status: i < wins ? 'won' : 'lost',
+      stake: 10,
+      actualReturn: i < wins ? 20 : 0,
+    }),
+  );
+
+describe('marginEdges', () => {
+  it('names nothing below the minimum pick count', () => {
+    expect(marginEdges([...evenPicks('Football', 10, 4), ...evenPicks('Tennis', 10, 4)])).toEqual({
+      worst: null,
+      best: null,
+    });
+  });
+
+  it('ranks a small gap over many picks above a large gap over few', () => {
+    const bets = [
+      // −5pp on the price, so −2.6pp past the cut, but over 700 picks.
+      ...evenPicks('Football', 700, 315),
+      // −10pp on the price, the uglier percentage, over 200 picks.
+      ...evenPicks('Tennis', 200, 80),
+      ...evenPicks('Basketball', 100, 40),
+    ];
+    const { worst, best } = marginEdges(bets);
+    expect(worst?.label).toBe('Football');
+    expect(worst?.picksPastMargin).toBeLessThan(-18);
+    // Nothing here clears the cut, so nothing is offered as an edge.
+    expect(best).toBeNull();
+  });
+
+  it('reads a group that only loses to the house cut as an edge, not a leak', () => {
+    const bets = [
+      // Level with the price: under no one, so it is 2.4pp clear of the cut.
+      ...evenPicks('Football', 700, 350),
+      ...evenPicks('Tennis', 200, 80),
+      ...evenPicks('Basketball', 100, 40),
+    ];
+    const { worst, best } = marginEdges(bets);
+    expect(best?.label).toBe('Football');
+    expect(best?.picksPastMargin).toBeGreaterThan(0);
+    expect(worst?.label).toBe('Tennis');
   });
 });

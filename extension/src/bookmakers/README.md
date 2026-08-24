@@ -19,6 +19,7 @@ bookmakers/
   registry.ts           <- collector 2: adapters
   catalog.ts            <- collector 3: metadata for the dashboard
   samples.ts            <- the contract every folder's samples.ts implements
+  shape.ts              <- refuses an answer the folder no longer recognises
   conformance.test.ts   <- the rules every folder is held to
   privacy.test.ts       <- proves no folder sends anything anywhere
 ```
@@ -78,12 +79,82 @@ Keep it that way.
 
 | File             | Must                                                                       |
 | ---------------- | -------------------------------------------------------------------------- |
-| `bookmaker.json` | `id` identical to the folder name. Everything keys off it.                 |
+| `bookmaker.json` | `id` identical to the folder name. Everything keys off it. `hasCasino` only if the site runs one. |
 | `capture.ts`     | Export `rule: CaptureRule`. Match hosts and fingerprint the API calls.     |
 | `adapter.ts`     | Export a `BookmakerAdapter`. See `../types.ts` for the interface.          |
 | `samples.ts`     | Export `samples: Samples` - the folder's own parsed bets. See `../samples.ts`.|
 | `__fixtures__/`  | At least one sanitised `.json`, so the parser has something to be proven on.|
 | `logo.png`       | Served at `logos/<id>.png` by the Vite plugin. No path to register.         |
+
+## Read every list through `readList`
+
+The one failure this project cannot otherwise see is a wrong number nobody has a
+reason to doubt. A site renames the list its bets live in; the adapter looks
+where it always looked, finds nothing, and reports a page of no bets - which is
+exactly what the end of a history looks like. The walk stops, the run reports
+success, and the totals stay frozen at whatever they last were.
+
+The fixtures cannot catch that. They are a copy of how the site answered on the
+day the folder was written, so they go on passing long after the site has moved
+on. Only the live answer knows.
+
+So the list is read through `readList` from `../shape.ts`, which throws a
+`ShapeChangedError` for an answer that is not a list at all, and for a full page
+it could not read one field out of. An **empty** list still passes, because that
+is the end of a history and every paging loop reads it that way.
+
+```ts
+const { parsed, skipped } = readList(BOOKMAKER, 'bet list', json?.bets, (item) =>
+  normalizeBet(item as RawBet, accountId),
+);
+```
+
+The error carries a marker the dashboard looks for, so the account card can say
+the site has changed and the folder needs an update, rather than lumping it in
+with a dead session. The background run leaves `lastSyncAt` where it was: the
+app says the figures are old rather than presenting stale ones as current.
+
+Two things stay outside it. A list a `parseOne` legitimately filters - money
+movements drop the pending and cancelled ones, so a page of ten of those is
+normal - would trip the "read nothing out of it" rule for a healthy answer. And
+`parseOpen`, which is handed whatever body the page fetched for its own reasons,
+means only that the bridge caught a different request. Both return nothing and
+let the next relay try.
+
+## The casino, where the site records it
+
+Two separate things, and a folder can do the first without the second.
+
+`"hasCasino": true` in `bookmaker.json` says the site runs a casino at all. That
+alone changes what the account card claims: the sportsbook figures no longer
+account for the whole wallet, so the gap between them and the balance is
+attributed to the casino instead of read as an error. Set it on any site with a
+casino, whether or not you can read a single round from it. Leave it off a
+sportsbook-only site, or its rounding errors get reported as slots losses.
+
+`syncCasino` on the adapter is the second, and it is optional because most sites
+make it impossible. It is implemented only where the site hands out its rounds
+one at a time, and it returns one `CasinoRound` per round: the site's own id for
+the round, when it resolved, the game and its slug, the stake, the payout, the
+multiplier the site itself states, and the currency. `deep` walks the whole
+history; a shallow run stops at the first page holding nothing new. Today only
+`stake/` has it.
+
+Three rules, all of which exist because the alternative is an invented figure:
+
+- **`kind` comes off the site's own label**, never off the game's name. A game an
+  outside studio supplied and the site does not categorise is `provider`, not a
+  guess at `slots`.
+- **A round with no timestamp is dropped, not dated.** The page puts rounds on a
+  period and on a curve, and both need a real time. Stake sends its live-casino
+  rounds without one, so they are skipped rather than stamped with now.
+- **The import is best-effort.** A casino read that fails must never cost the
+  bets or the payments in the same run - the sportsbook history is the thing
+  people came for.
+
+The rounds are stored on their own, in the `casinoRounds` store, and never
+folded into `Bet`. A spin is not a bet, and the moment the two are mixed every
+figure on the sports side becomes a different number.
 
 ## Mirrors
 

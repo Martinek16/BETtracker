@@ -1,11 +1,45 @@
 # Add a bookmaker
 
-This is the whole process, start to finish. It takes a few minutes, most of them
-spent waiting on the tool rather than on you.
+This is the whole process, start to finish. Set aside an afternoon, and more if
+the site is awkward. Very little of that is typing: the tool writes most of the
+code. What it is, is clicking slowly through your own bet history while the
+browser writes it down, and then checking figure by figure that what appears on
+screen is what the bookmaker says. The second half is the half people skip, and
+it is the half that decides whether the adapter is honest.
 
-You do not need to know how the extension works. You do need an account at the
-bookmaker - support is written from a recording of a real signed-in session, and
-there is no way to fake one.
+You do not need to know how the extension works.
+
+## Two people, one bookmaker
+
+Somebody has to have an account at the site. That cannot be worked around:
+support is written from a recording of a real signed-in session, and there is
+no way to fake one. But that somebody does not have to be the person who writes
+the code, and for most sites it will not be. There are two jobs here, and they
+can belong to two people who never meet.
+
+**The player** has an account and a real history at the site. They record it,
+run one command that strips the tokens and their name out of the recording, and
+hand the cleaned file over. No programming, no reading of this project's code,
+one command in one terminal. That is **steps 1 and 2**, and then they can stop.
+
+**The developer** takes that cleaned recording and writes the folder from it.
+They need no account at the bookmaker and never see one. That is **steps 3 to
+5**.
+
+Two things stay with the player and cannot be handed over. The recording is
+one. The other is **step 6**: whether the numbers on screen are the numbers the
+bookmaker shows. A developer working from a recording can produce an adapter
+that parses every field cleanly and is wrong about all of them - a withdrawal
+counted as a deposit, a void slip read as a loss, odds off by a decimal place -
+and nothing in the test suite can tell. Tests prove the code does what it did
+last week. Only somebody with an account there can prove it is true.
+
+So a split contribution is not finished when the tests pass. It is finished
+when somebody with an account has looked at the screen.
+
+One person doing both jobs is the simple case, and the rest of this document is
+written that way, in the second person. If you are the developer half, read
+**you** in steps 1, 2 and 6 as the person who sent you the recording.
 
 ## The whole thing, in one terminal
 
@@ -124,6 +158,33 @@ Slowly, giving each page a second to finish loading:
 - your balance, wherever it is shown
 - deposits and withdrawals
 - bonuses or free bets, if the site has them
+- your casino history, if the site has a casino and you play it - page back
+  through that as well
+
+**A thin history writes a lying adapter.** Whoever reads this recording can
+only see what the site was asked for. If every bet in it is a single that won,
+the folder gets written against winning singles, the tests pass on winning
+singles, and the first accumulator anybody else has goes through as something
+else entirely - or as a blank row. That failure is silent: no error, no zero,
+just a wrong number nobody has a reason to doubt.
+
+So page back until the recording holds at least one of each, and say in the
+request which of them it has:
+
+- a bet that **won** and a bet that **lost**
+- a **void** or cancelled bet, and a **partly void** slip if you have one -
+  sites disagree wildly about what a voided leg does to a winning multiple
+- a **cash-out**, which most sites report as neither a win nor a loss
+- an **accumulator**, so the legs and their individual results are visible
+- a **free bet or bonus stake**, if the site has them - the stake is not your
+  money and counting it as such moves every figure on the screen
+- a **deposit and a withdrawal**, and ideally a pending one, because a site
+  that reports a withdrawal as a negative number and one that reports it as a
+  positive number look identical until you have both
+
+Missing one is not a reason to stop. It is a line in the request: "no
+accumulators, my account has none." Then the adapter is written honestly
+without it and marked untested, instead of being written against a guess.
 
 ### Where the file goes
 
@@ -220,11 +281,36 @@ credential, and names the line and the key it found rather than the value.
 guarantee. Search it for your own name. If it is in there, run it again with
 `--me=`.
 
+### Handing it over, if somebody else is writing the code
+
+This is where the player's part ends and the developer's begins. Attach the
+`.sanitized.har` - never the raw one - to
+[a bookmaker request](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml),
+and say in it:
+
+- which of the pages in the list above you actually opened, and which you did
+  not
+- which kinds of bet are in there - won, lost, void, cash-out, accumulator,
+  free bet - and which your account has never had
+- whether you are willing to come back for step 6 and check the figures once
+  somebody has written it
+
+That last one is not a formality. An adapter nobody with an account can check
+gets merged as untested and stays that way, and "untested" on a money figure
+means "may be quietly wrong". Say no if the answer is no; it changes how the
+result is labelled, not whether it is accepted.
+
+**Read the file once more before you attach it.** An issue is public and
+permanent, and deleting it later does not unpublish it. The cleaner refuses to
+write a file that still looks like it holds a credential, but it recognises a
+personal field by its name, and no tool knows that `"nickname":
+"YourNickname87"` is you.
+
 ## 3. Write the folder
 
 ### First, read the recording
 
-Before writing anything, work out these six things from the sanitised file and
+Before writing anything, work out these seven things from the sanitised file and
 write them down. Everything in the folder falls out of them.
 
 - **Hosts.** Which host serves the API. Whether the site renumbers its domains
@@ -240,6 +326,8 @@ write them down. Everything in the folder falls out of them.
   Each site pages its own way; do not force it to look like another's.
 - **The bet shape.** How a selection, a market, odds, stake, return and status
   are represented, and how an accumulator differs from a single.
+- **The casino.** Two answers, not one. Does the site run a casino at all - yes
+  for nearly all of them - and does it hand out its rounds one at a time?
 
 ### Then write it
 
@@ -263,6 +351,48 @@ site's.
 
 Stake is one endpoint and one credential. If your site keeps its banking
 history behind a second session, read `bet-at-home/` as well - it does that.
+
+### If the site has a casino
+
+Answer the two questions separately, because they have different answers at
+almost every site.
+
+**Does it run one?** Then `bookmaker.json` gets `"hasCasino": true`, whether or
+not you can read a single round. This is what stops the app calling the money
+your slots night took an error. Without the flag, the gap between what your bets
+and payments say you should have and what you do is presented as something wrong
+with the sync. With it, the account card names it as the casino result, which is
+what it is. Do not set it on a sportsbook-only site: then that same gap really
+is a fault worth showing.
+
+**Does it hand out its rounds one at a time?** The folder you scaffolded is a
+copy of `stake/`, and Stake does, so `syncCasino` is sitting in your `adapter.ts`
+reading Stake's endpoint. **Delete it** unless your site has one of its own.
+Leaving Stake's there is a method that can only fail.
+
+Most sites do not, and that is fine -
+the reading above is the whole of the support and always was. Where it does,
+your adapter can also implement `syncCasino`, and the app gains a Casino page:
+every round, what it cost, what came back, which game, grouped into sittings.
+`stake/` is the one folder that does this today; read its `syncCasino` and the
+commented `CasinoRound` in `shared/src/types.ts`.
+
+Whatever you do, do not build rounds out of anything but rounds. A casino figure
+assembled from the balance, from payment rows or from the difference between two
+numbers is a guess wearing a table's clothes, and the whole point of the page is
+that it is not one. No round history in the recording means no `syncCasino`.
+
+Three things the one existing folder had to get right, and yours will too:
+
+- The site's own label decides what kind of game it was. A game from an outside
+  studio that the site does not categorise is `provider` - not a guess at
+  `slots`.
+- A round the site sends without a resolution time is dropped rather than dated.
+  The page filters by period and draws a curve, and both need a real time. Stake
+  sends its live-casino rounds that way, so live tables are missing from the page
+  and its README says so.
+- A casino read that fails must not take the bets down with it. The sports
+  history is what people came for.
 
 [`extension/src/bookmakers/README.md`](../extension/src/bookmakers/README.md)
 is the contract: what each file owes, what `capture.ts` may import, and the
@@ -414,6 +544,15 @@ nothing to copy anywhere.
 
 - [ ] A bet you have running right now shows as pending, with its potential return
 
+**The casino**, if the site has one
+
+- [ ] Options → Accounts shows a Casino result on the account card, rather than a
+      warning that the figures do not add up
+- [ ] If you wrote `syncCasino`: the Casino page is in the sidebar, and its
+      rounds, stakes and payouts match what the site's own casino history says
+- [ ] Its result is nowhere in the sports figures - your profit on Overview is
+      unchanged by a losing evening at the slots
+
 **And then**
 
 - [ ] Place or settle nothing - just sync a second time. Nothing duplicates, and
@@ -447,9 +586,14 @@ in the diff.
 Bookmakers change their API without telling anyone. When yours does, the sync
 stops and the numbers stay frozen on the last thing they knew.
 
+You will not have to work that out from the numbers. As long as your adapter
+reads its lists through `readList`, an answer it no longer recognises is an
+error rather than an empty page, and the account card says the site has changed
+and the folder needs an update.
+
 Record a fresh HAR, sanitise it, compare it to the fixtures in your folder, fix
-what moved, and refresh the fixtures. You are the person who will notice first,
-because you are the one using it.
+what moved, and refresh the fixtures. You are still the person who will notice
+first, because you are the one using it.
 
 ## Stuck
 

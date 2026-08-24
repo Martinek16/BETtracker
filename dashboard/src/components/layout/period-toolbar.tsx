@@ -1,3 +1,4 @@
+import type { CasinoRound } from '@betanal/shared';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { TimeRangeToggle } from '@/components/dashboard/time-range-toggle';
 import { SegmentedToggle, type SegmentedOption } from '@/components/dashboard/segmented-toggle';
@@ -23,13 +24,18 @@ const UNIT_OPTIONS: readonly SegmentedOption<AnalysisUnit>[] = [
  * Narrows every page to one account. Hidden below two accounts with data: a
  * single-choice filter is not a filter, only a control that appears broken.
  */
-const AccountToggle = (): JSX.Element | null => {
+const AccountToggle = ({ casinoOnly }: { casinoOnly: boolean }): JSX.Element | null => {
   const { bookmaker, setBookmaker, activeBookmakers } = useDashboard();
-  if (activeBookmakers.length < 2) return null;
+  // The casino page can only say anything about a book that runs one, so the
+  // rest are not choices there - offering them offers an empty page.
+  const choices = casinoOnly
+    ? activeBookmakers.filter((id) => findAccount(id)?.hasCasino === true)
+    : activeBookmakers;
+  if (choices.length < 2) return null;
 
   const options: SegmentedOption<AccountFilter>[] = [
     { value: 'all', label: 'All', title: 'All accounts' },
-    ...activeBookmakers.map((id) => ({
+    ...choices.map((id) => ({
       value: id,
       label: <AccountIcon bookmaker={id} className="h-4 w-4 rounded-[3px] p-0 text-[9px]" />,
       title: findAccount(id)?.name ?? id,
@@ -58,12 +64,29 @@ const UnconvertibleNote = (): JSX.Element | null => {
   );
 };
 
+/**
+ * The day the casino was first played, for the page that only shows the casino.
+ * A hand-picked window there would otherwise open on the first slip ever placed,
+ * which at an account that bet for a year before its first spin is a window
+ * mostly made of months with no casino in them.
+ */
+const earliestRound = (rounds: readonly CasinoRound[]): string | null =>
+  rounds.reduce<string | null>(
+    (oldest, round) => (oldest === null || round.playedAt < oldest ? round.playedAt : oldest),
+    null,
+  );
+
 interface PeriodToolbarProps {
   /** Analytics adds the view and slips/selections toggles on the left; time range stays right. */
   analyticsMode?: boolean;
+  /** Casino narrows the account chooser to the books that run one. */
+  casinoMode?: boolean;
 }
 
-export const PeriodToolbar = ({ analyticsMode = false }: PeriodToolbarProps): JSX.Element => {
+export const PeriodToolbar = ({
+  analyticsMode = false,
+  casinoMode = false,
+}: PeriodToolbarProps): JSX.Element => {
   const {
     range,
     setRange,
@@ -75,6 +98,7 @@ export const PeriodToolbar = ({ analyticsMode = false }: PeriodToolbarProps): JS
     setAnalysisUnit,
     analyticsView,
     setAnalyticsView,
+    casinoRounds,
   } = useDashboard();
 
   return (
@@ -99,7 +123,7 @@ export const PeriodToolbar = ({ analyticsMode = false }: PeriodToolbarProps): JS
           </div>
         )}
         <div className="flex items-center" data-tour="accounts">
-          <AccountToggle />
+          <AccountToggle casinoOnly={casinoMode} />
         </div>
         <UnconvertibleNote />
       </div>
@@ -110,7 +134,7 @@ export const PeriodToolbar = ({ analyticsMode = false }: PeriodToolbarProps): JS
           customFrom={customFrom}
           customTo={customTo}
           onCustom={setCustom}
-          earliest={earliestRecord}
+          earliest={casinoMode ? earliestRound(casinoRounds) : earliestRecord}
         />
       </div>
     </div>

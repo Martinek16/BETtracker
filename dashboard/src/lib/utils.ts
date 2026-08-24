@@ -108,6 +108,13 @@ export const tightMoney = (value: number, currency = 'EUR'): string =>
     ? withSymbol(decimals(Math.abs(value), 0), value < 0, currency)
     : formatMoney(value, currency);
 
+/**
+ * Money at a set number of places, for an axis whose steps are smaller than a
+ * unit: a chart of cent spins has to print the cents or every tick reads zero.
+ */
+export const preciseMoney = (value: number, currency: string, digits: number): string =>
+  withSymbol(decimals(Math.abs(value), digits), value < 0, currency);
+
 /** Axis-sized money: thousands and millions collapse so ticks stay narrow. */
 export const compactMoney = (value: number, currency: string): string => {
   const abs = Math.abs(value);

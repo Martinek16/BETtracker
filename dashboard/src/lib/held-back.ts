@@ -27,6 +27,16 @@ export const useRankFloor = (rows: number, exempt: boolean): number => {
   return exempt || floor <= 1 || rows <= CROWD ? 0 : floor;
 };
 
+/**
+ * How many settled picks a group needs before its figure is read as a pattern
+ * rather than a run of luck. One threshold from Settings for every card, so the
+ * reader is not told a row is thin on one card and solid on the next.
+ */
+export const useMinPicks = (): number => {
+  const { settings } = useSettings();
+  return Math.max(1, settings?.minPicks ?? DEFAULT_SETTINGS.minPicks);
+};
+
 export interface HeldBackRow<T> {
   row: T;
   /** Null on a held-back row, which carries no number to be read as a rank. */

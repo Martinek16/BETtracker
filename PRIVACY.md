@@ -1,6 +1,7 @@
 # BETtracker Privacy Policy
 
-**Version 1.0.0 — in force from 12 August 2026**
+**Version 1.1.0 — in force from August 2026**
+Changed since 1.0.0: casino rounds are read at a site that records them one by one.
 Contact: info.m04studio@gmail.com
 
 ## The short version
@@ -26,6 +27,8 @@ and every ten minutes in the background.
 - **Money in and out** — deposits and withdrawals, so your betting result can be told apart from
   your balance.
 - **Bonuses** — bonuses your account was already granted, what is left of one, and when it runs out.
+- **Casino rounds, at a site that records them** — the game, when it resolved, the stake and what
+  came back. Stake is the only one today. A site that keeps no round history has none of this read.
 - **Your balance** — the figure shown on the site, and a note of it each time it changes.
 - **Which account it belongs to** — the account number or username the site itself reports, so two
   logins at one bookmaker stay apart.
@@ -37,8 +40,9 @@ and every ten minutes in the background.
 
 - **Passwords and card details.** The extension reads pages you are already signed in to. It never
   asks for a login, never fills one in, and never sees a payment detail.
-- **Casino and slots play.** Only sports bets are read. Casino money shows up only as a smaller
-  balance.
+- **Anything from a site that does not hand it over.** Where a bookmaker records casino rounds one
+  by one, those rounds are read too — see above. Where it does not, nothing about the casino is
+  stored and it shows up only as a smaller balance.
 - **Anything about you as a person.** No name, no email, no address, no device fingerprint, no
   advertising identifier.
 - **Anything from other sites.** The extension only runs on the bookmakers you switched on.

@@ -266,6 +266,7 @@ const AppearanceSection = (): JSX.Element => {
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const monoIcons = settings?.monoIcons ?? true;
+  const showCasino = settings?.showCasino ?? true;
 
   const replayTour = (): void => {
     void patch({ tourSeen: false }).then(() => navigate('/'));
@@ -285,6 +286,16 @@ const AppearanceSection = (): JSX.Element => {
         }
       >
         <Switch checked={monoIcons} onCheckedChange={(next) => void patch({ monoIcons: next })} />
+      </Setting>
+      <Setting
+        label="Casino page"
+        hint={
+          showCasino
+            ? 'Shown for accounts whose casino runs off the betting wallet.'
+            : 'Hidden. The casino is still counted, it just has no page of its own.'
+        }
+      >
+        <Switch checked={showCasino} onCheckedChange={(next) => void patch({ showCasino: next })} />
       </Setting>
       <Setting label="Guided tour" hint="Walk through the dashboard again, page by page.">
         <Button variant="outline" size="sm" onClick={replayTour}>

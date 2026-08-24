@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { axisTicks, type ChartBucket } from '@/lib/chart-data';
+import { axisTicks, type AxisTick, type ChartBucket } from '@/lib/chart-data';
 import { barGeometry, buildProfitChartScale, yTickLayout } from '@/lib/profit-chart-scale';
 import { cn, formatMoney } from '@/lib/utils';
 import { ChartEmpty } from '@/components/charts/chart-empty';
@@ -12,6 +12,10 @@ interface ProfitTimelineChartProps {
   className?: string;
   /** Nothing has ever been imported, as opposed to nothing in this window. */
   noSource?: boolean;
+  /** Labels for buckets that are not calendar periods, which `days` cannot describe. */
+  ticks?: AxisTick[];
+  /** What one bucket counts, where it is not bets. */
+  countLabel?: string;
 }
 
 export const ProfitTimelineChart = ({
@@ -20,18 +24,21 @@ export const ProfitTimelineChart = ({
   days = null,
   className,
   noSource = false,
+  ticks,
+  countLabel = 'Bets',
 }: ProfitTimelineChartProps): JSX.Element => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const scale = useMemo(
-    () => buildProfitChartScale(
-      data.map((d) => d.profit),
-      currency,
-    ),
+    () =>
+      buildProfitChartScale(
+        data.map((d) => d.profit),
+        currency,
+      ),
     [data, currency],
   );
 
-  const xLabels = useMemo(() => axisTicks(data, days), [data, days]);
+  const xLabels = useMemo(() => ticks ?? axisTicks(data, days), [ticks, data, days]);
 
   if (data.length === 0 || scale === null) {
     return <ChartEmpty noSource={noSource} />;
@@ -73,7 +80,11 @@ export const ProfitTimelineChart = ({
                 key={`grid-${tick}`}
                 className={cn(
                   'pointer-events-none absolute inset-x-0 border-t',
-                  tick === 0 && showZeroLine ? 'border-border/60' : 'border-border/15',
+                  // Break-even is what every bar is read against, so it is drawn
+                  // heavier than the grid rather than as one more of it.
+                  tick === 0 && showZeroLine
+                    ? 'border-t-2 border-muted-foreground/40'
+                    : 'border-border/15',
                   lineClassName,
                 )}
                 style={{ top: `${pct}%` }}
@@ -144,7 +155,7 @@ export const ProfitTimelineChart = ({
                 },
                 { label: 'Won', value: formatMoney(hovered.wins, currency), tone: 'profit' },
                 { label: 'Lost', value: formatMoney(hovered.losses, currency), tone: 'loss' },
-                { label: 'Bets', value: String(hovered.bets), tone: 'neutral' },
+                { label: countLabel, value: String(hovered.bets), tone: 'neutral' },
               ]}
             />
           ) : null}

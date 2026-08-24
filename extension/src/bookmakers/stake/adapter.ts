@@ -22,6 +22,7 @@ import {
   getBackfillState,
   log,
   putBonus,
+  putCasinoRounds,
   putTransaction,
   setBackfillState,
   setPerks,
@@ -37,6 +38,8 @@ import type {
   BetStatus,
   BetType,
   Bookmaker,
+  CasinoKind,
+  CasinoRound,
   LiveScore,
   Transaction,
 } from '@betanal/shared';
@@ -49,6 +52,7 @@ import {
 } from '../../sync/sync';
 import { field } from '../types';
 import type { BookmakerAdapter, Credentials, SyncMode, SyncResult } from '../types';
+import { readList } from '../shape';
 
 const BOOKMAKER: Bookmaker = 'stake';
 const GRAPHQL_PATH = '/_api/graphql';
@@ -488,13 +492,54 @@ const USER_BALANCES = `query UserBalances {
 }`;
 
 /**
- * Lifetime turnover, as Stake counts it. The casino runs off the same wallet and
- * never writes a bet we could read, so this is the only figure that says what it
- * took. One row per coin per product; `betValue` is Stake's own USD pricing of
- * `betAmount`, which saves pricing 170 coins ourselves.
+ * Lifetime turnover and result, as Stake counts them. The casino runs off the
+ * same wallet and never writes a bet we could read, so without this the only way
+ * to price it is the money the wallet cannot otherwise explain - which carries
+ * every unread deposit along with it and is wrong by whatever those come to.
+ * `profitValue` ends that guess: Stake states the casino's result itself.
+ *
+ * One row per coin per product; the `*Value` fields are Stake's own USD pricing
+ * of the `*Amount` ones, which saves pricing 170 coins ourselves.
  */
 const USER_WAGERED = `query BettrackerWagered {
-  user { id statisticScoped { betAmount betValue currency scope } }
+  user { id statisticScoped { betValue profitValue currency scope } }
+}`;
+
+/**
+ * Casino rounds, one row per spin. Stake is the rare site that records them, so
+ * its casino is not only a figure in a summary.
+ *
+ * `bet` is a union and every field has to be asked for on each member by name.
+ * The members do not agree on what they carry: only `CasinoBet` declares
+ * `active`, `EvolutionBet` declares no timestamp at all, and the studio behind a
+ * game hangs off `ThirdPartyBet`'s own `game` rather than the round's. Asking any
+ * type for a field it does not have fails the whole query, which is why this
+ * follows the site's own document field for field.
+ */
+const CASINO_COMMON = 'id amount payout payoutMultiplier currency';
+
+const CASINO_BET_LIST = `query BettrackerCasinoBets($offset: Int = 0, $limit: Int = 50) {
+  user {
+    id
+    houseBetList(offset: $offset, limit: $limit) {
+      id
+      type
+      game { name slug }
+      bet {
+        ... on CasinoBet { ${CASINO_COMMON} active updatedAt }
+        ... on MultiplayerCrashBet { ${CASINO_COMMON} updatedAt }
+        ... on MultiplayerSlideBet { ${CASINO_COMMON} active updatedAt createdAt }
+        ... on SoftswissBet { ${CASINO_COMMON} updatedAt }
+        ... on ThirdPartyBet {
+          ${CASINO_COMMON}
+          updatedAt
+          game { name provider { name } }
+        }
+        ... on ZooBet { ${CASINO_COMMON} updatedAt }
+        ... on EvolutionBet { ${CASINO_COMMON} }
+      }
+    }
+  }
 }`;
 
 const CURRENCY_CONFIG = `query CurrencyConfiguration($isAcp: Boolean!) {
@@ -831,27 +876,27 @@ export const normalizeBet = (raw: RawBet, accountId: AccountId): Bet | null => {
   };
 };
 
-const parseBetPage = (
+/**
+ * An empty `sportBetList` is the end of the history and the walk above reads it
+ * as one. A *missing* one used to read the same way - which is why this goes
+ * through `readList`: the two answers mean opposite things, and telling them
+ * apart is the difference between "you have no older bets" and a total that
+ * quietly stopped growing.
+ */
+export const parseBetPage = (
   data: Record<string, unknown> | null,
   accountId: AccountId,
 ): { bets: Bet[]; skipped: number } => {
-  const list = (data?.user as { sportBetList?: unknown } | undefined)?.sportBetList;
-  if (!Array.isArray(list)) return { bets: [], skipped: 0 };
-
-  const bets: Bet[] = [];
-  let skipped = 0;
-  for (const item of list) {
-    const raw = (item as { bet?: unknown } | null)?.bet;
-    try {
-      const bet = raw === null || raw === undefined ? null : normalizeBet(raw as RawBet, accountId);
-      if (bet) bets.push(bet);
-      else skipped += 1;
-    } catch (err) {
-      skipped += 1;
-      log('warn', 'stake', `skipped unparseable bet: ${(err as Error).message}`);
-    }
-  }
-  return { bets, skipped };
+  const { parsed, skipped } = readList(
+    BOOKMAKER,
+    'bet list',
+    (data?.user as { sportBetList?: unknown } | undefined)?.sportBetList,
+    (item) => {
+      const raw = (item as { bet?: unknown } | null)?.bet;
+      return raw === null || raw === undefined ? null : normalizeBet(raw as RawBet, accountId);
+    },
+  );
+  return { bets: parsed, skipped };
 };
 
 // ── Deposits / withdrawals ───────────────────────────────────────────────────
@@ -927,6 +972,111 @@ const importMovements = async (
   return { imported, complete: false };
 };
 
+// ── Casino rounds ────────────────────────────────────────────────────────────
+
+/**
+ * Stake's own word for the round, mapped onto the kinds the app knows. `stake`
+ * runs its Originals, `softswiss` is the slot shelf it integrates itself and
+ * `evolution` the live tables. A third-party studio's game is left as that: the
+ * site never says which of its games are slots and which are live, and calling
+ * them either would be a guess printed as a fact.
+ */
+const CASINO_KINDS: Record<string, CasinoKind> = {
+  casino: 'originals',
+  crash: 'originals',
+  slide: 'originals',
+  swish: 'originals',
+  zoo: 'originals',
+  softswiss: 'slots',
+  evolution: 'live',
+  thirdparty: 'provider',
+};
+
+interface RawRound {
+  id?: string | null;
+  type?: string | null;
+  game?: { name?: string | null; slug?: string | null } | null;
+  bet?: {
+    id?: string | null;
+    active?: boolean | null;
+    amount?: number | null;
+    payout?: number | null;
+    payoutMultiplier?: number | null;
+    currency?: string | null;
+    updatedAt?: string | null;
+    createdAt?: string | null;
+    game?: { name?: string | null; provider?: { name?: string | null } | null } | null;
+  } | null;
+}
+
+/**
+ * One round, or null where it is not one we can state honestly: a round still
+ * running has no result yet, and one whose kind or clock the site withheld would
+ * land in a sitting it cannot be shown to belong to. The live-casino type is the
+ * one that carries no timestamp of any sort, so it is the one that gets dropped.
+ */
+export const normalizeRound = (raw: RawRound, accountId: AccountId): CasinoRound | null => {
+  const id = toStringOrNull(raw?.id);
+  const bet = raw?.bet;
+  // `updatedAt` is when the round resolved and is the field every type but one
+  // carries; `createdAt` exists on a single type and is the fallback for it.
+  const playedAt = toStringOrNull(bet?.updatedAt) ?? toStringOrNull(bet?.createdAt);
+  const kind = CASINO_KINDS[toStringOrNull(raw?.type) ?? ''];
+  if (id === null || bet === null || bet === undefined || playedAt === null) return null;
+  if (kind === undefined || bet.active === true) return null;
+
+  const stake = toNumber(bet.amount, 0);
+  const payout = toNumber(bet.payout, 0);
+  return {
+    id: `stake-round-${id}`,
+    bookmaker: BOOKMAKER,
+    accountId,
+    playedAt: normalizeTimestamp(playedAt),
+    game: toStringOrNull(raw.game?.name) ?? 'Unnamed game',
+    gameSlug: toStringOrNull(raw.game?.slug) ?? 'unknown',
+    kind,
+    // Only an outside studio's round names one, and it names it on the game the
+    // round itself points at rather than on the one the list carries.
+    provider: toStringOrNull(bet.game?.provider?.name),
+    stake,
+    payout,
+    // Stake's own figure where it gives one, so a round it prices differently
+    // from the plain ratio stays its number rather than ours.
+    multiplier: toNumber(bet.payoutMultiplier, stake === 0 ? 0 : payout / stake),
+    currency: normalizeCurrency(bet.currency),
+  };
+};
+
+/**
+ * The rounds, newest first, walked the way the deposits are: a page in which
+ * nothing was new is a page whose whole tail is already stored, so a routine sync
+ * stops there rather than re-reading a casino history that runs to thousands of
+ * spins.
+ */
+const importRounds = async (
+  creds: Credentials,
+  account: AccountRef,
+  deep: boolean,
+): Promise<number> => {
+  let imported = 0;
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const data = await gql(creds, CASINO_BET_LIST, {
+      offset: page * PAGE_LIMIT,
+      limit: PAGE_LIMIT,
+    });
+    const list = (data?.user as Record<string, unknown> | undefined)?.houseBetList;
+    if (!Array.isArray(list) || list.length === 0) return imported;
+    const rounds = list.flatMap(
+      (item) => normalizeRound(item as RawRound, account.accountId) ?? [],
+    );
+    const fresh = await putCasinoRounds(rounds);
+    imported += fresh;
+    if (list.length < PAGE_LIMIT) return imported;
+    if (!deep && fresh === 0) return imported;
+  }
+  return imported;
+};
+
 // ── Rewards ledger ───────────────────────────────────────────────────────────
 
 /**
@@ -964,19 +1114,25 @@ const BONUS_LEDGER = `query BettrackerBonusLedger($limit: Int!, $offset: Int!) {
   }
 }`;
 
-/** Bonus codes the account redeemed; the site calls these coupons. */
-const BONUS_CLAIM_LEDGER = `query BettrackerBonusClaims($limit: Int!, $offset: Int!) {
+/**
+ * Coupons, read where the site itself reads them. Stake's bonus history is one
+ * wallet ledger filtered by type - `Coupon` on the page is `bonusCode`, and the
+ * rakeback rows that already import sit in the very same list. The claim list
+ * behind `bonusClaimList` looked like the right source and is not: it is keyed
+ * off the code rather than the payment, and a coupon the code no longer resolves
+ * has nothing left to key on, so the rows never arrived.
+ *
+ * `bonusDrop` rides along because the site counts it as a coupon too - the same
+ * money, handed out in chat instead of by code.
+ */
+const COUPON_LEDGER = `query BettrackerCoupons($limit: Int!, $offset: Int!) {
   user {
-    bonusClaimList(limit: $limit, offset: $offset) {
+    transaction(types: [bonusCode, bonusDrop], limit: $limit, offset: $offset) {
+      id
+      type
       amount
       currency
-      claimedAt
-      redeemed
-      bonusCode {
-        id
-        code
-        expiresAt
-      }
+      createdAt
     }
   }
 }`;
@@ -1067,12 +1223,12 @@ interface RawUserBonus {
   createdAt?: string | null;
 }
 
-interface RawBonusClaim {
+interface RawCouponTransaction {
+  id?: string | null;
+  type?: string | null;
   amount?: number | null;
   currency?: string | null;
-  claimedAt?: string | null;
-  redeemed?: boolean | null;
-  bonusCode?: { id?: string | null; code?: string | null; expiresAt?: string | null } | null;
+  createdAt?: string | null;
 }
 
 interface RawRollover {
@@ -1160,32 +1316,32 @@ export const creditedBonus = (raw: RawUserBonus, accountId: AccountId): Bonus | 
 };
 
 /**
- * A redeemed bonus code. The claim carries no id of its own, so the code's does
- * the keying: an account can only claim a given code once.
+ * A coupon that paid out. It is read from the wallet ledger rather than from the
+ * code behind it, so it is the same kind of record as rakeback: a payment that
+ * happened, carrying its own row id, already spent of any condition. Nothing is
+ * owed on it and nothing can take it back, which is why it is written released.
  */
-export const couponBonus = (raw: RawBonusClaim, accountId: AccountId): Bonus | null => {
-  const id = toStringOrNull(raw.bonusCode?.id ?? null);
-  const claimedAt = toStringOrNull(raw.claimedAt ?? null);
+export const couponBonus = (raw: RawCouponTransaction, accountId: AccountId): Bonus | null => {
+  const id = toStringOrNull(raw.id);
+  const createdAt = toStringOrNull(raw.createdAt);
   const amount = toNumber(raw.amount, 0);
-  if (id === null || claimedAt === null || amount <= 0) return null;
-  const code = toStringOrNull(raw.bonusCode?.code ?? null);
+  if (id === null || createdAt === null || amount <= 0) return null;
+  const drop = toStringOrNull(raw.type) === 'bonusDrop';
   return {
     id: `stake-coupon-${id}`,
     bookmaker: BOOKMAKER,
     accountId,
-    name: code ?? 'Coupon',
-    code,
-    description: 'Bonus code redeemed',
+    name: drop ? 'Coupon drop' : 'Coupon',
+    code: null,
+    description: drop ? 'Bonus drop claimed' : 'Bonus code claimed',
     type: 'standard',
     trigger: 'manual',
-    // `redeemed` is the site saying the money left the code and reached the
-    // wallet; until then the claim is a promise like any other grant.
-    status: raw.redeemed === true ? 'released' : 'active',
+    status: 'released',
     grantedAmount: amount,
     currentAmount: amount,
     currency: normalizeCurrency(raw.currency),
-    grantedAt: normalizeTimestamp(claimedAt),
-    expiresAt: toStringOrNull(raw.bonusCode?.expiresAt ?? null),
+    grantedAt: normalizeTimestamp(createdAt),
+    expiresAt: null,
     wageringRequired: 0,
     wageringDone: 0,
   };
@@ -1396,11 +1552,11 @@ const importRewards = async (
     ],
     [
       'coupons',
-      BONUS_CLAIM_LEDGER,
+      COUPON_LEDGER,
       (data) => {
-        const list = (data?.user as { bonusClaimList?: unknown } | undefined)?.bonusClaimList;
+        const list = (data?.user as { transaction?: unknown } | undefined)?.transaction;
         return Array.isArray(list)
-          ? list.flatMap((raw) => couponBonus(raw as RawBonusClaim, id) ?? [])
+          ? list.flatMap((raw) => couponBonus(raw as RawCouponTransaction, id) ?? [])
           : [];
       },
     ],
@@ -1503,21 +1659,24 @@ export const fetchBaseRates = async (creds: Credentials): Promise<Map<string, nu
  * figure, and one cache for the site handed a second account signed in elsewhere
  * the first one's lifetime total for the next ten minutes.
  */
-const cachedWagered = new Map<AccountId, { at: number; wagered: BalanceInfo['wagered'] }>();
+const cachedWagered = new Map<
+  AccountId,
+  { at: number; totals: ReturnType<typeof parseScopedTotals> }
+>();
 
-/** Lifetime turnover, on the same slow clock as the price list and for the same reason. */
-const readWagered = async (
+/** Lifetime turnover and result, on the same slow clock as the price list and for the same reason. */
+const readScopedTotals = async (
   creds: Credentials,
   account: AccountRef,
-): Promise<BalanceInfo['wagered']> => {
+): Promise<ReturnType<typeof parseScopedTotals>> => {
   const held = cachedWagered.get(account.accountId);
-  if (held !== undefined && Date.now() - held.at < SLOW_FIELD_TTL_MS) return held.wagered;
+  if (held !== undefined && Date.now() - held.at < SLOW_FIELD_TTL_MS) return held.totals;
   const stats = await gql(creds, USER_WAGERED);
-  const wagered = parseWagered(
+  const totals = parseScopedTotals(
     (stats?.user as { statisticScoped?: unknown } | undefined)?.statisticScoped,
   );
-  if (wagered !== undefined) cachedWagered.set(account.accountId, { at: Date.now(), wagered });
-  return wagered;
+  if (totals !== undefined) cachedWagered.set(account.accountId, { at: Date.now(), totals });
+  return totals;
 };
 
 /**
@@ -1595,24 +1754,34 @@ export const parseBalance = (
 };
 
 /**
- * Turnover per product, in USD. `scope` is Stake's own word: `house` is the
- * casino, `sport` the sportsbook. An unseen scope is left out rather than
+ * Turnover and result per product, in USD. `scope` is Stake's own word: `house`
+ * is the casino, `sport` the sportsbook. An unseen scope is left out rather than
  * guessed at - a third product counted as either would misstate both.
+ *
+ * The result matters more than it looks: without it the casino figure has to be
+ * inferred from the gap left in the wallet, which also swallows every deposit
+ * and withdrawal we never read. Stake states its own, so we take its word.
  */
-export const parseWagered = (list: unknown): BalanceInfo['wagered'] | undefined => {
+export const parseScopedTotals = (
+  list: unknown,
+): { wagered: BalanceInfo['wagered']; result: BalanceInfo['result'] } | undefined => {
   if (!Array.isArray(list)) return undefined;
-  let sports = 0;
-  let casino = 0;
+  const wagered = { sports: 0, casino: 0 };
+  const result = { sports: 0, casino: 0 };
   let seen = false;
   for (const entry of list) {
-    const { scope, betValue } = (entry ?? {}) as { scope?: unknown; betValue?: unknown };
-    const worth = toNumber(betValue, 0);
-    if (scope === 'sport') sports += worth;
-    else if (scope === 'house') casino += worth;
-    else continue;
+    const { scope, betValue, profitValue } = (entry ?? {}) as {
+      scope?: unknown;
+      betValue?: unknown;
+      profitValue?: unknown;
+    };
+    const product = scope === 'sport' ? 'sports' : scope === 'house' ? 'casino' : null;
+    if (product === null) continue;
+    wagered[product] += toNumber(betValue, 0);
+    result[product] += toNumber(profitValue, 0);
     seen = true;
   }
-  return seen ? { sports, casino } : undefined;
+  return seen ? { wagered, result } : undefined;
 };
 
 // ── Adapter ──────────────────────────────────────────────────────────────────
@@ -1759,6 +1928,10 @@ export const stake: BookmakerAdapter = {
     return deposits.imported + withdrawals.imported;
   },
 
+  async syncCasino(creds, account, deep) {
+    return importRounds(creds, account, deep);
+  },
+
   async balance(creds, account) {
     const [data, rates] = await Promise.all([gql(creds, USER_BALANCES), fetchBaseRates(creds)]);
     const wallets = (data?.user as { balances?: unknown } | undefined)?.balances;
@@ -1766,8 +1939,11 @@ export const stake: BookmakerAdapter = {
     if (balance !== null) {
       // Its own failure domain: turnover is a nice-to-have, the balance is not.
       try {
-        const wagered = await readWagered(creds, account);
-        if (wagered !== undefined) balance.wagered = wagered;
+        const totals = await readScopedTotals(creds, account);
+        if (totals !== undefined) {
+          balance.wagered = totals.wagered;
+          balance.result = totals.result;
+        }
       } catch (err) {
         if (
           err instanceof SessionExpiredError ||

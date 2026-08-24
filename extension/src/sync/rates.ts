@@ -13,6 +13,7 @@ import {
   getAllBalances,
   getAllBets,
   getAllBonuses,
+  getAllCasinoRounds,
   getAllTransactions,
   getRates,
   getSettings,
@@ -127,10 +128,11 @@ const fetchCryptoDays = async (currency: string, fromDay: string): Promise<RateT
  * Returns how many quotes were added, so a caller can report a no-op cheaply.
  */
 export const syncRates = async (): Promise<number> => {
-  const [bets, transactions, bonuses, balances, settings, table] = await Promise.all([
+  const [bets, transactions, bonuses, rounds, balances, settings, table] = await Promise.all([
     getAllBets(),
     getAllTransactions(),
     getAllBonuses(),
+    getAllCasinoRounds(),
     getAllBalances(),
     getSettings(),
     getRates(),
@@ -140,6 +142,7 @@ export const syncRates = async (): Promise<number> => {
     ...bets.map((b) => ({ currency: b.currency, day: dayOf(b.placedAt) })),
     ...transactions.map((t) => ({ currency: t.currency, day: dayOf(t.occurredAt) })),
     ...bonuses.map((b) => ({ currency: b.currency, day: dayOf(b.grantedAt) })),
+    ...rounds.map((r) => ({ currency: r.currency, day: dayOf(r.playedAt) })),
     ...balances.flatMap((b) =>
       b.currency === null ? [] : [{ currency: b.currency, day: dayOf(b.capturedAt) }],
     ),

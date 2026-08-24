@@ -61,7 +61,8 @@ instruction is a chance to lose somebody:
 > **Preserve log**.
 >
 > Now click slowly through your settled bet history - page back several pages -
-> then your open bets, your balance, and your deposits and withdrawals.
+> then your open bets, your balance, and your deposits and withdrawals. If the
+> site has a casino and you play it, page back through that history too.
 >
 > Then save it. From the extension: its icon again, then **Save recording**.
 > From DevTools: right-click the list of requests and export the log, and if
@@ -144,9 +145,10 @@ than not opening it.
    Skip this if you were started by `pnpm add-bookmaker`: it names the
    sanitised file in the prompt, which means the recording is already made,
    cleaned and in place. Start at the next step.
-2. **Read** `har/<id>/*.sanitized.har` and work out the six things in
+2. **Read** `har/<id>/*.sanitized.har` and work out the seven things in
    [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md#3-write-the-folder):
-   hosts, authentication, fingerprint, endpoints, paging, bet shape.
+   hosts, authentication, fingerprint, endpoints, paging, bet shape, and whether
+   the site runs a casino and hands out its rounds.
 3. **Read** `extension/src/bookmakers/stake/` end to end - one endpoint, one
    session. If the site's money history sits behind a second login, read
    `bet-at-home/` instead, which does that.
@@ -328,6 +330,45 @@ Because none of this is tested, step 6 of
 [docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md) is the only thing standing
 between a sign error and somebody's totals. Read the money boxes as the work,
 not as the formality.
+
+## The casino is two separate decisions
+
+Most sites you will be asked for run a casino as well as a sportsbook, and
+getting this wrong makes the sports figures lie, so decide both deliberately.
+
+**Does the site have a casino at all?** That is `"hasCasino": true` in
+`bookmaker.json`, and it is about the site, not about what you managed to read.
+Set it wherever a casino exists. The app uses it to decide what the unexplained
+part of the wallet means: with it, money the bets and payments do not account
+for is shown as a casino result, and without it the same gap is a discrepancy
+the user is invited to worry about. A sportsbook-only site must not carry the
+flag, or its rounding gets labelled as slots losses.
+
+**Does the site hand out its rounds one at a time?** That is `syncCasino` on the
+adapter, and it is optional precisely because the answer is usually no. The
+scaffold copies `stake/`, which has one, so **delete `syncCasino` from the new
+`adapter.ts`** unless the recording actually holds a round history - what you
+inherit otherwise is Stake's endpoint under another site's name. Never derive
+rounds from the balance, from payment rows, or from anything else - a casino
+figure assembled out of what is left over is exactly the invented number this
+project refuses.
+
+Where you do implement it, `CasinoRound` in `shared/src/types.ts` is commented
+and is the contract. Four things it is easy to get wrong:
+
+- **`kind` is the site's own label**, never the game's name. A third-party game
+  the site does not categorise is `provider`. Calling it `slots` invents a fact.
+- **`id` is the site's own round id.** It is what makes a second import a no-op.
+- **A round with no resolution time is dropped.** The page filters rounds by
+  period and draws them on a curve; a round stamped with `now` because the site
+  sent no time is a wrong figure on both. Stake sends its live-casino rounds
+  that way, and `stake/` skips them - say so in the folder's README rather than
+  papering over it.
+- **Casino import is best-effort.** Wrap it so a failure there never costs the
+  bets and payments read in the same run.
+
+Rounds go to their own store and are never turned into `Bet`. A spin is not a
+bet: fold it in and every sports figure on screen becomes a different number.
 
 ## Where an adapter goes wrong quietly
 

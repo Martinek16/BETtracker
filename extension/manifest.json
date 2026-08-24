@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BETtracker",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Private, offline dashboard for your own betting account history. No sign-up, nothing uploaded, no ads. Adults 18+.",
   "permissions": ["storage", "alarms", "scripting", "activeTab"],
   "optional_host_permissions": ["https://*/*"],
@@ -50,11 +50,5 @@
       "matches": ["https://*/*"],
       "use_dynamic_url": true
     }
-  ],
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "bettracker@betanal.local",
-      "strict_min_version": "128.0"
-    }
-  }
+  ]
 }

@@ -16,6 +16,7 @@ import {
   getAllTransactions,
   getAllBalances,
   getAllBalanceHistory,
+  getAllCasinoRounds,
   getAllPerks,
   getAllSyncMeta as storedSyncMeta,
   getOpenBetsSeen,
@@ -30,6 +31,7 @@ import {
   type Bet,
   type Bonus,
   type Bookmaker,
+  type CasinoRound,
   type ExportBundle,
   type KnownAccount,
   type LiveScore,
@@ -274,6 +276,20 @@ export const loadBonuses = async (): Promise<Bonus[]> => {
     return (await getAllBonuses()).filter((b) => !NOISE_BONUS_NAMES.has(b.name));
   } catch (err) {
     log('warn', 'dashboard', `failed to read bonuses: ${(err as Error).message}`);
+    return [];
+  }
+};
+
+/**
+ * Casino rounds, newest first. Empty at every bookmaker that does not record its
+ * casino round by round, which is most of them.
+ */
+export const loadCasinoRounds = async (): Promise<CasinoRound[]> => {
+  if (isDemoData()) return [];
+  try {
+    return await getAllCasinoRounds();
+  } catch (err) {
+    log('warn', 'dashboard', `failed to read casino rounds: ${(err as Error).message}`);
     return [];
   }
 };

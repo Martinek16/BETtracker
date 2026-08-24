@@ -21,13 +21,32 @@ real conversation to have, just not one to have inside a pull request.
 
 ## Adding a bookmaker
 
-You need an account at the site. Support is written from a recording of a real
-signed-in session, and there is no way to fake one. No account there yourself?
-[Request the site](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml)
-and somebody who plays there may pick it up.
+Support is written from a recording of a real signed-in session at the site,
+and there is no way to fake one. So somebody with an account there is
+unavoidable - but it does not have to be the person writing the code.
 
-`pnpm add-bookmaker` runs the whole of it from one terminal, and asks which site
-you are adding. What it is doing while it does:
+**Two roles, and you may be only one of them.**
+
+- **The player** has the account. They record their own bet history, run `pnpm
+  sanitize-har` on it, and attach the cleaned file to
+  [a request](https://github.com/Martinek16/BETtracker/issues/new?template=new-bookmaker.yml).
+  One command, no programming. They come back at the end to check the figures
+  on screen against the bookmaker's own pages, which is the one thing nobody
+  else can do.
+- **The developer** writes the folder from that cleaned recording, with no
+  account at the site and no sight of one.
+
+A recording is only as good as the history behind it. If it holds nothing but
+winning singles, the adapter is written against winning singles and is wrong
+about everything else without saying so - so the player pages back for a win, a
+loss, a void, a cash-out, an accumulator and a free bet, and states in the
+request which of those their account has never had. Missing kinds are fine and
+get labelled untested; guessed ones are not.
+
+Doing both roles yourself is the simple case. `pnpm add-bookmaker` runs the
+whole of it from one terminal, and asks which site you are adding. Budget an
+afternoon: the code is largely written for you, the recording and the checking
+are not. What it is doing while it does:
 
 1. Record your own bet history with DevTools open. That gives you a `.har` file.
    The command opens the folder it goes into and waits for it.
@@ -42,19 +61,26 @@ you are adding. What it is doing while it does:
 Every step spelled out, including what to check on each screen:
 **[docs/ADD_A_BOOKMAKER.md](docs/ADD_A_BOOKMAKER.md)**.
 
-## Never commit a HAR file
+## Never publish a raw HAR file
 
-A raw HAR is a complete copy of your signed-in session: cookies, bearer tokens,
-your name, your account number, every deposit you have ever made. Publishing one
-cannot be undone by deleting it, because it is in the fork network and in
-everyone's clone within minutes.
+Not in a commit, not on an issue, not in a chat. A raw HAR is a complete copy of
+your signed-in session: cookies, bearer tokens, your name, your account number,
+every deposit you have ever made. Publishing one cannot be undone by deleting
+it, because it is in the fork network and in everyone's clone within minutes.
+
+The `.sanitized.har` that `pnpm sanitize-har` writes is a different file, and
+attaching it to a bookmaker request is exactly what it is for. Read it once
+before you do - see the paragraph below on what the cleaner cannot recognise.
+It still does not belong in a commit: what a bookmaker's folder publishes is
+fixtures, not a recording.
 
 `har/` is gitignored, `pnpm sanitize-har` cleans a recording before it goes
 anywhere, and CI rejects a `.har` or an added line shaped like a token. All
 three can be defeated. The cleaner recognises a personal field by its name, so a
 site that names its fields in its own language hands it nothing to recognise -
 tell it what is yours with `--me="Your Name,yourNickname,12345678"`. Then **read
-the fixtures you are committing**: no tool knows that `"nickname":
+what you are about to publish**, whether that is the fixtures in a pull request
+or a sanitised recording on an issue: no tool knows that `"nickname":
 "YourNickname87"` is you.
 
 A sanitised recording is not a thing to commit as it stands either. What a

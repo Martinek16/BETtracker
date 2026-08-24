@@ -1,5 +1,16 @@
+import { Fragment } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ArrowLeftRight, BarChart3, Gift, LayoutGrid, ReceiptText, Settings } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  BarChart3,
+  Dices,
+  Gift,
+  LayoutGrid,
+  ReceiptText,
+  Settings,
+} from 'lucide-react';
+import { findAccount, useAllKnownAccounts } from '@/data/accounts';
+import { useSettings } from '@/data/use-settings';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -9,74 +20,102 @@ interface NavItem {
   end?: boolean;
   /** Extra classes, used to push a link to the bottom of the rail. */
   className?: string;
+  /** Draw a hairline above this link, closing the group before it. */
+  divider?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Overview', icon: LayoutGrid, end: true },
-  { to: '/bets', label: 'Bets', icon: ReceiptText },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/transactions', label: 'Cashflow', icon: ArrowLeftRight },
+  { to: '/bets', label: 'Bets', icon: ReceiptText, divider: true },
+  { to: '/transactions', label: 'Cashflow', icon: ArrowLeftRight, divider: true },
   { to: '/bonuses', label: 'Bonuses', icon: Gift },
   { to: '/options', label: 'Options', icon: Settings, className: 'mt-auto' },
 ];
 
-export const AppSidebar = (): JSX.Element => (
-  <aside
-    className={cn(
-      'group/sidebar fixed left-0 top-14 z-30 flex h-[calc(100vh-3.5rem)] flex-col',
-      'w-[56px] border-r border-border bg-background/95 backdrop-blur',
-      'transition-[width] duration-200 ease-out',
-      'hover:w-[216px] hover:shadow-[4px_0_24px_rgba(0,0,0,0.35)]',
-    )}
-  >
-    <nav
-      data-tour="sidebar"
-      className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden p-2"
+const CASINO_ITEM: NavItem = { to: '/casino', label: 'Casino', icon: Dices };
+
+/**
+ * The casino link only where a connected account actually runs one off its
+ * betting wallet, and only while the reader wants it: an empty page for a
+ * sportsbook-only punter is a link that lies about having something to say.
+ */
+const useNavItems = (): NavItem[] => {
+  const logins = useAllKnownAccounts();
+  const { settings } = useSettings();
+  const casino =
+    (settings?.showCasino ?? true) &&
+    logins.some((login) => findAccount(login.bookmaker)?.hasCasino === true);
+  if (!casino) return NAV_ITEMS;
+  /* Next to the bets: both pages are a plain record of what was played, and
+     that is where a reader looks for them. */
+  const after = NAV_ITEMS.findIndex((item) => item.to === '/bets') + 1;
+  return [...NAV_ITEMS.slice(0, after), CASINO_ITEM, ...NAV_ITEMS.slice(after)];
+};
+
+export const AppSidebar = (): JSX.Element => {
+  const items = useNavItems();
+
+  return (
+    <aside
+      className={cn(
+        'group/sidebar fixed left-0 top-14 z-30 flex h-[calc(100vh-3.5rem)] flex-col',
+        'w-[56px] border-r border-border bg-background/95 backdrop-blur',
+        'transition-[width] duration-200 ease-out',
+        'hover:w-[216px] hover:shadow-[4px_0_24px_rgba(0,0,0,0.35)]',
+      )}
     >
-      {NAV_ITEMS.map(({ to, label, icon: Icon, end, className }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          title={label}
-          /* The tour opens every page by pointing at its own link first, so the
-             rail is what the user is looking at when the page changes under it. */
-          data-tour={`nav:${to}`}
-          className={({ isActive }) =>
-            cn(
-              'relative flex h-10 items-center rounded-lg',
-              'justify-center group-hover/sidebar:justify-start group-hover/sidebar:gap-3 group-hover/sidebar:px-3',
-              isActive
-                ? 'bg-accent text-foreground'
-                : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
-              className,
-            )
-          }
-        >
-          {({ isActive }) => (
-            <>
-              <span
-                className={cn(
-                  'absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-r-full bg-primary',
-                  'transition-opacity duration-200',
-                  isActive ? 'opacity-100' : 'opacity-0',
-                )}
-              />
-              <span className="relative shrink-0">
-                <Icon size={17} strokeWidth={isActive ? 2 : 1.75} />
-              </span>
-              <span
-                className={cn(
-                  'max-w-0 overflow-hidden whitespace-nowrap text-sm font-medium opacity-0',
-                  'group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100',
-                )}
-              >
-                {label}
-              </span>
-            </>
-          )}
-        </NavLink>
-      ))}
-    </nav>
-  </aside>
-);
+      <nav
+        data-tour="sidebar"
+        className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden p-2"
+      >
+        {items.map(({ to, label, icon: Icon, end, className, divider }) => (
+          <Fragment key={to}>
+            {divider && <span className="mx-2 my-1 h-px shrink-0 bg-border" />}
+            <NavLink
+              to={to}
+              end={end}
+              title={label}
+              /* The tour opens every page by pointing at its own link first, so the
+               rail is what the user is looking at when the page changes under it. */
+              data-tour={`nav:${to}`}
+              className={({ isActive }) =>
+                cn(
+                  'relative flex h-10 items-center rounded-lg',
+                  'justify-center group-hover/sidebar:justify-start group-hover/sidebar:gap-3 group-hover/sidebar:px-3',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+                  className,
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <span
+                    className={cn(
+                      'absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-r-full bg-primary',
+                      'transition-opacity duration-200',
+                      isActive ? 'opacity-100' : 'opacity-0',
+                    )}
+                  />
+                  <span className="relative shrink-0">
+                    <Icon size={17} strokeWidth={isActive ? 2 : 1.75} />
+                  </span>
+                  <span
+                    className={cn(
+                      'max-w-0 overflow-hidden whitespace-nowrap text-sm font-medium opacity-0',
+                      'group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100',
+                    )}
+                  >
+                    {label}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          </Fragment>
+        ))}
+      </nav>
+    </aside>
+  );
+};
