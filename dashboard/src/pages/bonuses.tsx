@@ -28,8 +28,7 @@ import { cn, formatDate, formatMoney } from '@/lib/utils';
  * wagered away - so it must not read as a win.
  */
 const STATUS_TONE: Record<string, string> = {
-  active: 'bg-profit/10 text-profit',
-  released: 'bg-profit/10 text-profit',
+  completed: 'bg-profit/10 text-profit',
 };
 
 const StatusBadge = ({ status }: { status: string }): JSX.Element => (
@@ -231,11 +230,11 @@ export const BonusesPage = (): JSX.Element => {
               <colgroup>
                 {showAccount ? <col className="w-[6%]" /> : null}
                 <col className={showAccount ? 'w-[13%]' : 'w-[14%]'} />
-                <col className={showAccount ? 'w-[32%]' : 'w-[34%]'} />
-                <col className={showAccount ? 'w-[12%]' : 'w-[13%]'} />
-                <col className={showAccount ? 'w-[12%]' : 'w-[13%]'} />
-                <col className={showAccount ? 'w-[12%]' : 'w-[13%]'} />
-                <col className="w-[13%]" />
+                <col className={showAccount ? 'w-[40%]' : 'w-[42%]'} />
+                <col className={showAccount ? 'w-[10%]' : 'w-[11%]'} />
+                <col className={showAccount ? 'w-[10%]' : 'w-[11%]'} />
+                <col className={showAccount ? 'w-[10%]' : 'w-[11%]'} />
+                <col className="w-[11%]" />
               </colgroup>
             }
             head={
@@ -288,7 +287,7 @@ export const BonusesPage = (): JSX.Element => {
                       <TableCell
                         className={cn(
                           'text-right font-medium tabular-nums',
-                          realized > 0 ? 'text-profit' : 'text-muted-foreground',
+                          !untracked && realized > 0 ? 'text-profit' : 'text-muted-foreground',
                         )}
                         title={
                           untracked
