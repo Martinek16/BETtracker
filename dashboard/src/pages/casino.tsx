@@ -40,9 +40,6 @@ const useRounds = (currency: string): CasinoRound[] => {
   return rounds;
 };
 
-/** As many rows as fit without the card growing a scrollbar of its own. */
-const TOP_ROWS = 5;
-
 const KIND_NAMES: Record<CasinoKind, string> = {
   originals: 'The site’s own games',
   slots: 'Slots',
@@ -68,9 +65,6 @@ const Row = ({
     {children}
   </div>
 );
-
-const topNote = (rows: readonly unknown[]): string =>
-  rows.length > TOP_ROWS ? `Most staked first, ${TOP_ROWS} of ${rows.length}` : 'Most staked first';
 
 const signTone = (value: number): 'profit' | 'loss' | 'neutral' =>
   value > 0 ? 'profit' : value < 0 ? 'loss' : 'neutral';
@@ -184,7 +178,7 @@ export const CasinoPage = (): JSX.Element => {
 
       <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-3">
         <div className="flex min-h-0 flex-col gap-3 xl:col-span-2">
-          <DashboardCard className="flex min-h-0 flex-1 flex-col p-4">
+          <DashboardCard className="flex min-h-0 flex-[3] flex-col p-4">
             <DashboardCardHeading
               className="mb-3"
               title="Casino over time"
@@ -211,34 +205,44 @@ export const CasinoPage = (): JSX.Element => {
             </div>
           </DashboardCard>
 
-          <div className="grid shrink-0 gap-3 sm:grid-cols-2">
-            <DashboardCard className="p-4">
+          <div className="grid min-h-0 flex-[2] gap-3 sm:grid-cols-2">
+            <DashboardCard className="flex min-h-0 flex-col p-4">
               <DashboardCardHeading
                 className="mb-2"
                 title="Where it went"
-                subtitle={topNote(games)}
+                subtitle="By game, most staked first"
               />
               <Row className={HEAD}>
                 <span className="flex-1">Game</span>
+                <span className="w-10 text-right">Rounds</span>
                 <span className="w-16 text-right">Staked</span>
                 <span className="w-16 text-right">Result</span>
+                <span className="w-12 text-right">Return</span>
               </Row>
-              {games.slice(0, TOP_ROWS).map((game) => (
-                <Row key={game.label} className={ROW}>
-                  <span className="flex-1 truncate" title={game.provider ?? undefined}>
-                    {game.label}
-                  </span>
-                  <span className="w-16 text-right tabular-nums text-muted-foreground">
-                    {formatMoney(game.staked, currency)}
-                  </span>
-                  <span className={cn('w-16 text-right tabular-nums', toneClass(game.net))}>
-                    {formatMoney(game.net, currency)}
-                  </span>
-                </Row>
-              ))}
+              <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
+                {games.map((game) => (
+                  <Row key={game.label} className={ROW}>
+                    <span className="flex-1 truncate" title={game.provider ?? undefined}>
+                      {game.label}
+                    </span>
+                    <span className="w-10 text-right tabular-nums text-muted-foreground">
+                      {game.rounds}
+                    </span>
+                    <span className="w-16 text-right tabular-nums text-muted-foreground">
+                      {formatMoney(game.staked, currency)}
+                    </span>
+                    <span className={cn('w-16 text-right tabular-nums', toneClass(game.net))}>
+                      {formatMoney(game.net, currency)}
+                    </span>
+                    <span className="w-12 text-right tabular-nums text-muted-foreground">
+                      {game.rtp === null ? '—' : formatPercent(game.rtp * 100, 0)}
+                    </span>
+                  </Row>
+                ))}
+              </div>
             </DashboardCard>
 
-            <DashboardCard className="p-4">
+            <DashboardCard className="flex min-h-0 flex-col p-4">
               <DashboardCardHeading
                 className="mb-2"
                 title="By type"
@@ -246,24 +250,35 @@ export const CasinoPage = (): JSX.Element => {
               />
               <Row className={HEAD}>
                 <span className="flex-1">Type</span>
-                <span className="w-12 text-right">Share</span>
+                <span className="w-10 text-right">Rounds</span>
+                <span className="w-16 text-right">Staked</span>
                 <span className="w-16 text-right">Result</span>
                 <span className="w-12 text-right">Return</span>
               </Row>
-              {kinds.map((kind) => (
-                <Row key={kind.label} className={ROW}>
-                  <span className="flex-1 truncate capitalize">{KIND_NAMES[kind.kind]}</span>
-                  <span className="w-12 text-right tabular-nums text-muted-foreground">
-                    {formatPercent(kind.share * 100, 0)}
-                  </span>
-                  <span className={cn('w-16 text-right tabular-nums', toneClass(kind.net))}>
-                    {formatMoney(kind.net, currency)}
-                  </span>
-                  <span className="w-12 text-right tabular-nums text-muted-foreground">
-                    {kind.rtp === null ? '—' : formatPercent(kind.rtp * 100, 0)}
-                  </span>
-                </Row>
-              ))}
+              <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
+                {kinds.map((kind) => (
+                  <Row key={kind.label} className={ROW}>
+                    <span
+                      className="flex-1 truncate"
+                      title={`${formatPercent(kind.share * 100, 0)} of the turnover`}
+                    >
+                      {KIND_NAMES[kind.kind]}
+                    </span>
+                    <span className="w-10 text-right tabular-nums text-muted-foreground">
+                      {kind.rounds}
+                    </span>
+                    <span className="w-16 text-right tabular-nums text-muted-foreground">
+                      {formatMoney(kind.staked, currency)}
+                    </span>
+                    <span className={cn('w-16 text-right tabular-nums', toneClass(kind.net))}>
+                      {formatMoney(kind.net, currency)}
+                    </span>
+                    <span className="w-12 text-right tabular-nums text-muted-foreground">
+                      {kind.rtp === null ? '—' : formatPercent(kind.rtp * 100, 0)}
+                    </span>
+                  </Row>
+                ))}
+              </div>
             </DashboardCard>
           </div>
         </div>
