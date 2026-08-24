@@ -369,6 +369,7 @@ const main = async () => {
       `  capture.ts           the fingerprint, and where the session lives (the host\n` +
       `                       pattern is already ${host})\n` +
       `  adapter.ts           the endpoints, the paging and the bet shape - and the '${from}-' id prefix\n` +
+      `                       delete syncCasino unless this site hands out casino rounds one by one\n` +
       `  samples.ts           the fixture put through this folder's parser\n` +
       `  adapter.test.ts      what is peculiar to this site\n` +
       '  README.md            what is odd about this site\n' +

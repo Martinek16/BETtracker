@@ -53,7 +53,8 @@ const QUESTIONS: readonly { question: string; answer: string }[] = [
   },
   {
     question: 'Is casino play counted?',
-    answer: 'No. Only sports bets. Casino money shows up as a smaller balance.',
+    answer:
+      'Where the site hands out its rounds one at a time — Stake does — the Casino page reads them, kept apart from the sports figures. Elsewhere the casino is only the gap in the wallet.',
   },
   {
     question: 'How do I keep a copy?',
@@ -148,8 +149,8 @@ export const AboutPage = (): JSX.Element => (
 
         <Section title="Your data">
           <Prose>
-            Stored: bets, deposits, withdrawals, bonuses, these settings. Not stored: passwords,
-            card details, casino play.
+            Stored: bets, deposits, withdrawals, bonuses, casino rounds where the site records them,
+            these settings. Not stored: passwords, card details.
           </Prose>
           <Prose>
             All of it stays in this browser. No account, no server, nothing uploaded or sold.

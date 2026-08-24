@@ -17,6 +17,14 @@ nine. Breakdowns by sport, league, market, odds band and stake size. Whether the
 prices you take are honest ones. Whether you chase after a loss, and what your
 worst run cost you.
 
+**Casino** - only at a site that records its rounds one by one, and only Stake
+does today. What the casino cost you, what came back per unit staked, how many
+rounds paid, and your best and worst. Which games took the money, what a round
+cost, what it paid as a multiple of the stake, and every evening read back as a
+sitting - so you can see the night it turned rather than a single lifetime
+figure. It is kept entirely apart from the sports numbers, which do not move
+whatever happens here.
+
 **Cashflow** - every deposit and withdrawal, what you are net down or up, and
 which of them came with a bonus attached.
 

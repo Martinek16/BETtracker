@@ -158,6 +158,8 @@ Slowly, giving each page a second to finish loading:
 - your balance, wherever it is shown
 - deposits and withdrawals
 - bonuses or free bets, if the site has them
+- your casino history, if the site has a casino and you play it - page back
+  through that as well
 
 **A thin history writes a lying adapter.** Whoever reads this recording can
 only see what the site was asked for. If every bet in it is a single that won,
@@ -308,7 +310,7 @@ personal field by its name, and no tool knows that `"nickname":
 
 ### First, read the recording
 
-Before writing anything, work out these six things from the sanitised file and
+Before writing anything, work out these seven things from the sanitised file and
 write them down. Everything in the folder falls out of them.
 
 - **Hosts.** Which host serves the API. Whether the site renumbers its domains
@@ -324,6 +326,8 @@ write them down. Everything in the folder falls out of them.
   Each site pages its own way; do not force it to look like another's.
 - **The bet shape.** How a selection, a market, odds, stake, return and status
   are represented, and how an accumulator differs from a single.
+- **The casino.** Two answers, not one. Does the site run a casino at all - yes
+  for nearly all of them - and does it hand out its rounds one at a time?
 
 ### Then write it
 
@@ -347,6 +351,48 @@ site's.
 
 Stake is one endpoint and one credential. If your site keeps its banking
 history behind a second session, read `bet-at-home/` as well - it does that.
+
+### If the site has a casino
+
+Answer the two questions separately, because they have different answers at
+almost every site.
+
+**Does it run one?** Then `bookmaker.json` gets `"hasCasino": true`, whether or
+not you can read a single round. This is what stops the app calling the money
+your slots night took an error. Without the flag, the gap between what your bets
+and payments say you should have and what you do is presented as something wrong
+with the sync. With it, the account card names it as the casino result, which is
+what it is. Do not set it on a sportsbook-only site: then that same gap really
+is a fault worth showing.
+
+**Does it hand out its rounds one at a time?** The folder you scaffolded is a
+copy of `stake/`, and Stake does, so `syncCasino` is sitting in your `adapter.ts`
+reading Stake's endpoint. **Delete it** unless your site has one of its own.
+Leaving Stake's there is a method that can only fail.
+
+Most sites do not, and that is fine -
+the reading above is the whole of the support and always was. Where it does,
+your adapter can also implement `syncCasino`, and the app gains a Casino page:
+every round, what it cost, what came back, which game, grouped into sittings.
+`stake/` is the one folder that does this today; read its `syncCasino` and the
+commented `CasinoRound` in `shared/src/types.ts`.
+
+Whatever you do, do not build rounds out of anything but rounds. A casino figure
+assembled from the balance, from payment rows or from the difference between two
+numbers is a guess wearing a table's clothes, and the whole point of the page is
+that it is not one. No round history in the recording means no `syncCasino`.
+
+Three things the one existing folder had to get right, and yours will too:
+
+- The site's own label decides what kind of game it was. A game from an outside
+  studio that the site does not categorise is `provider` - not a guess at
+  `slots`.
+- A round the site sends without a resolution time is dropped rather than dated.
+  The page filters by period and draws a curve, and both need a real time. Stake
+  sends its live-casino rounds that way, so live tables are missing from the page
+  and its README says so.
+- A casino read that fails must not take the bets down with it. The sports
+  history is what people came for.
 
 [`extension/src/bookmakers/README.md`](../extension/src/bookmakers/README.md)
 is the contract: what each file owes, what `capture.ts` may import, and the
@@ -497,6 +543,15 @@ nothing to copy anywhere.
 **Open bets**
 
 - [ ] A bet you have running right now shows as pending, with its potential return
+
+**The casino**, if the site has one
+
+- [ ] Options → Accounts shows a Casino result on the account card, rather than a
+      warning that the figures do not add up
+- [ ] If you wrote `syncCasino`: the Casino page is in the sidebar, and its
+      rounds, stakes and payouts match what the site's own casino history says
+- [ ] Its result is nowhere in the sports figures - your profit on Overview is
+      unchanged by a losing evening at the slots
 
 **And then**
 

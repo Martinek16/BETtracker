@@ -69,10 +69,14 @@ bet. [**How it works, screen by screen**](docs/HOW_IT_WORKS.md)
 
 Two. This is the whole list.
 
-| Bookmaker | Bets | Balance | Money in and out | Bonuses |
-|:--|:-:|:-:|:-:|:-:|
-| <img src="extension/src/bookmakers/bet-at-home/logo.png" width="20" align="top"> [**bet-at-home**](extension/src/bookmakers/bet-at-home/) | Yes | Yes | Yes | Yes |
-| <img src="extension/src/bookmakers/stake/logo.png" width="20" align="top"> [**Stake**](extension/src/bookmakers/stake/) | Yes | Yes | Yes | Yes |
+| Bookmaker | Bets | Balance | Money in and out | Bonuses | Casino rounds |
+|:--|:-:|:-:|:-:|:-:|:-:|
+| <img src="extension/src/bookmakers/bet-at-home/logo.png" width="20" align="top"> [**bet-at-home**](extension/src/bookmakers/bet-at-home/) | Yes | Yes | Yes | Yes | — |
+| <img src="extension/src/bookmakers/stake/logo.png" width="20" align="top"> [**Stake**](extension/src/bookmakers/stake/) | Yes | Yes | Yes | Yes | Yes |
+
+The last column is the rare one. Most sites keep no round-by-round casino
+history to read, and there the casino stays what it always was: the gap between
+what your bets and payments say you should have and what you do.
 
 Both work on all their addresses: country domains, numbered mirrors, and
 whatever they switch to next. Anywhere else, the extension knows nothing and
@@ -92,9 +96,10 @@ your browser, on your disk. It reads pages you already opened, so it never
 sees a password and cannot place a bet, deposit or withdraw. Export the lot to
 a file whenever you like, or delete it in one click.
 
-Besides your bookmakers it calls two addresses: a public exchange rate feed
-and a public coin price feed. Neither is told anything about you, and a test
-in the build fails if a bookmaker ever names a third.
+Besides your bookmakers it calls three addresses: a public exchange rate feed, a
+public coin price feed, and GitHub for the newest release number. None of them
+is told anything about you, and a test in the build fails if a bookmaker ever
+names a fourth.
 [**Privacy policy**](PRIVACY.md)
 
 ## Questions people ask
@@ -121,7 +126,7 @@ Long histories are read backwards, one page at a time. Open the bookmaker and le
 
 <details>
 <summary><b>Is casino play counted?</b></summary><br>
-No. Only sports bets. Casino money shows up as a smaller balance.
+At a site that records rounds one by one - Stake does - yes, and it gets a page of its own: every spin, what it cost, what it paid, and which game took the money. Everywhere else the casino is still only the gap in the wallet.
 </details>
 
 [**The rest of the questions**](docs/FAQ.md) - currencies and crypto, accounts

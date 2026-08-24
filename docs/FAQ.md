@@ -52,7 +52,20 @@ at - so what is on screen is old, not wrong. That one needs an adapter update,
 not another visit to the site.
 
 **Is casino play counted?**
-No. Only sports bets. Casino money shows up as a smaller balance.
+Where the site hands out its rounds one at a time, yes. Stake does, so a Stake
+account gets a Casino page: every round, what it cost, what it paid back, which
+game, and how the evening went. It is kept apart from the sports figures and
+never mixed into them - a slots night is not a betting record.
+
+Every other site only tells you the balance moved, so there the casino is still
+just the gap between what your bets and payments say you should have and what
+you actually have. That reading has not gone anywhere.
+
+Two things to know about the page even at Stake. Live-casino tables are missing,
+because Stake sends those rounds without a time and a round with no time cannot
+be put on a period or a curve. And the history goes back only as far as the site
+still hands out, so the page's total can be smaller than the lifetime casino
+result on the account card.
 
 **What about currencies, and crypto?**
 Everything is converted on the day the bet was placed, not today, so last
