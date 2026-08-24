@@ -355,6 +355,26 @@ export const openDb = (): Promise<IDBPDatabase<BetAnalDB>> => {
           }
         }
       },
+      /**
+       * Another page in this extension is still holding the previous version and
+       * a new one wants to upgrade. Left alone the upgrade never starts and every
+       * read behind it waits forever, which is a dashboard stuck on "Loading…"
+       * with nothing in the console to say why. Letting go is safe: the handle is
+       * dropped so the next call opens the upgraded database.
+       */
+      blocking(_current, _blocked, event) {
+        void (event.target as IDBDatabase | null)?.close();
+        dbPromise = null;
+      },
+      /** The browser closed the handle underneath us; reopen on next use. */
+      terminated() {
+        dbPromise = null;
+      },
+    });
+    // A rejected open must not be remembered, or one bad start makes every later
+    // read fail with an error nobody can act on.
+    dbPromise.catch(() => {
+      dbPromise = null;
     });
   }
   return dbPromise;

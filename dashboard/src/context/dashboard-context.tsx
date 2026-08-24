@@ -455,6 +455,14 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
         });
         setLoading(false);
       },
+      // A read that throws used to leave the whole dashboard on "Loading…" for
+      // good: nothing here ever stopped waiting. Saying so and letting the empty
+      // states speak is worse news, but it is news.
+      (err: Error) => {
+        if (!active) return;
+        log('error', 'dashboard', `could not read the database: ${err.message}`);
+        setLoading(false);
+      },
     );
     return () => {
       active = false;
