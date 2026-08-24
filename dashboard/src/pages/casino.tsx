@@ -276,6 +276,7 @@ const GroupTable = <T extends GroupRow>({
   iconOf,
   titleOf,
   compareLabel,
+  defaultSort = 'staked',
   currency,
 }: {
   title: string;
@@ -287,10 +288,12 @@ const GroupTable = <T extends GroupRow>({
   titleOf: (group: T) => string | undefined;
   /** How the name column orders, where alphabetical would be the wrong order. */
   compareLabel?: (a: T, b: T) => number;
+  /** The column the table opens on, where the biggest row is not the first one. */
+  defaultSort?: GroupSort;
   currency: string;
 }): JSX.Element => {
-  const [sort, setSort] = useState<GroupSort>('staked');
-  const [desc, setDesc] = useState(true);
+  const [sort, setSort] = useState<GroupSort>(defaultSort);
+  const [desc, setDesc] = useState(defaultSort !== 'label');
 
   const sorted = useMemo(() => {
     const value = (group: T): number =>
@@ -500,6 +503,7 @@ export const CasinoPage = (): JSX.Element => {
                 `${formatPercent((group.staked / played.staked) * 100, 0)} of the turnover`
               }
               compareLabel={(a, b) => a.floor - b.floor}
+              defaultSort="label"
               currency={currency}
             />
           </div>
