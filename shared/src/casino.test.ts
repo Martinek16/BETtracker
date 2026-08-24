@@ -4,7 +4,6 @@ import {
   casinoNet,
   casinoRoundCurve,
   casinoRoundTotals,
-  casinoSessions,
   casinoTotals,
   type CasinoAccountInput,
 } from './casino';
@@ -146,6 +145,8 @@ describe('casinoRoundTotals', () => {
     expect(totals.rtp).toBeCloseTo(1.44);
     expect(totals.bestRound?.id).toBe('r3');
     expect(totals.worstRound?.id).toBe('r2');
+    // The middle round paid nothing back, so two of the three are wins.
+    expect(totals.won).toBe(2);
   });
 
   it('has no return to report before a single round was played', () => {
@@ -166,30 +167,6 @@ describe('casinoByGame', () => {
     expect(rows[0]?.net).toBe(-20);
     expect(rows[0]?.share).toBeCloseTo(50 / 60);
     expect(rows[0]?.kind).toBe('slots');
-  });
-});
-
-describe('casinoSessions', () => {
-  it('cuts a sitting where the player walked away for long enough', () => {
-    const sessions = casinoSessions([
-      round({ id: 'a', playedAt: '2026-02-01T20:00:00Z' }),
-      round({ id: 'b', playedAt: '2026-02-01T20:10:00Z' }),
-      round({ id: 'c', playedAt: '2026-02-01T23:00:00Z' }),
-    ]);
-    // Newest sitting first, like every other list in the app.
-    expect(sessions).toHaveLength(2);
-    expect(sessions[0]?.totals.rounds).toBe(1);
-    expect(sessions[1]?.startedAt).toBe('2026-02-01T20:00:00Z');
-    expect(sessions[1]?.endedAt).toBe('2026-02-01T20:10:00Z');
-  });
-
-  it('keeps one long sitting together whatever order the rounds arrived in', () => {
-    const sessions = casinoSessions([
-      round({ id: 'b', playedAt: '2026-02-01T20:20:00Z' }),
-      round({ id: 'a', playedAt: '2026-02-01T20:00:00Z' }),
-    ]);
-    expect(sessions).toHaveLength(1);
-    expect(sessions[0]?.games).toEqual(['Crash']);
   });
 });
 

@@ -148,6 +148,8 @@ export const roundNet = (round: CasinoRound): number => round.payout - round.sta
 
 export interface CasinoRoundTotals {
   rounds: number;
+  /** Rounds that paid back more than they cost. A push is not a win. */
+  won: number;
   staked: number;
   returned: number;
   net: number;
@@ -162,16 +164,19 @@ export interface CasinoRoundTotals {
 export const casinoRoundTotals = (rounds: readonly CasinoRound[]): CasinoRoundTotals => {
   let staked = 0;
   let returned = 0;
+  let won = 0;
   let best: CasinoRound | null = null;
   let worst: CasinoRound | null = null;
   for (const round of rounds) {
     staked += round.stake;
     returned += round.payout;
+    if (roundNet(round) > 0) won += 1;
     if (best === null || roundNet(round) > roundNet(best)) best = round;
     if (worst === null || roundNet(round) < roundNet(worst)) worst = round;
   }
   return {
     rounds: rounds.length,
+    won,
     staked,
     returned,
     net: returned - staked,
@@ -225,47 +230,6 @@ export const casinoByGame = (rounds: readonly CasinoRound[]): CasinoGroup[] =>
 /** One row per kind of casino: the site's own word for it, never a guess. */
 export const casinoByKind = (rounds: readonly CasinoRound[]): CasinoGroup[] =>
   groupBy(rounds, (round) => round.kind);
-
-/**
- * A sitting at the casino: rounds with no long pause between them. There is no
- * such thing as a session in any site's data - nothing marks one opening or
- * closing - so it is read off the clock, and the gap is what defines it.
- */
-export interface CasinoSession {
-  startedAt: string;
-  endedAt: string;
-  totals: CasinoRoundTotals;
-  /** Games played in the sitting, most staked first. */
-  games: string[];
-}
-
-/** Default gap: half an hour away from the table is a different sitting. */
-export const SESSION_GAP_MS = 30 * 60 * 1000;
-
-export const casinoSessions = (
-  rounds: readonly CasinoRound[],
-  gapMs: number = SESSION_GAP_MS,
-): CasinoSession[] => {
-  const sorted = [...rounds].sort((a, b) => a.playedAt.localeCompare(b.playedAt));
-  const groups: CasinoRound[][] = [];
-  for (const round of sorted) {
-    const current = groups[groups.length - 1];
-    const previous = current?.[current.length - 1];
-    if (current === undefined || previous === undefined) groups.push([round]);
-    else if (Date.parse(round.playedAt) - Date.parse(previous.playedAt) > gapMs)
-      groups.push([round]);
-    else current.push(round);
-  }
-
-  return groups
-    .map((group) => ({
-      startedAt: group[0]?.playedAt ?? '',
-      endedAt: group[group.length - 1]?.playedAt ?? '',
-      totals: casinoRoundTotals(group),
-      games: casinoByGame(group).map((row) => row.label),
-    }))
-    .reverse();
-};
 
 /**
  * The casino round by round, oldest first. Unlike the balance curve above this
