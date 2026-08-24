@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { TimeRangeToggle } from '@/components/dashboard/time-range-toggle';
 import { SegmentedToggle, type SegmentedOption } from '@/components/dashboard/segmented-toggle';
@@ -8,6 +9,7 @@ import {
   type AnalyticsView,
 } from '@/context/dashboard-context';
 import { findAccount } from '@/data/accounts';
+import { loadCasinoRounds } from '@/data/source';
 
 const VIEW_OPTIONS: readonly SegmentedOption<AnalyticsView>[] = [
   { value: 'general', label: 'General' },
@@ -63,6 +65,36 @@ const UnconvertibleNote = (): JSX.Element | null => {
   );
 };
 
+/**
+ * The day the casino was first played, for the page that only shows the casino.
+ * A hand-picked window there would otherwise open on the first slip ever placed,
+ * which at an account that bet for a year before its first spin is a window
+ * mostly made of months with no casino in them.
+ *
+ * `null` off the casino page, so the window goes back to the sportsbook's own
+ * first day the moment the page is left.
+ */
+const useEarliestRound = (active: boolean): string | null => {
+  const [earliest, setEarliest] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!active) return;
+    let live = true;
+    void loadCasinoRounds().then((rounds) => {
+      const first = rounds.reduce<string | null>(
+        (oldest, round) => (oldest === null || round.playedAt < oldest ? round.playedAt : oldest),
+        null,
+      );
+      if (live) setEarliest(first);
+    });
+    return () => {
+      live = false;
+    };
+  }, [active]);
+
+  return active ? earliest : null;
+};
+
 interface PeriodToolbarProps {
   /** Analytics adds the view and slips/selections toggles on the left; time range stays right. */
   analyticsMode?: boolean;
@@ -86,6 +118,7 @@ export const PeriodToolbar = ({
     analyticsView,
     setAnalyticsView,
   } = useDashboard();
+  const earliestRound = useEarliestRound(casinoMode);
 
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -120,7 +153,7 @@ export const PeriodToolbar = ({
           customFrom={customFrom}
           customTo={customTo}
           onCustom={setCustom}
-          earliest={earliestRecord}
+          earliest={casinoMode ? earliestRound : earliestRecord}
         />
       </div>
     </div>
