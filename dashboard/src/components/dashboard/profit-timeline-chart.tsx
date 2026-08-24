@@ -80,7 +80,11 @@ export const ProfitTimelineChart = ({
                 key={`grid-${tick}`}
                 className={cn(
                   'pointer-events-none absolute inset-x-0 border-t',
-                  tick === 0 && showZeroLine ? 'border-border/60' : 'border-border/15',
+                  // Break-even is what every bar is read against, so it is drawn
+                  // heavier than the grid rather than as one more of it.
+                  tick === 0 && showZeroLine
+                    ? 'border-t-2 border-muted-foreground/40'
+                    : 'border-border/15',
                   lineClassName,
                 )}
                 style={{ top: `${pct}%` }}

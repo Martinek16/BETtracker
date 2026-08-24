@@ -83,10 +83,7 @@ export const ChasingCard = ({ bets, currency, open, onToggle }: ChasingCardProps
                 : 'Your stake stayed the same whether the last slip won or lost. '}
             {`Every ${hundred} staked after a loss came back as `}
             <span
-              className={cn(
-                'font-medium',
-                tilt.afterLoss.roi >= 0 ? 'text-profit' : 'text-loss',
-              )}
+              className={cn('font-medium', tilt.afterLoss.roi >= 0 ? 'text-profit' : 'text-loss')}
             >
               {money(100 + tilt.afterLoss.roi)}
             </span>

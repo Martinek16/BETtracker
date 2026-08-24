@@ -11,6 +11,20 @@
  */
 export const TYPICAL_BOOKMAKER_MARGIN_PCT = 5;
 
+/**
+ * How far under its own price a fairly bet selection is expected to land, in
+ * percentage points, purely because the book prices its market over 100%.
+ *
+ * A market quoted with a 5% overround sells a true 38.1% shot as 40%, so a set
+ * of picks priced at 40% that wins 38.1% of the time is exactly par - a −1.9pp
+ * gap that is the house cut and nothing else. Without this line every gap reads
+ * as the bettor's fault; with it, only the part past the line is theirs.
+ */
+export const marginGapPp = (
+  meanImplied: number,
+  marginPct: number = TYPICAL_BOOKMAKER_MARGIN_PCT,
+): number => -meanImplied * (marginPct / (100 + marginPct));
+
 /** Sustained yield that counts as a winning bettor. Published ranges put it at 3–7%. */
 export const GOOD_LONG_RUN_YIELD_PCT = 3;
 

@@ -1,6 +1,7 @@
 import type { Bet } from './types';
+import { marginGapPp } from './benchmarks';
 import { groupBy, type GroupStats, type LegDimension, type SlipDimension } from './dimensions';
-import { groupSelectionsBy } from './selections';
+import { groupSelectionsBy, type SelectionStats } from './selections';
 import { OTHER_MARKETS } from './markets';
 
 /** One betting habit, phrased so it can be read straight off the screen. */
@@ -216,5 +217,94 @@ export const selectionLeaks = (bets: readonly Bet[], minPicks = 8, limit = 3): H
   return {
     worst: topPerDimension(candidates.filter((c) => c.profit < 0).sort(ranked(1)), limit),
     best: topPerDimension(candidates.filter((c) => c.profit > 0).sort(ranked(-1)), limit),
+  };
+};
+
+/** One group read against the house cut rather than against the raw price. */
+export interface MarginEdge {
+  dimension: LegDimension;
+  label: string;
+  /** Points clear of (positive) or short of (negative) the built-in margin. */
+  pastMarginPp: number;
+  /**
+   * `pastMarginPp` spread over the group's picks: picks won or lost beyond what
+   * the margin alone accounts for. Small gaps over thousands of picks cost more
+   * than large gaps over fifty, and this is what says so.
+   */
+  picksPastMargin: number;
+  picks: number;
+  /** Real money attributed to the group - a combo leg carries its share. */
+  moneyPl: number;
+}
+
+/** Picks a group needs before its distance from par is worth naming at all. */
+const MIN_EDGE_PICKS = 30;
+
+/** The splits this page offers, so the summary names a card the reader can look at. */
+const EDGE_LEGS: readonly LegDimension[] = [
+  'sport',
+  'league',
+  'marketFamily',
+  'team',
+  'timeToEvent',
+  'oddsBand',
+];
+
+/**
+ * Worst-first for `sign = 1`, best-first for `sign = -1`. A tie is broken by how
+ * broad the split is: one team's picks are also a league's and a sport's, and the
+ * sport is the one a reader can act on without chasing the same picks twice.
+ */
+const byCost =
+  (sign: 1 | -1) =>
+  (a: MarginEdge, b: MarginEdge): number =>
+    sign * (a.picksPastMargin - b.picksPastMargin) ||
+    EDGE_LEGS.indexOf(a.dimension) - EDGE_LEGS.indexOf(b.dimension);
+
+export const marginEdgeOf = (g: SelectionStats, dimension: LegDimension): MarginEdge => {
+  const pastMarginPp = g.edgePp - marginGapPp(g.meanImplied);
+  return {
+    dimension,
+    label: g.label,
+    pastMarginPp,
+    picksPastMargin: (pastMarginPp / 100) * g.decided,
+    picks: g.decided,
+    moneyPl: g.moneyPl,
+  };
+};
+
+/**
+ * Where the record actually leaks, once the bookmaker's own cut is taken out of
+ * the reading and volume is taken into it.
+ *
+ * Every price carries an overround, so landing under it is expected; only the
+ * part past that line is the bettor's own. Ranked by picks lost past the line
+ * rather than by the ugliest percentage, because −3pp over 4000 picks is a
+ * bigger hole than −8pp over 100.
+ */
+export const marginEdges = (
+  bets: readonly Bet[],
+  minPicks = MIN_EDGE_PICKS,
+): { worst: MarginEdge | null; best: MarginEdge | null } => {
+  const candidates = EDGE_LEGS.flatMap((dimension) => {
+    const groups = groupSelectionsBy(bets, dimension);
+    const decidedTotal = groups.reduce((sum, g) => sum + g.decided, 0);
+    return groups
+      .filter(
+        (g) =>
+          g.decided >= minPicks &&
+          // A group holding nearly every pick is the period total in disguise.
+          g.decided <= decidedTotal * DOMINANT_SHARE &&
+          g.key !== 'Unknown' &&
+          g.key !== OTHER_MARKETS,
+      )
+      .map((g) => marginEdgeOf(g, dimension));
+  });
+
+  const worst = [...candidates].sort(byCost(1))[0];
+  const best = [...candidates].sort(byCost(-1))[0];
+  return {
+    worst: worst !== undefined && worst.picksPastMargin < 0 ? worst : null,
+    best: best !== undefined && best.picksPastMargin > 0 ? best : null,
   };
 };
