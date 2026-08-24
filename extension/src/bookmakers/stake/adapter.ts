@@ -1114,19 +1114,25 @@ const BONUS_LEDGER = `query BettrackerBonusLedger($limit: Int!, $offset: Int!) {
   }
 }`;
 
-/** Bonus codes the account redeemed; the site calls these coupons. */
-const BONUS_CLAIM_LEDGER = `query BettrackerBonusClaims($limit: Int!, $offset: Int!) {
+/**
+ * Coupons, read where the site itself reads them. Stake's bonus history is one
+ * wallet ledger filtered by type - `Coupon` on the page is `bonusCode`, and the
+ * rakeback rows that already import sit in the very same list. The claim list
+ * behind `bonusClaimList` looked like the right source and is not: it is keyed
+ * off the code rather than the payment, and a coupon the code no longer resolves
+ * has nothing left to key on, so the rows never arrived.
+ *
+ * `bonusDrop` rides along because the site counts it as a coupon too - the same
+ * money, handed out in chat instead of by code.
+ */
+const COUPON_LEDGER = `query BettrackerCoupons($limit: Int!, $offset: Int!) {
   user {
-    bonusClaimList(limit: $limit, offset: $offset) {
+    transaction(types: [bonusCode, bonusDrop], limit: $limit, offset: $offset) {
+      id
+      type
       amount
       currency
-      claimedAt
-      redeemed
-      bonusCode {
-        id
-        code
-        expiresAt
-      }
+      createdAt
     }
   }
 }`;
@@ -1217,12 +1223,12 @@ interface RawUserBonus {
   createdAt?: string | null;
 }
 
-interface RawBonusClaim {
+interface RawCouponTransaction {
+  id?: string | null;
+  type?: string | null;
   amount?: number | null;
   currency?: string | null;
-  claimedAt?: string | null;
-  redeemed?: boolean | null;
-  bonusCode?: { id?: string | null; code?: string | null; expiresAt?: string | null } | null;
+  createdAt?: string | null;
 }
 
 interface RawRollover {
@@ -1310,32 +1316,32 @@ export const creditedBonus = (raw: RawUserBonus, accountId: AccountId): Bonus | 
 };
 
 /**
- * A redeemed bonus code. The claim carries no id of its own, so the code's does
- * the keying: an account can only claim a given code once.
+ * A coupon that paid out. It is read from the wallet ledger rather than from the
+ * code behind it, so it is the same kind of record as rakeback: a payment that
+ * happened, carrying its own row id, already spent of any condition. Nothing is
+ * owed on it and nothing can take it back, which is why it is written released.
  */
-export const couponBonus = (raw: RawBonusClaim, accountId: AccountId): Bonus | null => {
-  const id = toStringOrNull(raw.bonusCode?.id ?? null);
-  const claimedAt = toStringOrNull(raw.claimedAt ?? null);
+export const couponBonus = (raw: RawCouponTransaction, accountId: AccountId): Bonus | null => {
+  const id = toStringOrNull(raw.id);
+  const createdAt = toStringOrNull(raw.createdAt);
   const amount = toNumber(raw.amount, 0);
-  if (id === null || claimedAt === null || amount <= 0) return null;
-  const code = toStringOrNull(raw.bonusCode?.code ?? null);
+  if (id === null || createdAt === null || amount <= 0) return null;
+  const drop = toStringOrNull(raw.type) === 'bonusDrop';
   return {
     id: `stake-coupon-${id}`,
     bookmaker: BOOKMAKER,
     accountId,
-    name: code ?? 'Coupon',
-    code,
-    description: 'Bonus code redeemed',
+    name: drop ? 'Coupon drop' : 'Coupon',
+    code: null,
+    description: drop ? 'Bonus drop claimed' : 'Bonus code claimed',
     type: 'standard',
     trigger: 'manual',
-    // `redeemed` is the site saying the money left the code and reached the
-    // wallet; until then the claim is a promise like any other grant.
-    status: raw.redeemed === true ? 'released' : 'active',
+    status: 'released',
     grantedAmount: amount,
     currentAmount: amount,
     currency: normalizeCurrency(raw.currency),
-    grantedAt: normalizeTimestamp(claimedAt),
-    expiresAt: toStringOrNull(raw.bonusCode?.expiresAt ?? null),
+    grantedAt: normalizeTimestamp(createdAt),
+    expiresAt: null,
     wageringRequired: 0,
     wageringDone: 0,
   };
@@ -1546,11 +1552,11 @@ const importRewards = async (
     ],
     [
       'coupons',
-      BONUS_CLAIM_LEDGER,
+      COUPON_LEDGER,
       (data) => {
-        const list = (data?.user as { bonusClaimList?: unknown } | undefined)?.bonusClaimList;
+        const list = (data?.user as { transaction?: unknown } | undefined)?.transaction;
         return Array.isArray(list)
-          ? list.flatMap((raw) => couponBonus(raw as RawBonusClaim, id) ?? [])
+          ? list.flatMap((raw) => couponBonus(raw as RawCouponTransaction, id) ?? [])
           : [];
       },
     ],

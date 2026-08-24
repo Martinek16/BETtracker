@@ -157,25 +157,29 @@ describe('stake bet products other than SportBet', () => {
 });
 
 describe('stake coupons', () => {
+  // A row off /transactions/bonuses, where the site labels this type "Coupon".
   const claim = {
-    amount: 5,
-    currency: 'ltc',
-    claimedAt: '2026-07-01T10:00:00Z',
-    redeemed: true,
-    bonusCode: { id: 'c1', code: 'WELCOME', expiresAt: '2026-09-01T00:00:00Z' },
+    id: '4a6b726e-e8e7-4df5-aed2-ddedb7f78f6f',
+    type: 'bonusCode',
+    currency: 'sol',
+    amount: 0.00039720000476640006,
+    createdAt: 'Sat, 08 Aug 2026 13:09:44 GMT',
   };
 
-  it('keys a redeemed code by the code it was claimed from', () => {
+  it('writes a coupon payment as money already received, like rakeback', () => {
     const bonus = couponBonus(claim, 'acc-1');
-    expect(bonus?.id).toBe('stake-coupon-c1');
-    expect(bonus?.name).toBe('WELCOME');
+    expect(bonus?.id).toBe('stake-coupon-4a6b726e-e8e7-4df5-aed2-ddedb7f78f6f');
+    expect(bonus?.name).toBe('Coupon');
     expect(bonus?.status).toBe('released');
-    expect(bonus?.currency).toBe('LTC');
+    expect(bonus?.currency).toBe('SOL');
+    expect(bonus?.wageringRequired).toBe(0);
+    // The ledger dates rows the way HTTP does, not the way the rest of the app reads.
+    expect(bonus?.grantedAt).toBe('2026-08-08T13:09:44.000Z');
   });
 
-  it('holds an unredeemed claim as still active, and drops a claim with no code', () => {
-    expect(couponBonus({ ...claim, redeemed: false }, 'acc-1')?.status).toBe('active');
-    expect(couponBonus({ ...claim, bonusCode: null }, 'acc-1')).toBeNull();
+  it('names a drop apart from a code, and drops a row that paid nothing', () => {
+    expect(couponBonus({ ...claim, type: 'bonusDrop' }, 'acc-1')?.name).toBe('Coupon drop');
+    expect(couponBonus({ ...claim, amount: 0 }, 'acc-1')).toBeNull();
   });
 });
 
