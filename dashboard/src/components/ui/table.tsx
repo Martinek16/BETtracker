@@ -31,7 +31,7 @@ export const Table = ({
   const tableClass = cn('w-full caption-bottom text-sm', className);
   if (head === undefined) {
     return (
-      <div className={cn('relative w-full overflow-auto', containerClassName)}>
+      <div className={cn('scroll-area relative w-full overflow-auto', containerClassName)}>
         <table className={tableClass} {...props}>
           {cols}
           {children}

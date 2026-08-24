@@ -95,6 +95,11 @@ of those are the site's limit, not a setting.
   Bets, Casino, Cashflow, Bonuses — with the groups ruled apart.
 - **The break-even line is visible again** on the profit charts, instead of
   blending into the grid behind it.
+- **A sideways flick of a mouse wheel no longer outlines the table in white.**
+  Chrome treats every scrolling box as something you can tab to, and draws its
+  own heavy ring around one the moment a wheel touches it. A thin line in the
+  theme's own colour does that job now, so a keyboard can still find its way
+  without a table lighting up every time the wheel moves.
 - **Bonuses only turn green when they are actually finished.** A bonus still
   being wagered was badged the same as one you had cleared, and a bonus the
   extension never watched being played through showed its face value in profit

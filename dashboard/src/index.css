@@ -149,6 +149,17 @@
     background: transparent;
   }
 
+  /* Chromium makes every scroll box keyboard-focusable and then paints its own
+     heavy focus ring the moment a wheel scrolls one - so a sideways flick of a
+     mouse wheel outlines half the screen in white. The ring is kept, because a
+     keyboard user scrolling one of these has to be able to see which, but it is
+     drawn thin, inside the box and in the theme's own colour. */
+  .scroll-area:focus-visible,
+  .scroll-gutter:focus-visible {
+    outline: 1px solid hsl(var(--ring) / 0.5);
+    outline-offset: -1px;
+  }
+
   /* Reserves exactly the same gutter as `.scroll-area` but paints nothing: used
      by a table header sitting above its scroll box, where the space is only
      needed so the header columns stay aligned with the body's. */
