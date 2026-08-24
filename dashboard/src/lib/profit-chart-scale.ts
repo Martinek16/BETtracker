@@ -25,12 +25,15 @@ const niceStep = (rough: number): number => {
 const tickDigits = (step: number): number => Math.min(4, Math.max(0, Math.ceil(-Math.log10(step))));
 
 /**
- * Smallest round bounds enclosing [min, max] with zero on a grid line.
+ * Round bounds enclosing [min, max] with zero on a grid line.
  *
- * The range is never padded out to a fixed division count: doing that pushes
- * bounds past the data on both sides, so an all-positive run gets a phantom
- * negative band and the zero line floats a quarter of the way up the plot
- * instead of sitting at the bottom where the data actually starts.
+ * The count of rungs is fixed, so the grid holds its place while the figures
+ * behind it change: narrowing a chart to one game moves the labels and leaves
+ * the lines where the eye already found them.
+ *
+ * Which side gains a rung is not: a run that never crossed zero keeps zero at
+ * its edge rather than gaining a band it was never in, and past that the rung
+ * goes to whichever side has less room left, so the data stays centred.
  */
 const buildAxis = (min: number, max: number): { yMin: number; yMax: number; step: number } => {
   let step = niceStep((max - min) / DIVISIONS);
@@ -38,10 +41,14 @@ const buildAxis = (min: number, max: number): { yMin: number; yMax: number; step
   // rung at a time whatever scale the account plays at.
   while (Math.ceil(max / step) - Math.floor(min / step) > DIVISIONS) step = niceStep(step * 1.5);
 
-  const lo = Math.floor(min / step);
+  let lo = Math.floor(min / step);
   let hi = Math.ceil(max / step);
-  // All-zero data collapses the axis to a point; give it one step of height.
-  if (hi === lo) hi += 1;
+  while (hi - lo < DIVISIONS) {
+    if (lo >= 0) hi += 1;
+    else if (hi <= 0) lo -= 1;
+    else if (hi * step - max <= min - lo * step) hi += 1;
+    else lo -= 1;
+  }
   return { yMin: lo * step, yMax: hi * step, step };
 };
 

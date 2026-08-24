@@ -563,14 +563,14 @@ export const CasinoPage = (): JSX.Element => {
             <DashboardCardHeading
               className="mb-3"
               title={
-                picked === null ? (
-                  'Round by round'
-                ) : (
-                  <span className="flex items-center gap-2 text-lg">
-                    <PickedIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
-                    <span className="truncate first-letter:uppercase">{picked.label}</span>
+                // Always the same shape, mark and size: a heading that grows when a
+                // game is picked shoves the buttons beside it down the card.
+                <span className="flex items-center gap-2 text-lg">
+                  <PickedIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+                  <span className="truncate first-letter:uppercase">
+                    {picked === null ? 'Round by round' : picked.label}
                   </span>
-                )
+                </span>
               }
               subtitle={
                 picked === null

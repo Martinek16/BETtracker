@@ -20,6 +20,18 @@ describe('buildProfitChartScale', () => {
     expect(scale?.yTicks).toEqual([-100, 0, 100, 200, 300]);
   });
 
+  it('draws the same number of grid lines whatever the data', () => {
+    const counts = [[1], [-5, 8], [0, 0], [-0.02, -0.18], [120, -40, 260]].map(
+      (profits) => buildProfitChartScale(profits, 'EUR')?.yTicks.length,
+    );
+    expect(new Set(counts)).toEqual(new Set([5]));
+  });
+
+  it('keeps zero at the edge for a run that never crossed it', () => {
+    const scale = buildProfitChartScale([40, 120, 260], 'EUR');
+    expect(scale?.yMin).toBe(0);
+  });
+
   it('holds zero on a grid line whatever the step', () => {
     const scale = buildProfitChartScale([-0.3, 0.45], 'EUR');
     expect(scale?.yTicks).toContain(0);
