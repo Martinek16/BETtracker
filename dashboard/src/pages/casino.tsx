@@ -8,6 +8,7 @@ import {
   casinoSessions,
   convertRounds,
   roundNet,
+  type CasinoGroup,
   type CasinoKind,
   type CasinoRound,
 } from '@betanal/shared';
@@ -15,7 +16,9 @@ import {
   ArrowUpDown,
   Bomb,
   Cherry,
+  ChevronDown,
   ChevronsDown,
+  ChevronUp,
   Club,
   Coins,
   Diamond,
@@ -122,6 +125,134 @@ const signTone = (value: number): 'profit' | 'loss' | 'neutral' =>
 
 const toneClass = (value: number | null): string =>
   value === null || value === 0 ? 'text-foreground' : value > 0 ? 'text-profit' : 'text-loss';
+
+type GroupSort = 'label' | 'rounds' | 'staked' | 'returned' | 'rtp';
+
+const GROUP_COLUMNS: readonly { key: GroupSort; label: string; width: string }[] = [
+  { key: 'rounds', label: 'Rounds', width: 'w-10' },
+  { key: 'staked', label: 'Staked', width: 'w-16' },
+  { key: 'returned', label: 'Paid out', width: 'w-16' },
+  { key: 'rtp', label: 'Return', width: 'w-12' },
+];
+
+const SortHead = ({
+  label,
+  width,
+  active,
+  desc,
+  onClick,
+}: {
+  label: string;
+  width: string;
+  active: boolean;
+  desc: boolean;
+  onClick: () => void;
+}): JSX.Element => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      'flex items-center justify-center gap-0.5 hover:text-foreground',
+      width,
+      active && 'text-foreground',
+    )}
+  >
+    {label}
+    {active && (desc ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}
+  </button>
+);
+
+/**
+ * One of the two breakdowns, sorted by whichever column was last clicked. Both
+ * hold the same figures over different groupings, so they are one table read
+ * twice rather than two tables kept in step by hand.
+ */
+const GroupTable = ({
+  title,
+  nameLabel,
+  groups,
+  nameOf,
+  iconOf,
+  titleOf,
+  currency,
+}: {
+  title: string;
+  nameLabel: string;
+  groups: readonly CasinoGroup[];
+  nameOf: (group: CasinoGroup) => string;
+  iconOf: (group: CasinoGroup) => LucideIcon;
+  titleOf: (group: CasinoGroup) => string | undefined;
+  currency: string;
+}): JSX.Element => {
+  const [sort, setSort] = useState<GroupSort>('staked');
+  const [desc, setDesc] = useState(true);
+
+  const sorted = useMemo(() => {
+    const value = (group: CasinoGroup): number =>
+      sort === 'label' ? 0 : sort === 'rtp' ? (group.rtp ?? -1) : group[sort];
+    return [...groups].sort((a, b) => {
+      const diff = sort === 'label' ? nameOf(a).localeCompare(nameOf(b)) : value(a) - value(b) || 0;
+      return desc ? -diff : diff;
+    });
+  }, [groups, sort, desc, nameOf]);
+
+  const click = (key: GroupSort) => (): void => {
+    setDesc(key === sort ? !desc : key !== 'label');
+    setSort(key);
+  };
+
+  return (
+    <DashboardCard className="flex min-h-0 flex-col p-4">
+      <DashboardCardHeading className="mb-2" title={title} />
+      {/* Reserves the body's scrollbar gutter so the columns stay aligned. */}
+      <Row className={cn(HEAD, 'scroll-gutter overflow-y-scroll')}>
+        <span className="w-3 shrink-0" />
+        <SortHead
+          label={nameLabel}
+          width="flex-1 !justify-start"
+          active={sort === 'label'}
+          desc={desc}
+          onClick={click('label')}
+        />
+        {GROUP_COLUMNS.map((column) => (
+          <SortHead
+            key={column.key}
+            label={column.label}
+            width={column.width}
+            active={sort === column.key}
+            desc={desc}
+            onClick={click(column.key)}
+          />
+        ))}
+      </Row>
+      <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
+        {sorted.map((group) => {
+          const Icon = iconOf(group);
+          return (
+            <Row key={group.label} className={ROW}>
+              <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <span className="flex-1 truncate first-letter:uppercase" title={titleOf(group)}>
+                {nameOf(group)}
+              </span>
+              <span className="w-10 text-right tabular-nums text-muted-foreground">
+                {group.rounds}
+              </span>
+              <span className="w-16 text-right tabular-nums text-muted-foreground">
+                {formatMoney(group.staked, currency)}
+              </span>
+              <span className={cn('w-16 text-right tabular-nums', toneClass(group.net))}>
+                {formatMoney(group.returned, currency)}
+              </span>
+              <span className="w-12 text-right tabular-nums text-muted-foreground">
+                {group.rtp === null ? '—' : formatPercent(group.rtp * 100, 0)}
+              </span>
+            </Row>
+          );
+        })}
+      </div>
+    </DashboardCard>
+  );
+};
 
 /**
  * The casino, which the sportsbook figures otherwise swallow.
@@ -231,112 +362,38 @@ export const CasinoPage = (): JSX.Element => {
       <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-3">
         <div className="flex min-h-0 flex-col gap-3 xl:col-span-2">
           <DashboardCard className="flex min-h-0 flex-[12] flex-col p-4">
-            <DashboardCardHeading
-              className="mb-3"
-              title="Casino over time"
-              subtitle={
-                rounds.length === 0 ? 'Nothing played in this period' : 'One step per round'
-              }
-            />
+            <DashboardCardHeading className="mb-3" title="Casino over time" />
             <div className="min-h-0 flex-1 overflow-hidden">
-              {rounds.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Either no round was played in this period, or the site hands out no round-by-round
-                  history.
-                </p>
-              ) : (
-                <RunningPlChart
-                  series={curve}
-                  currency={currency}
-                  days={days}
-                  until={until}
-                  deltaLabel="This round"
-                  totalLabel="Casino result"
-                />
-              )}
+              <RunningPlChart
+                series={curve}
+                currency={currency}
+                days={days}
+                until={until}
+                deltaLabel="This round"
+                totalLabel="Casino result"
+              />
             </div>
           </DashboardCard>
 
           <div className="grid min-h-0 flex-[13] gap-3 sm:grid-cols-2">
-            <DashboardCard className="flex min-h-0 flex-col p-4">
-              <DashboardCardHeading className="mb-2" title="Games" />
-              <Row className={HEAD}>
-                <span className="w-3 shrink-0" />
-                <span className="flex-1">Game</span>
-                <span className="w-10 text-center">Rounds</span>
-                <span className="w-16 text-center">Staked</span>
-                <span className="w-16 text-center">Paid out</span>
-                <span className="w-12 text-center">Return</span>
-              </Row>
-              <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
-                {games.map((game) => {
-                  const Icon = gameIcon(game.label, game.kind);
-                  return (
-                    <Row key={game.label} className={ROW}>
-                      <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
-                      <span
-                        className="flex-1 truncate first-letter:uppercase"
-                        title={game.provider ?? undefined}
-                      >
-                        {game.label}
-                      </span>
-                      <span className="w-10 text-right tabular-nums text-muted-foreground">
-                        {game.rounds}
-                      </span>
-                      <span className="w-16 text-right tabular-nums text-muted-foreground">
-                        {formatMoney(game.staked, currency)}
-                      </span>
-                      <span className={cn('w-16 text-right tabular-nums', toneClass(game.net))}>
-                        {formatMoney(game.returned, currency)}
-                      </span>
-                      <span className="w-12 text-right tabular-nums text-muted-foreground">
-                        {game.rtp === null ? '—' : formatPercent(game.rtp * 100, 0)}
-                      </span>
-                    </Row>
-                  );
-                })}
-              </div>
-            </DashboardCard>
-
-            <DashboardCard className="flex min-h-0 flex-col p-4">
-              <DashboardCardHeading className="mb-2" title="By type" />
-              <Row className={HEAD}>
-                <span className="w-3 shrink-0" />
-                <span className="flex-1">Type</span>
-                <span className="w-10 text-center">Rounds</span>
-                <span className="w-16 text-center">Staked</span>
-                <span className="w-16 text-center">Paid out</span>
-                <span className="w-12 text-center">Return</span>
-              </Row>
-              <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
-                {kinds.map((kind) => {
-                  const Icon = KIND_ICONS[kind.kind];
-                  return (
-                    <Row key={kind.label} className={ROW}>
-                      <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
-                      <span
-                        className="flex-1 truncate"
-                        title={`${formatPercent(kind.share * 100, 0)} of the turnover`}
-                      >
-                        {KIND_NAMES[kind.kind]}
-                      </span>
-                      <span className="w-10 text-right tabular-nums text-muted-foreground">
-                        {kind.rounds}
-                      </span>
-                      <span className="w-16 text-right tabular-nums text-muted-foreground">
-                        {formatMoney(kind.staked, currency)}
-                      </span>
-                      <span className={cn('w-16 text-right tabular-nums', toneClass(kind.net))}>
-                        {formatMoney(kind.returned, currency)}
-                      </span>
-                      <span className="w-12 text-right tabular-nums text-muted-foreground">
-                        {kind.rtp === null ? '—' : formatPercent(kind.rtp * 100, 0)}
-                      </span>
-                    </Row>
-                  );
-                })}
-              </div>
-            </DashboardCard>
+            <GroupTable
+              title="Games"
+              nameLabel="Game"
+              groups={games}
+              nameOf={(group) => group.label}
+              iconOf={(group) => gameIcon(group.label, group.kind)}
+              titleOf={(group) => group.provider ?? undefined}
+              currency={currency}
+            />
+            <GroupTable
+              title="By type"
+              nameLabel="Type"
+              groups={kinds}
+              nameOf={(group) => KIND_NAMES[group.kind]}
+              iconOf={(group) => KIND_ICONS[group.kind]}
+              titleOf={(group) => `${formatPercent(group.share * 100, 0)} of the turnover`}
+              currency={currency}
+            />
           </div>
         </div>
 
