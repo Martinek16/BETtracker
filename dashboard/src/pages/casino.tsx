@@ -205,7 +205,7 @@ const GroupTable = ({
     <DashboardCard className="flex min-h-0 flex-col p-4">
       <DashboardCardHeading className="mb-2" title={title} />
       {/* Reserves the body's scrollbar gutter so the columns stay aligned. */}
-      <Row className={cn(HEAD, 'scroll-gutter overflow-y-scroll')}>
+      <Row className={cn(HEAD, 'scroll-gutter overflow-y-scroll pr-2')}>
         <span className="w-3 shrink-0" />
         <SortHead
           label={nameLabel}
@@ -225,7 +225,7 @@ const GroupTable = ({
           />
         ))}
       </Row>
-      <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
+      <div className="scroll-area min-h-0 flex-1 overflow-y-auto pr-2">
         {sorted.map((group) => {
           const Icon = iconOf(group);
           return (
@@ -399,14 +399,15 @@ export const CasinoPage = (): JSX.Element => {
 
         <DashboardCard className="flex h-full min-h-0 flex-col p-4">
           <DashboardCardHeading className="mb-2" title="Sittings" />
-          <Row className={HEAD}>
+          {/* Reserves the body's scrollbar gutter so the columns stay aligned. */}
+          <Row className={cn(HEAD, 'scroll-gutter overflow-y-scroll pr-2')}>
             <span className="w-3 shrink-0" />
             <span className="flex-1">Game</span>
             <span className="w-16 text-center">Staked</span>
             <span className="w-12 text-center">Odds</span>
             <span className="w-16 text-center">Paid out</span>
           </Row>
-          <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
+          <div className="scroll-area min-h-0 flex-1 overflow-y-auto pr-2">
             {sessions.map((session) => (
               <div key={session.startedAt}>
                 <Row className="mt-3 first:mt-2">
