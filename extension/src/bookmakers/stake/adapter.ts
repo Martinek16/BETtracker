@@ -22,6 +22,7 @@ import {
   getBackfillState,
   log,
   putBonus,
+  putCasinoRounds,
   putTransaction,
   setBackfillState,
   setPerks,
@@ -37,6 +38,8 @@ import type {
   BetStatus,
   BetType,
   Bookmaker,
+  CasinoKind,
+  CasinoRound,
   LiveScore,
   Transaction,
 } from '@betanal/shared';
@@ -498,6 +501,37 @@ const USER_WAGERED = `query BettrackerWagered {
   user { id statisticScoped { betAmount betValue currency scope } }
 }`;
 
+/**
+ * Casino rounds, one row per spin. Stake is the rare site that records them, so
+ * its casino is not only the gap in the wallet.
+ *
+ * `bet` is a union of seven types and every field has to be asked for on each of
+ * them by name. `createdAt` rather than the `updatedAt` Stake's own page asks
+ * for: the live-casino type is the one that does not declare `updatedAt`, and a
+ * round with no clock cannot be put in a session.
+ */
+const CASINO_FIELDS = 'id active amount payout payoutMultiplier currency createdAt';
+
+const CASINO_BET_LIST = `query BettrackerCasinoBets($offset: Int = 0, $limit: Int = 50) {
+  user {
+    id
+    houseBetList(offset: $offset, limit: $limit) {
+      id
+      type
+      game { name slug provider { name } }
+      bet {
+        ... on CasinoBet { ${CASINO_FIELDS} }
+        ... on MultiplayerCrashBet { ${CASINO_FIELDS} }
+        ... on MultiplayerSlideBet { ${CASINO_FIELDS} }
+        ... on SoftswissBet { ${CASINO_FIELDS} }
+        ... on ThirdPartyBet { ${CASINO_FIELDS} }
+        ... on ZooBet { ${CASINO_FIELDS} }
+        ... on EvolutionBet { ${CASINO_FIELDS} }
+      }
+    }
+  }
+}`;
+
 const CURRENCY_CONFIG = `query CurrencyConfiguration($isAcp: Boolean!) {
   currencyConfiguration(isAcp: $isAcp) { baseRates { currency baseRate } }
 }`;
@@ -926,6 +960,106 @@ const importMovements = async (
   }
   // Ran out of pages before the list did: history is longer than we walked.
   return { imported, complete: false };
+};
+
+// ── Casino rounds ────────────────────────────────────────────────────────────
+
+/**
+ * Stake's own word for the round, mapped onto the kinds the app knows. `stake`
+ * runs its Originals, `softswiss` is the slot shelf it integrates itself and
+ * `evolution` the live tables. A third-party studio's game is left as that: the
+ * site never says which of its games are slots and which are live, and calling
+ * them either would be a guess printed as a fact.
+ */
+const CASINO_KINDS: Record<string, CasinoKind> = {
+  casino: 'originals',
+  crash: 'originals',
+  slide: 'originals',
+  swish: 'originals',
+  zoo: 'originals',
+  softswiss: 'slots',
+  evolution: 'live',
+  thirdparty: 'provider',
+};
+
+interface RawRound {
+  id?: string | null;
+  type?: string | null;
+  game?: {
+    name?: string | null;
+    slug?: string | null;
+    provider?: { name?: string | null } | null;
+  } | null;
+  bet?: {
+    id?: string | null;
+    active?: boolean | null;
+    amount?: number | null;
+    payout?: number | null;
+    payoutMultiplier?: number | null;
+    currency?: string | null;
+    createdAt?: string | null;
+  } | null;
+}
+
+/**
+ * One round, or null where it is not one we can state honestly: a round still
+ * running has no result yet, and one whose kind or clock the site withheld would
+ * land in a session it cannot be shown to belong to.
+ */
+export const normalizeRound = (raw: RawRound, accountId: AccountId): CasinoRound | null => {
+  const id = toStringOrNull(raw?.id);
+  const bet = raw?.bet;
+  const createdAt = toStringOrNull(bet?.createdAt);
+  const kind = CASINO_KINDS[toStringOrNull(raw?.type) ?? ''];
+  if (id === null || bet === null || bet === undefined || createdAt === null) return null;
+  if (kind === undefined || bet.active === true) return null;
+
+  const stake = toNumber(bet.amount, 0);
+  const payout = toNumber(bet.payout, 0);
+  return {
+    id: `stake-round-${id}`,
+    bookmaker: BOOKMAKER,
+    accountId,
+    playedAt: normalizeTimestamp(createdAt),
+    game: toStringOrNull(raw.game?.name) ?? 'Unnamed game',
+    gameSlug: toStringOrNull(raw.game?.slug) ?? 'unknown',
+    kind,
+    provider: toStringOrNull(raw.game?.provider?.name),
+    stake,
+    payout,
+    // Stake's own figure where it gives one, so a round it prices differently
+    // from the plain ratio stays its number rather than ours.
+    multiplier: toNumber(bet.payoutMultiplier, stake === 0 ? 0 : payout / stake),
+    currency: normalizeCurrency(bet.currency),
+  };
+};
+
+/**
+ * The rounds, newest first, walked the way the deposits are: a page in which
+ * nothing was new is a page whose whole tail is already stored, so a routine sync
+ * stops there rather than re-reading a casino history that runs to thousands of
+ * spins.
+ */
+const importRounds = async (
+  creds: Credentials,
+  account: AccountRef,
+  deep: boolean,
+): Promise<number> => {
+  let imported = 0;
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const data = await gql(creds, CASINO_BET_LIST, {
+      offset: page * PAGE_LIMIT,
+      limit: PAGE_LIMIT,
+    });
+    const list = (data?.user as Record<string, unknown> | undefined)?.houseBetList;
+    if (!Array.isArray(list) || list.length === 0) return imported;
+    const rounds = list.flatMap((item) => normalizeRound(item as RawRound, account.accountId) ?? []);
+    const fresh = await putCasinoRounds(rounds);
+    imported += fresh;
+    if (list.length < PAGE_LIMIT) return imported;
+    if (!deep && fresh === 0) return imported;
+  }
+  return imported;
 };
 
 // ── Rewards ledger ───────────────────────────────────────────────────────────
@@ -1758,6 +1892,10 @@ export const stake: BookmakerAdapter = {
     if (deposits.complete && withdrawals.complete)
       await setBackfillState(account, { moneyComplete: true });
     return deposits.imported + withdrawals.imported;
+  },
+
+  async syncCasino(creds, account, deep) {
+    return importRounds(creds, account, deep);
   },
 
   async balance(creds, account) {

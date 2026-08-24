@@ -10,13 +10,14 @@ import {
   type Bet,
   type Bonus,
   type Bookmaker,
+  type CasinoRound,
   type Transaction,
 } from './types';
 
 export const DB_NAME = 'betanal-db';
 // Bumped when a store is added: an existing database already sitting on the old
 // number never re-runs `upgrade`, so the new store would silently never exist.
-export const DB_VERSION = 7;
+export const DB_VERSION = 8;
 
 /**
  * The account every pre-v5 record belongs to. Only bet-at-home was ever
@@ -99,6 +100,12 @@ export interface AppSettings {
    * than money in hand - and a reminder nobody acts on is just noise.
    */
   showClaimable: boolean;
+  /**
+   * Show the casino page for accounts that run one off the same wallet. Off for
+   * a reader who only wants the sportsbook - the figures are still counted, they
+   * just stop having a page of their own.
+   */
+  showCasino: boolean;
   /** Toast when a sync brings in bets the tracker did not have. */
   syncAlerts: boolean;
   /** Toast when a connected account stopped syncing or signed itself out. */
@@ -133,6 +140,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   includeBonus: true,
   monoIcons: true,
   showClaimable: true,
+  showCasino: true,
   syncAlerts: true,
   connectionAlerts: true,
   hiddenAccountStats: [],
@@ -209,6 +217,11 @@ interface BetAnalDB extends DBSchema {
     value: Bonus;
     indexes: { grantedAt: string; bookmaker: string };
   };
+  casinoRounds: {
+    key: string;
+    value: CasinoRound;
+    indexes: { playedAt: string; bookmaker: string };
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<BetAnalDB>> | null = null;
@@ -238,6 +251,11 @@ export const openDb = (): Promise<IDBPDatabase<BetAnalDB>> => {
         if (!db.objectStoreNames.contains('bonuses')) {
           const store = db.createObjectStore('bonuses', { keyPath: 'id' });
           store.createIndex('grantedAt', 'grantedAt');
+          store.createIndex('bookmaker', 'bookmaker');
+        }
+        if (!db.objectStoreNames.contains('casinoRounds')) {
+          const store = db.createObjectStore('casinoRounds', { keyPath: 'id' });
+          store.createIndex('playedAt', 'playedAt');
           store.createIndex('bookmaker', 'bookmaker');
         }
 
@@ -527,6 +545,7 @@ export const clearAll = async (): Promise<void> => {
     db.clear('bets'),
     db.clear('transactions'),
     db.clear('bonuses'),
+    db.clear('casinoRounds'),
     db.clear('meta'),
     db.clear('settings'),
   ]);
@@ -539,16 +558,18 @@ export const clearAll = async (): Promise<void> => {
 export const clearAccount = async (account: AccountRef): Promise<void> => {
   const db = await openDb();
   const key = accountKey(account);
-  const [bets, transactions, bonuses, metaKeys] = await Promise.all([
+  const [bets, transactions, bonuses, rounds, metaKeys] = await Promise.all([
     db.getAllFromIndex('bets', 'bookmaker', account.bookmaker),
     db.getAllFromIndex('transactions', 'bookmaker', account.bookmaker),
     db.getAllFromIndex('bonuses', 'bookmaker', account.bookmaker),
+    db.getAllFromIndex('casinoRounds', 'bookmaker', account.bookmaker),
     db.getAllKeys('meta'),
   ]);
   await Promise.all([
     ...ofAccount(bets, account).map((b) => db.delete('bets', b.betId)),
     ...ofAccount(transactions, account).map((t) => db.delete('transactions', t.id)),
     ...ofAccount(bonuses, account).map((b) => db.delete('bonuses', b.id)),
+    ...ofAccount(rounds, account).map((r) => db.delete('casinoRounds', r.id)),
     ...metaKeys.filter((k) => k.endsWith(`:${key}`)).map((k) => db.delete('meta', k)),
   ]);
 
@@ -619,8 +640,8 @@ export const claimUnclaimed = async (account: AccountRef): Promise<void> => {
   const db = await openDb();
   const orphan: AccountRef = { bookmaker: account.bookmaker, accountId: UNCLAIMED };
 
-  const tx = db.transaction(['bets', 'transactions', 'bonuses'], 'readwrite');
-  for (const name of ['bets', 'transactions', 'bonuses'] as const) {
+  const tx = db.transaction(['bets', 'transactions', 'bonuses', 'casinoRounds'], 'readwrite');
+  for (const name of ['bets', 'transactions', 'bonuses', 'casinoRounds'] as const) {
     const store = tx.objectStore(name);
     for (const row of ofAccount(await store.index('bookmaker').getAll(account.bookmaker), orphan)) {
       await store.put({ ...row, accountId: account.accountId });
@@ -664,6 +685,27 @@ export const putTransaction = async (txn: Transaction): Promise<boolean> => {
   const tx = db.transaction('transactions', 'readwrite');
   const fresh = (await tx.store.getKey(txn.id)) === undefined;
   await tx.store.put(txn);
+  await tx.done;
+  return fresh;
+};
+
+/** Casino rounds, newest first. Only sites that record rounds ever write here. */
+export const getAllCasinoRounds = async (): Promise<CasinoRound[]> => {
+  const db = await openDb();
+  const rows = await db.getAll('casinoRounds');
+  return rows.sort((a, b) => Date.parse(b.playedAt) - Date.parse(a.playedAt));
+};
+
+/** How many of these rounds were not stored yet; see `putTransaction`. */
+export const putCasinoRounds = async (rounds: readonly CasinoRound[]): Promise<number> => {
+  if (rounds.length === 0) return 0;
+  const db = await openDb();
+  const tx = db.transaction('casinoRounds', 'readwrite');
+  let fresh = 0;
+  for (const round of rounds) {
+    if ((await tx.store.getKey(round.id)) === undefined) fresh += 1;
+    await tx.store.put(round);
+  }
   await tx.done;
   return fresh;
 };
@@ -827,7 +869,17 @@ export const appendBalanceSnapshot = async (
   const row = await db.get('meta', key);
   const list: BalanceInfo[] = Array.isArray(row?.value) ? (row.value as BalanceInfo[]) : [];
   const last = list[list.length - 1];
-  if (last && last.amount === snapshot.amount && last.currency === snapshot.currency) return;
+  // Turnover counts as movement in its own right: a casino round that gave back
+  // what it took leaves the balance where it was, and dropping that reading
+  // would hide the play rather than the repeat.
+  if (
+    last &&
+    last.amount === snapshot.amount &&
+    last.currency === snapshot.currency &&
+    last.wagered?.casino === snapshot.wagered?.casino &&
+    last.wagered?.sports === snapshot.wagered?.sports
+  )
+    return;
   list.push(snapshot);
   if (list.length > BALANCE_HISTORY_CAP) list.splice(0, list.length - BALANCE_HISTORY_CAP);
   await db.put('meta', { key, value: list });
@@ -928,6 +980,7 @@ export interface ExportBundle {
   settings: AppSettings;
   transactions: Transaction[];
   bonuses: Bonus[];
+  casinoRounds: CasinoRound[];
 }
 
 export const exportAll = async (): Promise<ExportBundle> => ({
@@ -937,6 +990,7 @@ export const exportAll = async (): Promise<ExportBundle> => ({
   settings: await getSettings(),
   transactions: await getAllTransactions(),
   bonuses: await getAllBonuses(),
+  casinoRounds: await getAllCasinoRounds(),
 });
 
 // A backup only goes one way. Reading a file back in would let a hand-edited

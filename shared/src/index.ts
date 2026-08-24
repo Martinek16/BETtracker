@@ -18,6 +18,7 @@ export * from './status';
 export * from './sports';
 export * from './bankroll';
 export * from './bonus';
+export * from './casino';
 export * from './db';
 export * from './log';
 export * from './wallet';

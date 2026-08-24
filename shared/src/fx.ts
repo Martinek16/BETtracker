@@ -10,7 +10,7 @@
  * coin's move rather than for the bet.
  */
 
-import type { Bet, Bonus, Transaction } from './types';
+import type { Bet, Bonus, CasinoRound, Transaction } from './types';
 
 /** ISO date (YYYY-MM-DD) -> currency code -> units of that currency per 1 BASE. */
 export type RateTable = Record<string, Record<string, number>>;
@@ -115,6 +115,25 @@ export const convertBonus = (bonus: Bonus, table: RateTable, target: string): Bo
   };
 };
 
+export const convertRound = (
+  round: CasinoRound,
+  table: RateTable,
+  target: string,
+): CasinoRound | null => {
+  if (round.currency === target) return round;
+  const rate = convertAmount(1, round.currency, dayOf(round.playedAt), table, target);
+  if (rate === null) return null;
+  // The multiplier is a ratio of two amounts in one currency and survives untouched.
+  return {
+    ...round,
+    currency: target,
+    sourceCurrency: round.currency,
+    fxRate: rate,
+    stake: round.stake * rate,
+    payout: round.payout * rate,
+  };
+};
+
 export interface Converted<T> {
   converted: T[];
   /** Records left out because no rate was available. Shown, never summed. */
@@ -146,6 +165,12 @@ export const convertBonuses = (
   t: RateTable,
   target: string,
 ): Converted<Bonus> => partition(rows, (b) => convertBonus(b, t, target));
+
+export const convertRounds = (
+  rows: readonly CasinoRound[],
+  t: RateTable,
+  target: string,
+): Converted<CasinoRound> => partition(rows, (r) => convertRound(r, t, target));
 
 /**
  * The (currency, day) pairs a set of records needs but the table cannot serve.

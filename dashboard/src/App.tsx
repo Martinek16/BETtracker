@@ -16,6 +16,7 @@ import { BetsPage } from '@/pages/bets';
 import { AnalyticsPage } from '@/pages/analytics';
 import { TransactionsPage } from '@/pages/transactions';
 import { BonusesPage } from '@/pages/bonuses';
+import { CasinoPage } from '@/pages/casino';
 import { OptionsPage } from '@/pages/options';
 import { WelcomePage } from '@/pages/welcome';
 import { ProductTour } from '@/components/tour/product-tour';
@@ -57,6 +58,7 @@ export const App = (): JSX.Element => {
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/transactions" element={<TransactionsPage />} />
                 <Route path="/bonuses" element={<BonusesPage />} />
+                <Route path="/casino" element={<CasinoPage />} />
                 <Route path="/options/*" element={<OptionsPage />} />
                 <Route path="/welcome" element={<WelcomePage />} />
               </Routes>

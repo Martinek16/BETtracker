@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import fixture from './__fixtures__/bets.json';
 import walletFixture from './__fixtures__/wallet.json';
+import casinoFixture from './__fixtures__/casino-rounds.json';
 import { RateLimitedError } from '../../sync/sync';
 import { sampleRef } from '../samples';
 import {
   couponBonus,
   fetchBaseRates,
   normalizeBet,
+  normalizeRound,
   parseBalance,
   parseWagered,
   stake,
@@ -359,5 +361,36 @@ describe('stake GraphQL failures', () => {
     answers({ data: null, errors: [{ message: 'Cannot query field baseRate.' }] });
     expect((await fetchBaseRates(creds)).get('LTC')).toBe(110);
     clock.mockRestore();
+  });
+});
+
+describe('casino rounds', () => {
+  const raw = casinoFixture.data.user.houseBetList;
+  const rounds = raw.flatMap((entry) => normalizeRound(entry, 'acc-1') ?? []);
+
+  it('keeps only the rounds it can state a result for', () => {
+    // Six rows in, four out: one round is still running and one is the racebook,
+    // which is not a casino at all.
+    expect(rounds).toHaveLength(4);
+    expect(rounds.map((r) => r.game)).not.toContain('Horse Racing');
+  });
+
+  it('reads the kind off the type Stake puts on the round', () => {
+    expect(rounds.map((r) => r.kind)).toEqual(['originals', 'slots', 'live', 'provider']);
+  });
+
+  it('keeps the round in the coin it was played in', () => {
+    expect(rounds[0]?.currency).toBe('SOL');
+    expect(rounds[0]?.stake).toBeCloseTo(0.33574873);
+    expect(rounds[0]?.payout).toBeCloseTo(0.402898476);
+  });
+
+  it('names the studio where Stake names one', () => {
+    expect(rounds[1]?.provider).toBe('Pragmatic Play');
+    expect(rounds[0]?.provider).toBeNull();
+  });
+
+  it('dates the round by the site clock, as an ISO timestamp', () => {
+    expect(rounds[0]?.playedAt).toBe('2026-01-31T19:42:39.000Z');
   });
 });

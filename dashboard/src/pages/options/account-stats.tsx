@@ -1,4 +1,5 @@
 import {
+  casinoNet,
   decisiveBets,
   isLoss,
   isWin,
@@ -65,14 +66,9 @@ const buildSectors = (
   const signed = (amount: number): string | undefined =>
     amount === 0 ? undefined : amount > 0 ? 'text-profit' : 'text-loss';
 
-  // The vault is the account's money too - the site just keeps it out of betting
-  // reach, and its own header leaves it out. Counting only what is bettable would
-  // read money put aside as money that went missing.
-  const held = balance === null ? null : balance + (vault ?? 0);
-  const gap = held === null ? null : held - expected;
   // The casino shares this wallet and is never written down as a bet, so what it
   // took can only be read off the money the bets and payments cannot explain.
-  const casinoResult = account.hasCasino === true ? gap : null;
+  const casinoResult = account.hasCasino === true ? casinoNet(expected, balance, vault) : null;
 
   const wallet: StatDef[] = [
     // Coloured from the pocket's side, not the account's: money paid in is money

@@ -285,3 +285,38 @@ export interface AccountPerks {
     expiresAt: string | null;
   } | null;
 }
+
+/**
+ * What kind of casino a round was played in. Taken from the type the site puts
+ * on the round itself, never guessed from the game's name: `provider` is an
+ * outside studio's game whose category the site does not say, and calling that
+ * a slot would invent a fact.
+ */
+export type CasinoKind = 'originals' | 'slots' | 'live' | 'provider';
+
+/**
+ * One casino round, where the site records rounds one by one. Most do not - the
+ * casino is then only visible as the gap in the wallet - so this is an extra on
+ * top of that reading, never a replacement for it.
+ */
+export interface CasinoRound extends ConvertedFrom {
+  /** The site's own id for the round, which is what makes a re-import a no-op. */
+  id: string;
+  bookmaker: Bookmaker;
+  accountId: AccountId;
+  /** When the round resolved, ISO. */
+  playedAt: string;
+  /** The game as the site names it. */
+  game: string;
+  /** The site's slug for it, so a renamed game stays the same game. */
+  gameSlug: string;
+  kind: CasinoKind;
+  /** The studio behind the game where the site names one. */
+  provider: string | null;
+  stake: number;
+  /** What came back. Zero on a losing round. */
+  payout: number;
+  /** What came back per unit staked, as the site reports it. */
+  multiplier: number;
+  currency: string;
+}

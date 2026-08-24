@@ -14,6 +14,7 @@ vi.mock('@betanal/shared', async (importOriginal) => ({
   getAllBets: () => Promise.resolve(stored.bets),
   getAllTransactions: () => Promise.resolve([]),
   getAllBonuses: () => Promise.resolve([]),
+  getAllCasinoRounds: () => Promise.resolve([]),
   getAllBalances: () => Promise.resolve(stored.balances),
   getSettings: () => Promise.resolve({ currency: stored.currency }),
   getRates: () => Promise.resolve(stored.rates),
