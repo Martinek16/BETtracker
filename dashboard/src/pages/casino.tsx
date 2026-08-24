@@ -161,13 +161,7 @@ const stakeBands = (rounds: readonly CasinoRound[], currency: string): StakeBand
   const money = (value: number): string =>
     `${symbol}${formatNumber(value, Number.isInteger(value) ? 0 : 2)}`;
   const label = (floor: number, ceiling: number | null): string =>
-    ceiling === null
-      ? floor === 0
-        ? 'All stakes'
-        : `${money(floor)} and up`
-      : floor === 0
-        ? `under ${money(ceiling)}`
-        : `${money(floor)} – ${money(ceiling)}`;
+    ceiling === null ? `${money(floor)} and up` : `${money(floor)} – ${money(ceiling)}`;
 
   const sorted = [...rounds].sort((a, b) => a.stake - b.stake);
   const target = Math.max(MIN_BAND_ROUNDS, Math.ceil(sorted.length / MAX_BANDS));
@@ -216,6 +210,11 @@ const stakeBands = (rounds: readonly CasinoRound[], currency: string): StakeBand
     previous.ceiling = last.ceiling;
     bands.pop();
   }
+
+  // The ladder starts at the cheapest round actually played, not at the rung
+  // below it: a band nobody's stake reaches down to is a wider claim than true.
+  const first = bands[0];
+  if (first) first.floor = first.group[0]?.stake ?? first.floor;
 
   return bands.map((band) => ({
     ...casinoRoundTotals(band.group),
