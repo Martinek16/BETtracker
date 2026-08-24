@@ -41,7 +41,15 @@ import { useDashboard } from '@/context/dashboard-context';
 import { findAccount, useAllKnownAccounts } from '@/data/accounts';
 import { getRates, loadCasinoRounds } from '@/data/source';
 import { rangeCutoff, rangeEnd } from '@/lib/chart-data';
-import { cn, formatDate, formatMoney, formatPercent, formatTime, symbolOf } from '@/lib/utils';
+import {
+  cn,
+  formatDate,
+  formatMoney,
+  formatNumber,
+  formatPercent,
+  formatTime,
+  symbolOf,
+} from '@/lib/utils';
 
 /**
  * The rounds a site wrote down one by one, priced in the display currency. Empty
@@ -119,36 +127,58 @@ const toneClass = (value: number | null): string =>
   value === null || value === 0 ? 'text-foreground' : value > 0 ? 'text-profit' : 'text-loss';
 
 /**
- * The stake ladder. A round is grouped by what it cost rather than by what it
- * was played on, which is the only grouping that answers whether the money went
- * on the big bets or was ground away by the small ones.
+ * Rounds enough for a band to say something rather than describe one evening,
+ * and the most bands worth reading at once.
  */
-const STAKE_BANDS = [1, 5, 20, 100] as const;
+const MIN_BAND_ROUNDS = 15;
+const MAX_BANDS = 8;
 
 interface StakeBand extends GroupRow {
-  /** The band's floor, which is also the order the ladder is read in. */
+  /** The band's cheapest round, which is also the order the ladder is read in. */
   floor: number;
 }
 
+/**
+ * The stake ladder. A round is grouped by what it cost rather than by what it
+ * was played on, which is the only grouping that answers whether the money went
+ * on the big rounds or was ground away by the small ones.
+ *
+ * The rungs are cut from the play itself, not fixed in advance: fixed bands put
+ * every round of a small-stakes player in one row and say nothing. Enough play
+ * buys more rungs, up to the point where a rung would be too thin to read.
+ */
 const stakeBands = (rounds: readonly CasinoRound[], currency: string): StakeBand[] => {
+  if (rounds.length === 0) return [];
   const symbol = symbolOf(currency);
-  const floorOf = (stake: number): number =>
-    STAKE_BANDS.reduce((floor, top) => (stake >= top ? top : floor), 0);
-  const labelOf = (floor: number): string => {
-    const top = STAKE_BANDS.find((band) => band > floor);
-    if (floor === 0) return `under ${symbol}${STAKE_BANDS[0]}`;
-    return top === undefined ? `${symbol}${floor} and up` : `${symbol}${floor} – ${symbol}${top}`;
-  };
+  const money = (value: number): string => `${symbol}${formatNumber(value, value < 10 ? 2 : 0)}`;
 
-  const buckets = new Map<number, CasinoRound[]>();
-  for (const round of rounds) {
-    const floor = floorOf(round.stake);
-    buckets.set(floor, [...(buckets.get(floor) ?? []), round]);
+  const sorted = [...rounds].sort((a, b) => a.stake - b.stake);
+  const count = Math.min(MAX_BANDS, Math.max(1, Math.floor(sorted.length / MIN_BAND_ROUNDS)));
+  const target = sorted.length / count;
+
+  const groups: CasinoRound[][] = [];
+  let current: CasinoRound[] = [];
+  for (const round of sorted) {
+    const last = current[current.length - 1];
+    // One price belongs to one band: cutting mid-stake would put the same round
+    // in two rows and make the boundary a lie.
+    if (current.length >= target && groups.length < count - 1 && last?.stake !== round.stake) {
+      groups.push(current);
+      current = [];
+    }
+    current.push(round);
   }
+  groups.push(current);
 
-  return [...buckets]
-    .map(([floor, group]) => ({ ...casinoRoundTotals(group), floor, label: labelOf(floor) }))
-    .sort((a, b) => a.floor - b.floor);
+  return groups.map((group) => {
+    const low = group[0]?.stake ?? 0;
+    const high = group[group.length - 1]?.stake ?? 0;
+    return {
+      ...casinoRoundTotals(group),
+      floor: low,
+      label: low === high ? money(low) : `${money(low)} – ${money(high)}`,
+    };
+  });
 };
 
 type GroupSort = 'label' | 'rounds' | 'staked' | 'returned' | 'rtp';
