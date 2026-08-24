@@ -33,6 +33,7 @@ import {
   Spade,
   Target,
   TrendingUp,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import { ChartViewToggle, type TimelineChartView } from '@/components/dashboard/chart-view-toggle';
@@ -485,12 +486,11 @@ export const CasinoPage = (): JSX.Element => {
   // The round the sittings list is being pointed at, marked on the curve so the
   // two panels are read as one thing rather than two.
   const [markedRound, setMarkedRound] = useState<string | null>(null);
+  const picked = games.find((group) => group.label === game) ?? null;
+  const PickedIcon = picked === null ? Dices : gameIcon(picked.label, picked.kind);
   const shown = useMemo(
-    () =>
-      game === null || !games.some((group) => group.label === game)
-        ? rounds
-        : rounds.filter((round) => round.game === game),
-    [rounds, games, game],
+    () => (picked === null ? rounds : rounds.filter((round) => round.game === picked.label)),
+    [rounds, picked],
   );
   const curve = useMemo(() => casinoRoundCurve(shown), [shown]);
   const buckets = useMemo(() => sessionBuckets(casinoSessions(shown)), [shown]);
@@ -563,20 +563,37 @@ export const CasinoPage = (): JSX.Element => {
             <DashboardCardHeading
               className="mb-3"
               title={
-                game === null ? (
+                picked === null ? (
                   'Round by round'
                 ) : (
-                  <span className="first-letter:uppercase">{game}</span>
+                  <span className="flex items-center gap-2 text-lg">
+                    <PickedIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+                    <span className="truncate first-letter:uppercase">{picked.label}</span>
+                  </span>
                 )
               }
               subtitle={
-                game === null
+                picked === null
                   ? chartView === 'line'
                     ? 'Running casino result, a step per round'
                     : 'What each sitting finished at'
-                  : 'This game alone — pick it again for all of them'
+                  : `${picked.rounds} rounds · ${money(picked.net)}`
               }
-              action={<ChartViewToggle value={chartView} onChange={setChartView} />}
+              action={
+                <div className="flex items-center gap-2">
+                  {picked === null ? null : (
+                    <button
+                      type="button"
+                      onClick={() => setGame(null)}
+                      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      <X size={12} />
+                      All games
+                    </button>
+                  )}
+                  <ChartViewToggle value={chartView} onChange={setChartView} primary="line" />
+                </div>
+              }
             />
             <div className="min-h-0 flex-1 overflow-hidden">
               {chartView === 'line' ? (
