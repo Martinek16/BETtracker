@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   accountKey,
   casinoByGame,
@@ -40,6 +40,16 @@ const useRounds = (currency: string): CasinoRound[] => {
 
   return rounds;
 };
+
+/** As many rows as fit without the card growing a scrollbar of its own. */
+const TOP_ROWS = 5;
+
+const Row = ({ className, children }: { className?: string; children: ReactNode }): JSX.Element => (
+  <div className={cn('flex items-center gap-3', className)}>{children}</div>
+);
+
+const topNote = (rows: readonly unknown[]): string =>
+  rows.length > TOP_ROWS ? `Most staked first, ${TOP_ROWS} of ${rows.length}` : 'Most staked first';
 
 const signTone = (value: number): 'profit' | 'loss' | 'neutral' =>
   value > 0 ? 'profit' : value < 0 ? 'loss' : 'neutral';
@@ -132,7 +142,7 @@ export const CasinoPage = (): JSX.Element => {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto">
+    <div className="flex h-full flex-col gap-3 overflow-hidden">
       <div className="grid shrink-0 grid-cols-2 gap-3 xl:grid-cols-4">
         <MetricCard
           icon={Dices}
@@ -162,184 +172,153 @@ export const CasinoPage = (): JSX.Element => {
         />
       </div>
 
-      {rounds.length === 0 ? (
-        <DashboardCard className="shrink-0 p-4">
+      <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-3">
+        <DashboardCard className="flex h-full min-h-0 flex-col p-4 xl:col-span-2">
           <DashboardCardHeading
-            title="No rounds in this period"
-            subtitle="Either none were played, or the site hands out no round-by-round history."
+            className="mb-3"
+            title="Casino over time"
+            subtitle={rounds.length === 0 ? 'Nothing played in this period' : 'One step per round'}
           />
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {rounds.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Either no round was played in this period, or the site hands out no round-by-round
+                history.
+              </p>
+            ) : (
+              <RunningPlChart
+                series={curve}
+                currency={currency}
+                days={days}
+                until={until}
+                deltaLabel="This round"
+                totalLabel="Casino result"
+              />
+            )}
+          </div>
         </DashboardCard>
-      ) : (
-        <>
-          <div className="grid min-h-[320px] flex-1 gap-3 xl:grid-cols-3">
-            <DashboardCard className="flex h-full min-h-0 flex-col p-4 xl:col-span-2">
-              <DashboardCardHeading
-                className="mb-3"
-                title="Casino over time"
-                subtitle="One step per round"
-              />
-              <div className="min-h-0 flex-1 overflow-hidden">
-                <RunningPlChart
-                  series={curve}
-                  currency={currency}
-                  days={days}
-                  until={until}
-                  deltaLabel="This round"
-                  totalLabel="Casino result"
-                />
-              </div>
-            </DashboardCard>
 
-            <DashboardCard className="flex h-full min-h-0 flex-col p-4">
-              <DashboardCardHeading className="mb-3" title="Rounds" />
-              <div className="flex items-center gap-3 border-b border-border/60 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <span className="flex-1">When</span>
-                <span className="w-20 text-right">Staked</span>
-                <span className="w-20 text-right">Result</span>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                {[...rounds]
-                  .sort((a, b) => b.playedAt.localeCompare(a.playedAt))
-                  .map((round) => (
-                    <div key={round.id} className="flex items-center gap-3 py-1.5 text-sm">
-                      <span className="flex-1 truncate text-muted-foreground" title={round.game}>
-                        {formatDateTime(round.playedAt)}
-                      </span>
-                      <span className="w-20 text-right tabular-nums text-muted-foreground">
-                        {formatMoney(round.stake, currency)}
-                      </span>
-                      <span
-                        className={cn(
-                          'w-20 text-right tabular-nums',
-                          toneClass(round.payout - round.stake),
-                        )}
-                      >
-                        {formatMoney(round.payout - round.stake, currency)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </DashboardCard>
+        <DashboardCard className="flex h-full min-h-0 flex-col p-4">
+          <DashboardCardHeading className="mb-3" title="Rounds" subtitle="Newest first" />
+          <Row className="border-b border-border/60 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="flex-1">When</span>
+            <span className="w-14 text-right">×</span>
+            <span className="w-20 text-right">Staked</span>
+            <span className="w-20 text-right">Result</span>
+          </Row>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {[...rounds]
+              .sort((a, b) => b.playedAt.localeCompare(a.playedAt))
+              .map((round) => (
+                <Row key={round.id} className="py-1.5 text-sm">
+                  <span className="flex-1 truncate" title={formatDateTime(round.playedAt)}>
+                    {round.game}
+                  </span>
+                  <span className="w-14 text-right tabular-nums text-muted-foreground">
+                    {`${round.multiplier.toFixed(2)}×`}
+                  </span>
+                  <span className="w-20 text-right tabular-nums text-muted-foreground">
+                    {formatMoney(round.stake, currency)}
+                  </span>
+                  <span
+                    className={cn(
+                      'w-20 text-right tabular-nums',
+                      toneClass(round.payout - round.stake),
+                    )}
+                  >
+                    {formatMoney(round.payout - round.stake, currency)}
+                  </span>
+                </Row>
+              ))}
           </div>
+        </DashboardCard>
+      </div>
 
-          <div className="grid shrink-0 gap-3 xl:grid-cols-2">
-            <DashboardCard className="flex max-h-[360px] flex-col p-4">
-              <DashboardCardHeading
-                className="mb-3"
-                title="Where it went"
-                subtitle="By game, most staked first"
-              />
-              <div className="flex items-center gap-3 border-b border-border/60 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <span className="flex-1">Game</span>
-                <span className="w-16 text-right">Rounds</span>
-                <span className="w-24 text-right">Staked</span>
-                <span className="w-24 text-right">Result</span>
-                <span className="w-16 text-right">Return</span>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                {games.map((game) => (
-                  <div key={game.label} className="flex items-center gap-3 py-1.5 text-sm">
-                    <span className="flex-1 truncate" title={game.provider ?? undefined}>
-                      {game.label}
-                    </span>
-                    <span className="w-16 text-right tabular-nums text-muted-foreground">
-                      {game.rounds}
-                    </span>
-                    <span className="w-24 text-right tabular-nums text-muted-foreground">
-                      {formatMoney(game.staked, currency)}
-                    </span>
-                    <span className={cn('w-24 text-right tabular-nums', toneClass(game.net))}>
-                      {formatMoney(game.net, currency)}
-                    </span>
-                    <span className="w-16 text-right tabular-nums text-muted-foreground">
-                      {game.rtp === null ? '—' : formatPercent(game.rtp * 100)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </DashboardCard>
+      <div className="grid shrink-0 gap-3 xl:grid-cols-3">
+        <DashboardCard className="p-4">
+          <DashboardCardHeading className="mb-3" title="Where it went" subtitle={topNote(games)} />
+          <Row className="border-b border-border/60 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="flex-1">Game</span>
+            <span className="w-20 text-right">Staked</span>
+            <span className="w-20 text-right">Result</span>
+          </Row>
+          {games.slice(0, TOP_ROWS).map((game) => (
+            <Row key={game.label} className="py-1.5 text-sm">
+              <span className="flex-1 truncate" title={game.provider ?? undefined}>
+                {game.label}
+              </span>
+              <span className="w-20 text-right tabular-nums text-muted-foreground">
+                {formatMoney(game.staked, currency)}
+              </span>
+              <span className={cn('w-20 text-right tabular-nums', toneClass(game.net))}>
+                {formatMoney(game.net, currency)}
+              </span>
+            </Row>
+          ))}
+        </DashboardCard>
 
-            <DashboardCard className="flex max-h-[360px] flex-col p-4">
-              <DashboardCardHeading
-                className="mb-3"
-                title="Sittings"
-                subtitle="Rounds with no half-hour break between them, newest first"
-              />
-              <div className="flex items-center gap-3 border-b border-border/60 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <span className="flex-1">Started</span>
-                <span className="w-16 text-right">Rounds</span>
-                <span className="w-24 text-right">Staked</span>
-                <span className="w-24 text-right">Result</span>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                {sessions.map((session) => (
-                  <div key={session.startedAt} className="flex items-center gap-3 py-1.5 text-sm">
-                    <span
-                      className="flex-1 truncate text-muted-foreground"
-                      title={session.games.join(', ')}
-                    >
-                      {formatDateTime(session.startedAt)}
-                    </span>
-                    <span className="w-16 text-right tabular-nums text-muted-foreground">
-                      {session.totals.rounds}
-                    </span>
-                    <span className="w-24 text-right tabular-nums text-muted-foreground">
-                      {formatMoney(session.totals.staked, currency)}
-                    </span>
-                    <span
-                      className={cn('w-24 text-right tabular-nums', toneClass(session.totals.net))}
-                    >
-                      {formatMoney(session.totals.net, currency)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </DashboardCard>
-          </div>
-        </>
-      )}
+        <DashboardCard className="p-4">
+          <DashboardCardHeading
+            className="mb-3"
+            title="Sittings"
+            subtitle="No half-hour break between rounds"
+          />
+          <Row className="border-b border-border/60 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="flex-1">Started</span>
+            <span className="w-14 text-right">Rounds</span>
+            <span className="w-20 text-right">Result</span>
+          </Row>
+          {sessions.slice(0, TOP_ROWS).map((session) => (
+            <Row key={session.startedAt} className="py-1.5 text-sm">
+              <span
+                className="flex-1 truncate text-muted-foreground"
+                title={session.games.join(', ')}
+              >
+                {formatDateTime(session.startedAt)}
+              </span>
+              <span className="w-14 text-right tabular-nums text-muted-foreground">
+                {session.totals.rounds}
+              </span>
+              <span className={cn('w-20 text-right tabular-nums', toneClass(session.totals.net))}>
+                {formatMoney(session.totals.net, currency)}
+              </span>
+            </Row>
+          ))}
+        </DashboardCard>
 
-      <DashboardCard className="shrink-0 p-4">
-        <DashboardCardHeading
-          className="mb-3"
-          title="Lifetime, per account"
-          subtitle="The whole life of each account, whatever period is chosen above"
-        />
-        <div className="flex items-center gap-3 border-b border-border/60 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          <span className="flex-1">Account</span>
-          <span className="w-24 text-right">Wagered</span>
-          <span className="w-24 text-right">Result</span>
-          <span className="w-16 text-right">Return</span>
-          <span className="w-32 text-right">Comes from</span>
-        </div>
-        {lifetime.accounts.map((account) => (
-          <div key={account.key} className="flex items-center gap-3 py-1.5 text-sm">
-            <span className="flex-1 truncate">
-              {findAccount(account.bookmaker)?.name ?? account.bookmaker}
-            </span>
-            <span className="w-24 text-right tabular-nums text-muted-foreground">
-              {account.wagered === null ? 'not read' : formatMoney(account.wagered, currency)}
-            </span>
-            <span className={cn('w-24 text-right tabular-nums', toneClass(account.net))}>
-              {money(account.net)}
-            </span>
-            <span className="w-16 text-right tabular-nums text-muted-foreground">
-              {account.rtp === null ? '—' : formatPercent(account.rtp * 100)}
-            </span>
-            <span className="w-32 truncate text-right text-xs text-muted-foreground">
-              {account.source === 'site' ? 'the site’s own tally' : 'the gap in the wallet'}
-            </span>
-          </div>
-        ))}
-      </DashboardCard>
-
-      <p className="shrink-0 pb-1 text-xs leading-relaxed text-muted-foreground">
-        The figures at the top are the rounds themselves, so the period picker cuts them exactly as
-        it cuts bets. They only go back as far as the site still hands its rounds out. The table
-        above is each account’s whole life: where a site states its own casino result that is what
-        it shows, and where it states none it falls back to the money the wallet cannot otherwise
-        explain - which also carries any history that was never read.
-      </p>
+        <DashboardCard className="p-4">
+          <DashboardCardHeading
+            className="mb-3"
+            title="Lifetime, per account"
+            subtitle="Whatever period is chosen above"
+          />
+          <Row className="border-b border-border/60 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="flex-1">Account</span>
+            <span className="w-20 text-right">Wagered</span>
+            <span className="w-20 text-right">Result</span>
+            <span className="w-14 text-right">Return</span>
+          </Row>
+          {lifetime.accounts.map((account) => (
+            <Row key={account.key} className="py-1.5 text-sm">
+              <span
+                className="flex-1 truncate"
+                title={account.source === 'site' ? 'the site’s own tally' : 'the gap in the wallet'}
+              >
+                {findAccount(account.bookmaker)?.name ?? account.bookmaker}
+              </span>
+              <span className="w-20 text-right tabular-nums text-muted-foreground">
+                {account.wagered === null ? 'not read' : formatMoney(account.wagered, currency)}
+              </span>
+              <span className={cn('w-20 text-right tabular-nums', toneClass(account.net))}>
+                {money(account.net)}
+              </span>
+              <span className="w-14 text-right tabular-nums text-muted-foreground">
+                {account.rtp === null ? '—' : formatPercent(account.rtp * 100)}
+              </span>
+            </Row>
+          ))}
+        </DashboardCard>
+      </div>
     </div>
   );
 };
