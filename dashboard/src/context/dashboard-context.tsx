@@ -12,6 +12,7 @@ import {
   convertAmount,
   convertBets,
   convertBonuses,
+  convertRounds,
   convertTransactions,
   dayOf,
   log,
@@ -21,6 +22,8 @@ import {
   type Bet,
   type Bonus,
   type Bookmaker,
+  type CasinoRound,
+  type KnownAccount,
   type OddsFormat,
   type Transaction,
 } from '@betanal/shared';
@@ -44,6 +47,7 @@ import {
   loadBetSummary,
   loadBets,
   loadBonuses,
+  loadCasinoRounds,
   loadPerks,
   loadTransactions,
 } from '@/data/source';
@@ -84,6 +88,13 @@ interface DashboardContextValue {
    * page to one book never renames a competition or takes its flag away.
    */
   allBets: Bet[];
+  /**
+   * Every casino round on record, converted. Read here rather than on the casino
+   * page so that page opens with its figures already in hand, like every other.
+   */
+  casinoRounds: CasinoRound[];
+  /** Every login the extension has seen, whether or not it is switched off. */
+  knownAccounts: KnownAccount[];
   /** Bets stored in total, counted in the database rather than in `bets`. */
   betCount: number;
   periodBets: Bet[];
@@ -180,6 +191,8 @@ interface Loaded {
   bets: Bet[];
   transactions: Transaction[];
   bonuses: Bonus[];
+  casinoRounds: CasinoRound[];
+  knownAccounts: KnownAccount[];
   balances: BalanceRow[];
   claimable: ClaimableReward[];
   currency: string;
@@ -201,6 +214,8 @@ const NOTHING: Loaded = {
   bets: [],
   transactions: [],
   bonuses: [],
+  casinoRounds: [],
+  knownAccounts: [],
   balances: [],
   claimable: [],
   betCount: 0,
@@ -317,6 +332,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
       loadBetSummary(),
       getKnownAccounts(),
       loadPerks(),
+      loadCasinoRounds(),
     ]).then(
       ([
         loadedBets,
@@ -328,6 +344,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
         summary,
         known,
         loadedPerks,
+        loadedRounds,
       ]) => {
         if (!active) return;
         setNumberFormat(settings.numberFormat, settings.symbolPosition);
@@ -343,6 +360,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
           transactions: convertTransactions(shown(loadedTxs), rates, target),
           bonuses: convertBonuses(shown(loadedBonuses), rates, target),
         };
+        const casinoRounds = convertRounds(loadedRounds, rates, target).converted;
         // A balance is read off the page, where the currency symbol can be missing;
         // the account's own movements are denominated in it and say which it is.
         const accountCurrency = (bm: Bookmaker): string =>
@@ -439,6 +457,8 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
           bets: converted.bets.converted,
           transactions: converted.transactions.converted,
           bonuses: converted.bonuses.converted,
+          casinoRounds,
+          knownAccounts: known,
           balances,
           claimable,
           currency: target,
@@ -503,6 +523,8 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
         allTransactions: data.transactions,
         allBonuses: data.bonuses,
         allBets: data.bets,
+        casinoRounds: data.casinoRounds,
+        knownAccounts: data.knownAccounts,
         betCount: data.betCount,
         periodBets,
         currency: data.currency,

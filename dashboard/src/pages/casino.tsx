@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   accountKey,
   casinoByGame,
   casinoRoundCurve,
   casinoRoundTotals,
   casinoSessions,
-  convertRounds,
   roundNet,
   type CasinoKind,
   type CasinoRound,
@@ -15,6 +14,7 @@ import {
 import {
   ArrowUpDown,
   Bomb,
+  CalendarClock,
   Cherry,
   ChevronDown,
   ChevronsDown,
@@ -30,6 +30,7 @@ import {
   Joystick,
   Layers,
   Percent,
+  Search,
   Spade,
   Target,
   TrendingUp,
@@ -37,13 +38,13 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { ChartViewToggle, type TimelineChartView } from '@/components/dashboard/chart-view-toggle';
+import { SegmentedToggle, type SegmentedOption } from '@/components/dashboard/segmented-toggle';
 import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { ProfitTimelineChart } from '@/components/dashboard/profit-timeline-chart';
 import { RunningPlChart } from '@/components/dashboard/running-pl-chart';
 import { useDashboard } from '@/context/dashboard-context';
-import { findAccount, useAllKnownAccounts } from '@/data/accounts';
-import { getRates, loadCasinoRounds } from '@/data/source';
+import { findAccount } from '@/data/accounts';
 import { rangeCutoff, rangeEnd, type AxisTick, type ChartBucket } from '@/lib/chart-data';
 import { usePersistedState } from '@/lib/persisted-state';
 import { pickXLabelIndices } from '@/lib/profit-chart-scale';
@@ -56,26 +57,6 @@ import {
   formatTime,
   symbolOf,
 } from '@/lib/utils';
-
-/**
- * The rounds a site wrote down one by one, priced in the display currency. Empty
- * at every site that keeps no such record, which is all but one of them.
- */
-const useRounds = (currency: string, nonce: number): CasinoRound[] => {
-  const [rounds, setRounds] = useState<CasinoRound[]>([]);
-
-  useEffect(() => {
-    let active = true;
-    void Promise.all([loadCasinoRounds(), getRates()]).then(([stored, rates]) => {
-      if (active) setRounds(convertRounds(stored, rates, currency).converted);
-    });
-    return () => {
-      active = false;
-    };
-  }, [currency, nonce]);
-
-  return rounds;
-};
 
 const KIND_ICONS: Record<CasinoKind, LucideIcon> = {
   originals: Dices,
@@ -280,6 +261,78 @@ const sessionTicks = (buckets: readonly ChartBucket[]): AxisTick[] =>
     label: buckets[index]?.label ?? '',
   }));
 
+/** What the chart is narrowed to: one game, or one sitting. */
+type Focus = { kind: 'game' | 'sitting'; id: string } | null;
+
+/** Which breakdown the card beside the games is showing. */
+type TableView = 'stake' | 'payout';
+
+const TABLE_VIEWS: readonly SegmentedOption<TableView>[] = [
+  { value: 'stake', label: 'Stake', title: 'Grouped by what a round cost' },
+  { value: 'payout', label: 'Payout', title: 'Grouped by what a round paid back' },
+];
+
+interface PayoutBand extends GroupRow {
+  /** The rung's place in the ladder, which is the order the rows are read in. */
+  order: number;
+}
+
+/**
+ * What a round paid back, as a multiple of what it cost. The rungs are fixed
+ * rather than fitted to the play the way the stake ladder is: a multiplier means
+ * the same thing at every stake and in every currency, and the question this
+ * answers - how much of the money back came from the rare big hits - needs the
+ * rare rungs kept apart even when only a handful of rounds ever reached them.
+ */
+const PAYOUT_MARKS: readonly number[] = [
+  0,
+  // Where the play actually lands: a slot pays back a fraction of the stake far
+  // more often than it pays a multiple of it, so this stretch is read in tenths.
+  ...Array.from({ length: 20 }, (_, i) => (i + 1) / 10),
+  // Past twice the stake the rungs only have to keep the rare hits apart, and a
+  // tenth of a multiple there would be a row per round.
+  3,
+  5,
+  10,
+  25,
+  50,
+  100,
+  Infinity,
+];
+
+const PAYOUT_BANDS: readonly { label: string; upTo: number }[] = PAYOUT_MARKS.map((upTo, index) => {
+  if (index === 0) return { label: '0×', upTo };
+  const from = PAYOUT_MARKS[index - 1] ?? 0;
+  return {
+    label: upTo === Infinity ? `${from}× and up` : `${from}× – ${upTo}×`,
+    upTo,
+  };
+});
+
+const payoutBands = (rounds: readonly CasinoRound[]): PayoutBand[] => {
+  const buckets = PAYOUT_BANDS.map((): CasinoRound[] => []);
+  for (const round of rounds) {
+    // The rung holds up to its own mark but not the mark itself, so a round that
+    // paid exactly its stake back is a 1×, not the top of "under 1×".
+    const at = PAYOUT_BANDS.findIndex((band, index) =>
+      index === 0 ? round.multiplier <= 0 : round.multiplier < band.upTo,
+    );
+    buckets[at]?.push(round);
+  }
+  // A rung nothing landed on is not a row: it would only say "never", which the
+  // rungs around it already say.
+  return PAYOUT_BANDS.flatMap((band, index) => {
+    const group = buckets[index] ?? [];
+    return group.length === 0
+      ? []
+      : [{ ...casinoRoundTotals(group), label: band.label, order: index }];
+  });
+};
+
+/** A sitting as a row is named by when it started - that is what tells two apart. */
+const sittingLabel = (session: CasinoSession): string =>
+  `${formatDate(session.startedAt)} · ${formatTime(session.startedAt)}`;
+
 type GroupSort = 'label' | 'rounds' | 'staked' | 'returned' | 'rtp';
 
 const GROUP_COLUMNS: readonly { key: GroupSort; label: string; width: string }[] = [
@@ -320,6 +373,50 @@ const SortHead = ({
 type GroupRow = CasinoRoundTotals & { label: string };
 
 /**
+ * A way to find one game among the hundreds a slots player gets through. Kept
+ * shut until it is asked for: a search box standing open in a card heading is a
+ * control most readings of the page never need.
+ */
+const SearchBox = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}): JSX.Element => {
+  const [open, setOpen] = useState(false);
+
+  return open ? (
+    <input
+      // Opened by a click, so the cursor belongs in what the click asked for.
+      autoFocus
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      onBlur={() => {
+        if (value === '') setOpen(false);
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape') return;
+        onChange('');
+        setOpen(false);
+      }}
+      placeholder="Find a game"
+      className="h-[23px] w-40 rounded-md border border-border bg-muted/30 px-2 text-[10px] text-foreground outline-none placeholder:text-muted-foreground focus:border-foreground/40"
+    />
+  ) : (
+    <button
+      type="button"
+      onClick={() => setOpen(true)}
+      title="Find a game"
+      aria-label="Find a game"
+      className="flex h-[23px] w-[23px] items-center justify-center rounded-md border border-border bg-muted/30 text-muted-foreground hover:text-foreground"
+    >
+      <Search className="h-3 w-3" />
+    </button>
+  );
+};
+
+/**
  * One of the breakdowns, sorted by whichever column was last clicked. They hold
  * the same figures over different groupings, so they are one table read twice
  * rather than two tables kept in step by hand.
@@ -335,6 +432,8 @@ const GroupTable = <T extends GroupRow>({
   defaultSort = 'staked',
   picked,
   onPick,
+  searchable = false,
+  action,
   currency,
 }: {
   title: string;
@@ -351,20 +450,28 @@ const GroupTable = <T extends GroupRow>({
   /** The row the chart above is currently narrowed to, if any. */
   picked?: string | null;
   onPick?: (group: T) => void;
+  /** Adds a shut search box that narrows the rows by name. */
+  searchable?: boolean;
+  /** A control of the table's own, beside the search box. */
+  action?: ReactNode;
   currency: string;
 }): JSX.Element => {
   const [sort, setSort] = useState<GroupSort>(defaultSort);
   const [desc, setDesc] = useState(defaultSort !== 'label');
+  const [query, setQuery] = useState('');
 
   const sorted = useMemo(() => {
     const value = (group: T): number =>
       sort === 'label' ? 0 : sort === 'rtp' ? (group.rtp ?? -1) : group[sort];
     const byLabel = compareLabel ?? ((a: T, b: T): number => nameOf(a).localeCompare(nameOf(b)));
-    return [...groups].sort((a, b) => {
-      const diff = sort === 'label' ? byLabel(a, b) : value(a) - value(b) || 0;
-      return desc ? -diff : diff;
-    });
-  }, [groups, sort, desc, nameOf, compareLabel]);
+    const needle = query.trim().toLowerCase();
+    return [...groups]
+      .filter((group) => needle === '' || nameOf(group).toLowerCase().includes(needle))
+      .sort((a, b) => {
+        const diff = sort === 'label' ? byLabel(a, b) : value(a) - value(b) || 0;
+        return desc ? -diff : diff;
+      });
+  }, [groups, sort, desc, query, nameOf, compareLabel]);
 
   const click = (key: GroupSort) => (): void => {
     setDesc(key === sort ? !desc : key !== 'label');
@@ -373,7 +480,18 @@ const GroupTable = <T extends GroupRow>({
 
   return (
     <DashboardCard className="flex min-h-0 flex-col p-4">
-      <DashboardCardHeading className="mb-2" title={title} />
+      <DashboardCardHeading
+        className="mb-2"
+        title={title}
+        action={
+          searchable || action ? (
+            <div className="flex items-center gap-2">
+              {searchable && <SearchBox value={query} onChange={setQuery} />}
+              {action}
+            </div>
+          ) : undefined
+        }
+      />
       {/* Reserves the body's scrollbar gutter so the columns stay aligned. */}
       <Row className={cn(HEAD, 'scroll-gutter overflow-y-scroll pr-2')}>
         {iconOf && <span className="w-3 shrink-0" />}
@@ -441,9 +559,15 @@ const GroupTable = <T extends GroupRow>({
  * which is why nothing on it contradicts the picker above it.
  */
 export const CasinoPage = (): JSX.Element => {
-  const { bookmaker, currency, days, until, nonce } = useDashboard();
-  const logins = useAllKnownAccounts();
-  const allRounds = useRounds(currency, nonce);
+  const {
+    bookmaker,
+    currency,
+    days,
+    until,
+    loading,
+    casinoRounds: allRounds,
+    knownAccounts: logins,
+  } = useDashboard();
 
   const casinoKeys = useMemo(
     () =>
@@ -480,17 +604,41 @@ export const CasinoPage = (): JSX.Element => {
     'line',
     ['bars', 'line'],
   );
-  // One game's own run, picked from the table below. A game the period no longer
-  // holds narrows to nothing, so the pick is dropped rather than drawn empty.
-  const [game, setGame] = useState<string | null>(null);
+  const [tableView, setTableView] = usePersistedState<TableView>('casino.tableView', 'stake', [
+    'stake',
+    'payout',
+  ]);
+  // What the chart is narrowed to: one game's own run, or one sitting's. Both
+  // are picked from a table below, and picking either drops the other - two
+  // narrowings at once would draw a curve nothing on the page names.
+  const [focus, setFocus] = useState<Focus>(null);
   // The round the sittings list is being pointed at, marked on the curve so the
   // two panels are read as one thing rather than two.
   const [markedRound, setMarkedRound] = useState<string | null>(null);
-  const picked = games.find((group) => group.label === game) ?? null;
-  const PickedIcon = picked === null ? Dices : gameIcon(picked.label, picked.kind);
+
+  // Picking what is already picked is how a narrowing is undone.
+  const toggleFocus = (kind: 'game' | 'sitting', id: string): void =>
+    setFocus((was) => (was?.kind === kind && was.id === id ? null : { kind, id }));
+
+  // A pick the period no longer holds narrows to nothing, so it is dropped
+  // rather than drawn empty.
+  const picked = focus?.kind === 'game' ? (games.find((g) => g.label === focus.id) ?? null) : null;
+  const sitting =
+    focus?.kind === 'sitting' ? (sessions.find((s) => s.startedAt === focus.id) ?? null) : null;
+  const paid = useMemo(() => payoutBands(rounds), [rounds]);
+
+  const PickedIcon =
+    picked !== null
+      ? gameIcon(picked.label, picked.kind)
+      : sitting !== null
+        ? CalendarClock
+        : Dices;
   const shown = useMemo(
-    () => (picked === null ? rounds : rounds.filter((round) => round.game === picked.label)),
-    [rounds, picked],
+    () =>
+      picked !== null
+        ? rounds.filter((round) => round.game === picked.label)
+        : (sitting?.rounds ?? rounds),
+    [rounds, picked, sitting],
   );
   const curve = useMemo(() => casinoRoundCurve(shown), [shown]);
   const buckets = useMemo(() => sessionBuckets(casinoSessions(shown)), [shown]);
@@ -499,7 +647,9 @@ export const CasinoPage = (): JSX.Element => {
   const money = (value: number | null): string =>
     value === null ? '—' : formatMoney(value, currency);
 
-  if (casinoKeys.size === 0) {
+  // Only once the accounts have been read: before that, "no casino account" is
+  // a claim about an empty list rather than about the accounts.
+  if (!loading && casinoKeys.size === 0) {
     return (
       <DashboardCard className="p-5">
         <DashboardCardHeading
@@ -568,27 +718,29 @@ export const CasinoPage = (): JSX.Element => {
                 <span className="flex items-center gap-2 text-lg">
                   <PickedIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
                   <span className="truncate first-letter:uppercase">
-                    {picked === null ? 'Round by round' : picked.label}
+                    {picked?.label ?? (sitting === null ? 'Round by round' : sittingLabel(sitting))}
                   </span>
                 </span>
               }
               subtitle={
-                picked === null
-                  ? chartView === 'line'
-                    ? 'Running casino result, a step per round'
-                    : 'What each sitting finished at'
-                  : `${picked.rounds} rounds · ${money(picked.net)}`
+                picked !== null
+                  ? `${picked.rounds} rounds · ${money(picked.net)}`
+                  : sitting !== null
+                    ? `${sitting.totals.rounds} rounds · ${money(sitting.totals.net)} · until ${formatTime(sitting.endedAt)}`
+                    : chartView === 'line'
+                      ? 'Running casino result, a step per round'
+                      : 'What each sitting finished at'
               }
               action={
                 <div className="flex items-center gap-2">
-                  {picked === null ? null : (
+                  {focus === null ? null : (
                     <button
                       type="button"
-                      onClick={() => setGame(null)}
+                      onClick={() => setFocus(null)}
                       className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground"
                     >
                       <X size={12} />
-                      All games
+                      {focus.kind === 'game' ? 'All games' : 'All sittings'}
                     </button>
                   )}
                   <ChartViewToggle value={chartView} onChange={setChartView} primary="line" />
@@ -624,22 +776,57 @@ export const CasinoPage = (): JSX.Element => {
               nameOf={(group) => group.label}
               iconOf={(group) => gameIcon(group.label, group.kind)}
               titleOf={(group) => group.provider ?? undefined}
-              picked={game}
-              onPick={(group) => setGame(game === group.label ? null : group.label)}
+              picked={picked?.label ?? null}
+              onPick={(group) => toggleFocus('game', group.label)}
+              searchable
               currency={currency}
             />
-            <GroupTable
-              title="By stake"
-              nameLabel="Stake"
-              groups={bands}
-              nameOf={(group) => group.label}
-              titleOf={(group) =>
-                `${formatPercent((group.staked / played.staked) * 100, 0)} of the turnover`
-              }
-              compareLabel={(a, b) => a.floor - b.floor}
-              defaultSort="label"
-              currency={currency}
-            />
+            {/* Remounted per view so each opens on its own column and sort. */}
+            {tableView === 'stake' ? (
+              <GroupTable
+                key="stake"
+                title="By stake"
+                nameLabel="Stake"
+                groups={bands}
+                nameOf={(group) => group.label}
+                titleOf={(group) =>
+                  `${formatPercent((group.staked / played.staked) * 100, 0)} of the turnover`
+                }
+                compareLabel={(a, b) => a.floor - b.floor}
+                defaultSort="label"
+                action={
+                  <SegmentedToggle
+                    value={tableView}
+                    options={TABLE_VIEWS}
+                    onChange={setTableView}
+                  />
+                }
+                currency={currency}
+              />
+            ) : (
+              <GroupTable
+                key="payout"
+                title="By payout"
+                nameLabel="Paid"
+                groups={paid}
+                nameOf={(group) => group.label}
+                titleOf={(group) =>
+                  played.returned === 0
+                    ? undefined
+                    : `${formatPercent((group.returned / played.returned) * 100, 0)} of everything paid back`
+                }
+                compareLabel={(a, b) => a.order - b.order}
+                defaultSort="label"
+                action={
+                  <SegmentedToggle
+                    value={tableView}
+                    options={TABLE_VIEWS}
+                    onChange={setTableView}
+                  />
+                }
+                currency={currency}
+              />
+            )}
           </div>
         </div>
 
@@ -656,7 +843,16 @@ export const CasinoPage = (): JSX.Element => {
           <div className="scroll-area min-h-0 flex-1 overflow-y-auto pr-2">
             {sessions.map((session) => (
               <div key={session.startedAt}>
-                <Row className="mt-3 first:mt-2">
+                {/* The divider is the sitting itself: clicking it narrows the
+                    chart to that evening's play. */}
+                <Row
+                  className={cn(
+                    'mt-3 rounded px-1 first:mt-2 hover:bg-muted/40',
+                    sitting?.startedAt === session.startedAt && 'bg-muted/60',
+                  )}
+                  title={`${formatTime(session.startedAt)} – ${formatTime(session.endedAt)}`}
+                  onClick={() => toggleFocus('sitting', session.startedAt)}
+                >
                   <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {formatDate(session.startedAt)}
                   </span>
@@ -667,17 +863,20 @@ export const CasinoPage = (): JSX.Element => {
                 </Row>
                 {session.rounds.map((round) => {
                   const Icon = gameIcon(round.game, round.kind);
+                  const when = `${formatDate(round.playedAt)} · ${formatTime(round.playedAt)}`;
                   return (
                     <Row
                       key={round.id}
                       className={cn(ROW, 'rounded px-1', markedRound === round.id && 'bg-muted/60')}
-                      title={formatTime(round.playedAt)}
+                      title={when}
                       onHover={(over) => setMarkedRound(over ? round.id : null)}
                     >
                       <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      {/* The name carries the moment too: its own tooltip would
+                          otherwise shadow the row's wherever the cursor lands. */}
                       <span
                         className="flex-1 truncate first-letter:uppercase"
-                        title={round.provider ?? undefined}
+                        title={round.provider === null ? when : `${round.provider} · ${when}`}
                       >
                         {round.game}
                       </span>
