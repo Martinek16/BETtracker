@@ -44,8 +44,12 @@ const useSnapshots = (currency: string): Map<string, CasinoSnapshot[]> => {
           row.wagered === undefined
             ? null
             : convertAmount(row.wagered.casino, from, day, rates, currency);
+        const reported =
+          row.result === undefined
+            ? null
+            : convertAmount(row.result.casino, from, day, rates, currency);
         const key = accountKey(row);
-        next.set(key, [...(next.get(key) ?? []), { at: row.capturedAt, held, wagered }]);
+        next.set(key, [...(next.get(key) ?? []), { at: row.capturedAt, held, wagered, reported }]);
       }
       setByAccount(next);
     });
@@ -115,6 +119,7 @@ export const CasinoPage = (): JSX.Element => {
             balance: read?.amount ?? null,
             vault: read?.vault ?? null,
             wagered: read?.wagered?.casino ?? null,
+            reported: read?.result?.casino ?? null,
           };
         }),
     [logins, accountBalances, stored, bookmaker],
@@ -164,6 +169,11 @@ export const CasinoPage = (): JSX.Element => {
   const money = (value: number | null): string =>
     value === null ? '—' : formatMoney(value, currency);
 
+  // Two different figures wear the same label, so the page has to say which one
+  // it is showing: a site's own statement, or the money its wallet cannot account
+  // for - and that second one carries every payment nobody ever read.
+  const inferred = totals.accounts.some((account) => account.source === 'wallet');
+
   if (totals.accounts.length === 0) {
     return (
       <DashboardCard className="p-5">
@@ -185,7 +195,11 @@ export const CasinoPage = (): JSX.Element => {
           icon={Dices}
           label="Casino result"
           value={money(totals.net)}
-          subtitle="What the casino took"
+          subtitle={
+            inferred
+              ? 'What the wallet cannot explain'
+              : 'What the casino took, as the site states it'
+          }
           tone={totals.net === null ? 'neutral' : signTone(totals.net)}
         />
         <MetricCard
@@ -342,10 +356,11 @@ export const CasinoPage = (): JSX.Element => {
       )}
 
       <p className="shrink-0 pb-1 text-xs leading-relaxed text-muted-foreground">
-        The casino result is what the wallet holds less what the bets and payments explain, so it
-        carries any history that was never read as well - and it only closes over an account's whole
-        life, not over the period above. Turnover is the site's own lifetime figure. The rounds
-        below it are the ones the site still hands out, which is why they can add up to less.
+        {inferred
+          ? 'Where a site states no casino result of its own, the figure above is what the wallet holds less what the bets and payments explain - so it carries any history that was never read as well. '
+          : 'The casino result and the turnover are the site’s own lifetime figures, not something worked out here. '}
+        Either way it covers an account’s whole life, not the period above. The rounds below are the
+        ones the site still hands out, which is why they can add up to less.
       </p>
     </div>
   );

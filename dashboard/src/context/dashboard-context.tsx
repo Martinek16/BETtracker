@@ -156,6 +156,8 @@ export interface BalanceRow {
   vault?: number;
   /** Lifetime turnover the site reports itself, split by product. */
   wagered?: { sports: number; casino: number };
+  /** Lifetime result the site reports itself, split by product. */
+  result?: { sports: number; casino: number };
 }
 
 /**
@@ -386,6 +388,8 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
             convertAmount(value, b.currency ?? accountCurrency(b.bookmaker), day, rates, target);
           const sports = b.wagered === undefined ? null : inTarget(b.wagered.sports);
           const casino = b.wagered === undefined ? null : inTarget(b.wagered.casino);
+          const wonSports = b.result === undefined ? null : inTarget(b.result.sports);
+          const wonCasino = b.result === undefined ? null : inTarget(b.result.casino);
           return [
             {
               bookmaker: b.bookmaker,
@@ -394,6 +398,9 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
               holdings,
               ...(vault === null ? {} : { vault }),
               ...(sports === null || casino === null ? {} : { wagered: { sports, casino } }),
+              ...(wonSports === null || wonCasino === null
+                ? {}
+                : { result: { sports: wonSports, casino: wonCasino } }),
             },
           ];
         });

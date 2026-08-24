@@ -21,6 +21,12 @@ export interface CasinoAccountInput {
   vault: number | null;
   /** Lifetime casino turnover the site reports itself, already converted. */
   wagered: number | null;
+  /**
+   * Lifetime casino result the site states itself, already converted. Where it
+   * exists it is the answer; the wallet gap below is only what is left when a
+   * site states nothing, and that gap also swallows every payment never read.
+   */
+  reported: number | null;
 }
 
 export interface CasinoAccount {
@@ -30,6 +36,8 @@ export interface CasinoAccount {
   wagered: number | null;
   /** What the casino took, negative when it took money. `null` without a balance. */
   net: number | null;
+  /** Where `net` came from: the site's own statement, or the gap in the wallet. */
+  source: 'site' | 'wallet';
   /** What came back per unit staked. `null` unless both figures above are known. */
   rtp: number | null;
 }
@@ -82,6 +90,8 @@ export interface CasinoSnapshot {
   held: number;
   /** Lifetime casino turnover at that reading, `null` where none is published. */
   wagered: number | null;
+  /** Lifetime casino result at that reading, `null` where the site states none. */
+  reported: number | null;
 }
 
 /**
@@ -140,7 +150,7 @@ export const casinoCurve = (
       bonuses.filter((b) => Date.parse(b.grantedAt) <= at),
       snapshot.held,
     );
-    const net = casinoNet(ledger.expected, snapshot.held, null) ?? 0;
+    const net = snapshot.reported ?? casinoNet(ledger.expected, snapshot.held, null) ?? 0;
     const wagered =
       snapshot.wagered === null || previousWagered === null
         ? null
@@ -167,12 +177,13 @@ export const casinoTotals = (inputs: readonly CasinoAccountInput[]): CasinoTotal
     betResult += ledger.betResult;
     // A gap at a sportsbook-only account is history nobody read, not a casino.
     if (!input.hasCasino) continue;
-    const net = casinoNet(ledger.expected, input.balance, input.vault);
+    const net = input.reported ?? casinoNet(ledger.expected, input.balance, input.vault);
     accounts.push({
       bookmaker: input.bookmaker,
       key: input.key,
       wagered: input.wagered,
       net,
+      source: input.reported === null ? 'wallet' : 'site',
       rtp: rtpOf(net, input.wagered),
     });
   }

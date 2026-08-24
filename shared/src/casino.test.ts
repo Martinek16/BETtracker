@@ -33,6 +33,7 @@ const account = (over: Partial<CasinoAccountInput> = {}): CasinoAccountInput => 
   balance: 400,
   vault: null,
   wagered: 5000,
+  reported: null,
   ...over,
 });
 
@@ -53,6 +54,15 @@ describe('casinoTotals', () => {
     expect(totals.net).toBe(-600);
     expect(totals.wagered).toBe(5000);
     expect(totals.rtp).toBeCloseTo(0.88);
+  });
+
+  it('takes the site at its word over the wallet gap, and says which it used', () => {
+    // The gap here reads -600; the site states it took 250. The gap also holds
+    // every payment nobody read, so the site's own figure wins.
+    const totals = casinoTotals([account({ reported: -250 })]);
+    expect(totals.net).toBe(-250);
+    expect(totals.accounts[0]?.source).toBe('site');
+    expect(casinoTotals([account()]).accounts[0]?.source).toBe('wallet');
   });
 
   it('leaves a sportsbook-only account out of the casino, gap and all', () => {
@@ -113,8 +123,8 @@ describe('casinoCurve', () => {
   it('reads each balance reading as the casino result up to that moment', () => {
     const curve = casinoCurve(
       [
-        { at: '2026-02-01T00:00:00Z', held: 900, wagered: 500 },
-        { at: '2026-03-01T00:00:00Z', held: 700, wagered: 1200 },
+        { at: '2026-02-01T00:00:00Z', held: 900, wagered: 500, reported: null },
+        { at: '2026-03-01T00:00:00Z', held: 700, wagered: 1200, reported: null },
       ],
       [],
       txs,
@@ -135,7 +145,7 @@ describe('casinoCurve', () => {
       actualReturn: 300,
     });
     const curve = casinoCurve(
-      [{ at: '2026-02-01T00:00:00Z', held: 900, wagered: null }],
+      [{ at: '2026-02-01T00:00:00Z', held: 900, wagered: null, reported: null }],
       [bet],
       txs,
       [],
@@ -146,8 +156,8 @@ describe('casinoCurve', () => {
   it('puts the readings in order whatever order they were stored in', () => {
     const curve = casinoCurve(
       [
-        { at: '2026-03-01T00:00:00Z', held: 700, wagered: null },
-        { at: '2026-02-01T00:00:00Z', held: 900, wagered: null },
+        { at: '2026-03-01T00:00:00Z', held: 700, wagered: null, reported: null },
+        { at: '2026-02-01T00:00:00Z', held: 900, wagered: null, reported: null },
       ],
       [],
       txs,

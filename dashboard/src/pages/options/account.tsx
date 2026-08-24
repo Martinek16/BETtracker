@@ -271,6 +271,7 @@ export const AccountDetailPage = (): JSX.Element => {
           balance={balance}
           vault={read?.vault ?? null}
           wagered={read?.wagered ?? null}
+          result={read?.result ?? null}
           currency={stored.currency}
         />
       </div>

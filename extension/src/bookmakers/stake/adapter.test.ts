@@ -10,7 +10,7 @@ import {
   normalizeBet,
   normalizeRound,
   parseBalance,
-  parseWagered,
+  parseScopedTotals,
   stake,
 } from './adapter';
 
@@ -179,22 +179,24 @@ describe('stake coupons', () => {
   });
 });
 
-describe('stake wagered totals', () => {
-  it('sums turnover per product and leaves an unknown scope out', () => {
-    // Coin amounts differ wildly in worth, so only `betValue` may be added up.
-    const wagered = parseWagered([
-      { betAmount: 33.67, betValue: 4238.57, currency: 'ltc', scope: 'house' },
-      { betAmount: 28.46, betValue: 3269.35, currency: 'ltc', scope: 'sport' },
-      { betAmount: 149.5, betValue: 47.8, currency: 'doge', scope: 'sport' },
-      { betAmount: 1, betValue: 999, currency: 'btc', scope: 'poker' },
+describe('stake scoped totals', () => {
+  it('sums turnover and result per product and leaves an unknown scope out', () => {
+    // Coin amounts differ wildly in worth, so only the priced fields may be added up.
+    const totals = parseScopedTotals([
+      { betAmount: 33.67, betValue: 4238.57, profitValue: -612.4, currency: 'ltc', scope: 'house' },
+      { betAmount: 28.46, betValue: 3269.35, profitValue: 118.2, currency: 'ltc', scope: 'sport' },
+      { betAmount: 149.5, betValue: 47.8, profitValue: -12.05, currency: 'doge', scope: 'sport' },
+      { betAmount: 1, betValue: 999, profitValue: 999, currency: 'btc', scope: 'poker' },
     ]);
-    expect(wagered?.casino).toBeCloseTo(4238.57);
-    expect(wagered?.sports).toBeCloseTo(3317.15);
+    expect(totals?.wagered?.casino).toBeCloseTo(4238.57);
+    expect(totals?.wagered?.sports).toBeCloseTo(3317.15);
+    expect(totals?.result?.casino).toBeCloseTo(-612.4);
+    expect(totals?.result?.sports).toBeCloseTo(106.15);
   });
 
-  it('reports no turnover rather than zero when the site sends none', () => {
-    expect(parseWagered([])).toBeUndefined();
-    expect(parseWagered(null)).toBeUndefined();
+  it('reports nothing rather than zero when the site sends none', () => {
+    expect(parseScopedTotals([])).toBeUndefined();
+    expect(parseScopedTotals(null)).toBeUndefined();
   });
 });
 
@@ -369,14 +371,15 @@ describe('casino rounds', () => {
   const rounds = raw.flatMap((entry) => normalizeRound(entry, 'acc-1') ?? []);
 
   it('keeps only the rounds it can state a result for', () => {
-    // Six rows in, four out: one round is still running and one is the racebook,
-    // which is not a casino at all.
+    // Seven rows in, four out: one round is still running, one is the racebook,
+    // which is not a casino at all, and the live table names no clock of its own.
     expect(rounds).toHaveLength(4);
     expect(rounds.map((r) => r.game)).not.toContain('Horse Racing');
+    expect(rounds.map((r) => r.game)).not.toContain('Lightning Roulette');
   });
 
   it('reads the kind off the type Stake puts on the round', () => {
-    expect(rounds.map((r) => r.kind)).toEqual(['originals', 'slots', 'live', 'provider']);
+    expect(rounds.map((r) => r.kind)).toEqual(['originals', 'originals', 'slots', 'provider']);
   });
 
   it('keeps the round in the coin it was played in', () => {
@@ -386,7 +389,9 @@ describe('casino rounds', () => {
   });
 
   it('names the studio where Stake names one', () => {
-    expect(rounds[1]?.provider).toBe('Pragmatic Play');
+    // Only an outside studio's round carries a provider, and it carries it on
+    // the round rather than on the game.
+    expect(rounds[3]?.provider).toBe('Hacksaw Gaming');
     expect(rounds[0]?.provider).toBeNull();
   });
 

@@ -183,6 +183,13 @@ export interface BalanceInfo {
    * publishes no such figure.
    */
   wagered?: { sports: number; casino: number };
+  /**
+   * What each product actually returned over the account's life, as the site
+   * adds it up itself, in the same currency as `amount`. Where this exists there
+   * is nothing to infer: the casino's result is a figure the site publishes, not
+   * the money its wallet cannot otherwise explain.
+   */
+  result?: { sports: number; casino: number };
 }
 
 /**
@@ -897,7 +904,8 @@ export const appendBalanceSnapshot = async (
     last.amount === snapshot.amount &&
     last.currency === snapshot.currency &&
     last.wagered?.casino === snapshot.wagered?.casino &&
-    last.wagered?.sports === snapshot.wagered?.sports
+    last.wagered?.sports === snapshot.wagered?.sports &&
+    last.result?.casino === snapshot.result?.casino
   )
     return;
   list.push(snapshot);
