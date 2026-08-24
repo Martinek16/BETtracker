@@ -228,11 +228,12 @@ export const CasinoPage = (): JSX.Element => {
             <DashboardCard className="flex min-h-0 flex-col p-4">
               <DashboardCardHeading className="mb-2" title="Games" />
               <Row className={HEAD}>
+                <span className="w-3 shrink-0" />
                 <span className="flex-1">Game</span>
-                <span className="w-10 text-right">Rounds</span>
-                <span className="w-16 text-right">Staked</span>
-                <span className="w-16 text-right">Result</span>
-                <span className="w-12 text-right">Return</span>
+                <span className="w-10 text-center">Rounds</span>
+                <span className="w-16 text-center">Staked</span>
+                <span className="w-16 text-center">Result</span>
+                <span className="w-12 text-center">Return</span>
               </Row>
               <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
                 {games.map((game) => {
@@ -267,11 +268,12 @@ export const CasinoPage = (): JSX.Element => {
             <DashboardCard className="flex min-h-0 flex-col p-4">
               <DashboardCardHeading className="mb-2" title="By type" />
               <Row className={HEAD}>
+                <span className="w-3 shrink-0" />
                 <span className="flex-1">Type</span>
-                <span className="w-10 text-right">Rounds</span>
-                <span className="w-16 text-right">Staked</span>
-                <span className="w-16 text-right">Result</span>
-                <span className="w-12 text-right">Return</span>
+                <span className="w-10 text-center">Rounds</span>
+                <span className="w-16 text-center">Staked</span>
+                <span className="w-16 text-center">Result</span>
+                <span className="w-12 text-center">Return</span>
               </Row>
               <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
                 {kinds.map((kind) => {
@@ -306,12 +308,13 @@ export const CasinoPage = (): JSX.Element => {
         </div>
 
         <DashboardCard className="flex h-full min-h-0 flex-col p-4">
-          <DashboardCardHeading className="mb-2" title="Rounds" />
+          <DashboardCardHeading className="mb-2" title="Sittings" />
           <Row className={HEAD}>
+            <span className="w-3 shrink-0" />
             <span className="flex-1">Game</span>
-            <span className="w-16 text-right">Staked</span>
-            <span className="w-12 text-right">Odds</span>
-            <span className="w-16 text-right">Result</span>
+            <span className="w-16 text-center">Staked</span>
+            <span className="w-12 text-center">Odds</span>
+            <span className="w-16 text-center">Result</span>
           </Row>
           <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
             {sessions.map((session) => (
@@ -321,12 +324,7 @@ export const CasinoPage = (): JSX.Element => {
                     {formatDate(session.startedAt)}
                   </span>
                   <span className="h-px flex-1 bg-border/60" />
-                  <span
-                    className={cn(
-                      'shrink-0 text-[11px] tabular-nums',
-                      toneClass(session.totals.net),
-                    )}
-                  >
+                  <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
                     {formatMoney(session.totals.net, currency)}
                   </span>
                 </Row>
