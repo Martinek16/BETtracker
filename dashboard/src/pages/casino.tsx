@@ -12,10 +12,20 @@ import {
   type CasinoRound,
 } from '@betanal/shared';
 import {
+  ArrowUpDown,
+  Bomb,
+  Cherry,
+  ChevronsDown,
+  Club,
   Coins,
+  Diamond,
   Dices,
+  Disc3,
   Gamepad2,
+  Gem,
+  Grid3x3,
   Joystick,
+  Layers,
   Percent,
   Spade,
   Target,
@@ -60,10 +70,33 @@ const KIND_NAMES: Record<CasinoKind, string> = {
 
 const KIND_ICONS: Record<CasinoKind, LucideIcon> = {
   originals: Dices,
-  slots: Gamepad2,
-  live: Spade,
+  slots: Cherry,
+  live: Gamepad2,
   provider: Joystick,
 };
+
+/**
+ * A mark of its own for the games played often enough to be recognised by it.
+ * Anything else keeps the mark of the corner of the casino it was played in,
+ * which is the honest answer for a slot nobody will meet twice.
+ */
+const GAME_ICONS: readonly (readonly [RegExp, LucideIcon])[] = [
+  [/blackjack/, Spade],
+  [/poker/, Club],
+  [/baccarat/, Diamond],
+  [/roulette|wheel/, Disc3],
+  [/crash|limbo|slide/, TrendingUp],
+  [/mines/, Bomb],
+  [/plinko/, ChevronsDown],
+  [/keno/, Grid3x3],
+  [/dice/, Dices],
+  [/hi-?lo/, ArrowUpDown],
+  [/diamonds/, Gem],
+  [/tower|cases/, Layers],
+];
+
+const gameIcon = (game: string, kind: CasinoKind): LucideIcon =>
+  GAME_ICONS.find(([pattern]) => pattern.test(game.toLowerCase()))?.[1] ?? KIND_ICONS[kind];
 
 const HEAD =
   'border-b border-border/60 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground';
@@ -237,7 +270,7 @@ export const CasinoPage = (): JSX.Element => {
               </Row>
               <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
                 {games.map((game) => {
-                  const Icon = KIND_ICONS[game.kind];
+                  const Icon = gameIcon(game.label, game.kind);
                   return (
                     <Row key={game.label} className={ROW}>
                       <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -329,7 +362,7 @@ export const CasinoPage = (): JSX.Element => {
                   </span>
                 </Row>
                 {session.rounds.map((round) => {
-                  const Icon = KIND_ICONS[round.kind];
+                  const Icon = gameIcon(round.game, round.kind);
                   return (
                     <Row key={round.id} className={ROW} title={formatTime(round.playedAt)}>
                       <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
