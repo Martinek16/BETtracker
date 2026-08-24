@@ -1,6 +1,6 @@
 # BETtracker Privacy Policy
 
-**Version 1.1.0 — in force from 24 August 2026**
+**Version 1.1.0 — in force from August 2026**
 Changed since 1.0.0: casino rounds are read at a site that records them one by one.
 Contact: info.m04studio@gmail.com
 

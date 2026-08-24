@@ -222,7 +222,7 @@ export const PrivacyPage = (): JSX.Element => (
 
         <Section title="This policy">
           <Prose>
-            Version 1.1.0, in force from 24 August 2026. It is written from what the code does, and
+            Version 1.1.0, in force from August 2026. It is written from what the code does, and
             every claim in it can be checked against the permissions the extension asks for. What
             changed since 1.0.0: casino rounds are read at a site that records them one by one.
           </Prose>
