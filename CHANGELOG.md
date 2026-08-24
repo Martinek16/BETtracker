@@ -75,6 +75,11 @@ of those are the site's limit, not a setting.
 
 ### The rest
 
+- **The privacy policy moves to 1.1.0** and says what is now true: casino rounds
+  are read at a site that records them one by one, and nothing about the casino
+  is stored anywhere else. It is the one document in the project that has to be
+  right about this, so it names what changed since 1.0.0 rather than quietly
+  reading differently.
 - **A copy installed by hand now says when a new version is out.** Chrome will
   not carry a betting extension, so outside Edge this is loaded from a folder
   and no browser will ever update it. When your browser opens it reads the

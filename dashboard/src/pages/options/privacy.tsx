@@ -64,6 +64,10 @@ export const PrivacyPage = (): JSX.Element => (
             <Point term="Bonuses">
               Bonuses your account was already granted, what is left of one, and when it runs out.
             </Point>
+            <Point term="Casino rounds, at a site that records them">
+              The game, when it resolved, the stake and what came back. Stake is the only one today.
+              A site that keeps no round history has none of this read.
+            </Point>
             <Point term="Your balance">
               The figure shown on the site, and a note of it each time it changes, so the chart has
               something to draw.
@@ -162,8 +166,9 @@ export const PrivacyPage = (): JSX.Element => (
             It reads pages you are already signed in to - it never asks for a login, fills one in,
             or sees a payment detail.
           </Point>
-          <Point term="Casino and slots play">
-            Only sports bets are read. Casino money shows up only as a smaller balance.
+          <Point term="Anything from a site that does not hand it over">
+            Where a bookmaker records casino rounds one by one, those rounds are read too. Where it
+            does not, nothing about the casino is stored and it shows up only as a smaller balance.
           </Point>
           <Point term="Anything about you as a person">
             No name, no email, no address, no device fingerprint, no advertising identifier.
@@ -217,8 +222,9 @@ export const PrivacyPage = (): JSX.Element => (
 
         <Section title="This policy">
           <Prose>
-            Version 1.0.0, in force from 12 August 2026. It is written from what the code does, and
-            every claim in it can be checked against the permissions the extension asks for.
+            Version 1.1.0, in force from 24 August 2026. It is written from what the code does, and
+            every claim in it can be checked against the permissions the extension asks for. What
+            changed since 1.0.0: casino rounds are read at a site that records them one by one.
           </Prose>
           <Prose>
             Your data is never sold, never used for advertising, never used to train anything, and
