@@ -234,16 +234,16 @@ const GroupTable = ({
               <span className="flex-1 truncate first-letter:uppercase" title={titleOf(group)}>
                 {nameOf(group)}
               </span>
-              <span className="w-10 text-right tabular-nums text-muted-foreground">
+              <span className="w-10 text-center tabular-nums text-muted-foreground">
                 {group.rounds}
               </span>
-              <span className="w-16 text-right tabular-nums text-muted-foreground">
+              <span className="w-16 text-center tabular-nums text-muted-foreground">
                 {formatMoney(group.staked, currency)}
               </span>
-              <span className={cn('w-16 text-right tabular-nums', toneClass(group.net))}>
+              <span className={cn('w-16 text-center tabular-nums', toneClass(group.net))}>
                 {formatMoney(group.returned, currency)}
               </span>
-              <span className="w-12 text-right tabular-nums text-muted-foreground">
+              <span className="w-12 text-center tabular-nums text-muted-foreground">
                 {group.rtp === null ? '—' : formatPercent(group.rtp * 100, 0)}
               </span>
             </Row>
