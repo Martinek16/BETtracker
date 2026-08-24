@@ -135,6 +135,12 @@ trust to say the same thing twice.
 
 ### The rest
 
+- **A copy installed by hand now says when a new version is out.** Chrome will
+  not carry a betting extension, so outside Edge this is loaded from a folder
+  and no browser will ever update it. When your browser opens it reads the
+  project's newest release number and, if that release is a version ahead — 1.2
+  to 1.3, not 1.2 to 1.2.1 — the header carries a link to it. The Edge copy
+  updates itself and is left alone.
 - **Settings, About and Privacy read tighter**, and the guided tour sits with
   Appearance where it belongs.
 - **The bonus expiry notice is gone.** It fired on a date the site rarely gives
