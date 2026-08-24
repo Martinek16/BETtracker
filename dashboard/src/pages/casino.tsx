@@ -135,9 +135,14 @@ const MIN_BAND_ROUNDS = 12;
 const MAX_BANDS = 10;
 const MAX_BAND_SHARE = 0.25;
 
-/** The marks a stake is chosen at: 1, 1.5, 2, 3, 5, 7 and their decades. */
-const STAKE_MARKS: readonly number[] = [-1, 0, 1, 2, 3, 4].flatMap((power) =>
-  [1, 1.5, 2, 3, 5, 7].map((step) => Number((step * 10 ** power).toFixed(2))),
+/**
+ * The marks a stake is chosen at: 1, 1.5, 2, 3, 5, 7 and their decades, from a
+ * tenth of a cent up. The ladder has to reach that low because a spin costing a
+ * few cents is the ordinary case, and a rung nobody's stake reaches is free -
+ * only the rungs the play crosses ever become a row.
+ */
+const STAKE_MARKS: readonly number[] = [-4, -3, -2, -1, 0, 1, 2, 3, 4].flatMap((power) =>
+  [1, 1.5, 2, 3, 5, 7].map((step) => Number((step * 10 ** power).toPrecision(2))),
 );
 
 interface StakeBand extends GroupRow {
@@ -158,8 +163,10 @@ interface StakeBand extends GroupRow {
 const stakeBands = (rounds: readonly CasinoRound[], currency: string): StakeBand[] => {
   if (rounds.length === 0) return [];
   const symbol = symbolOf(currency);
+  // As many decimals as the figure itself carries: a ladder of cent spins needs
+  // them, a ladder of blackjack hands would only be padded by them.
   const money = (value: number): string =>
-    `${symbol}${formatNumber(value, Number.isInteger(value) ? 0 : 2)}`;
+    `${symbol}${formatNumber(value, Math.min(3, (String(value).split('.')[1] ?? '').length))}`;
   const label = (floor: number, ceiling: number | null): string =>
     ceiling === null ? `${money(floor)} and up` : `${money(floor)} – ${money(ceiling)}`;
 
