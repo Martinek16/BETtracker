@@ -83,90 +83,20 @@ const sumKnown = (values: readonly (number | null)[]): number | null => {
   return known.length === 0 ? null : known.reduce((sum, value) => sum + value, 0);
 };
 
-/** One balance reading, already priced in the display currency. */
-export interface CasinoSnapshot {
-  at: string;
-  /** What the account held then, the vault counted in. */
-  held: number;
-  /** Lifetime casino turnover at that reading, `null` where none is published. */
-  wagered: number | null;
-  /** Lifetime casino result at that reading, `null` where the site states none. */
-  reported: number | null;
-}
-
 /**
- * The casino at one reading. Shaped like an equity point so the running-total
+ * The casino at one round. Shaped like an equity point so the running-total
  * chart can draw it without a second chart being written for it.
  */
 export interface CasinoPoint {
   date: string;
-  /** The reading's own timestamp: a balance snapshot carries no id. */
   betId: string;
-  /** Change in the casino result since the reading before. */
+  /** What that round paid back, its stake taken off. */
   profit: number;
-  /** The casino result as it stood at that reading. */
+  /** The casino result as it stood after that round. */
   cumulative: number;
-  /** Turnover since the reading before, `null` unless both readings carry one. */
+  /** What that round staked. */
   wagered: number | null;
 }
-
-/**
- * A slip as it stood at `at`. One that settled later was an open slip then, not
- * a result: reading it as settled would put the winnings in the wallet before
- * they were won, and the gap beside them would blame the casino for it.
- */
-const openAt = (bet: Bet, at: number): Bet => {
-  const resolved = bet.settledAt ?? bet.cashedOutAt;
-  if (resolved === null || Date.parse(resolved) <= at) return bet;
-  return { ...bet, status: 'pending', settledAt: null, cashedOutAt: null, actualReturn: 0 };
-};
-
-/**
- * What the casino had taken at each balance reading. Every reading is a fresh
- * sum of the wallet as it stood then, so the curve is the same figure the page
- * shows, wound back.
- *
- * A bonus is placed by the day it was granted - no site records when one cleared
- * its wagering, so one granted before the reading counts at that reading.
- *
- * ponytail: the wallet is re-summed per reading, O(readings x records). Prefix
- * sums if a long history ever drags.
- */
-export const casinoCurve = (
-  snapshots: readonly CasinoSnapshot[],
-  bets: readonly Bet[],
-  transactions: readonly Transaction[],
-  bonuses: readonly Bonus[],
-): CasinoPoint[] => {
-  const sorted = [...snapshots].sort((a, b) => a.at.localeCompare(b.at));
-  let previousNet: number | null = null;
-  let previousWagered: number | null = null;
-
-  return sorted.map((snapshot) => {
-    const at = Date.parse(snapshot.at);
-    const ledger = walletLedger(
-      bets.filter((bet) => Date.parse(bet.placedAt) <= at).map((bet) => openAt(bet, at)),
-      transactions.filter((t) => Date.parse(t.occurredAt) <= at),
-      bonuses.filter((b) => Date.parse(b.grantedAt) <= at),
-      snapshot.held,
-    );
-    const net = snapshot.reported ?? casinoNet(ledger.expected, snapshot.held, null) ?? 0;
-    const wagered =
-      snapshot.wagered === null || previousWagered === null
-        ? null
-        : snapshot.wagered - previousWagered;
-    const point: CasinoPoint = {
-      date: snapshot.at,
-      betId: snapshot.at,
-      profit: previousNet === null ? net : net - previousNet,
-      cumulative: net,
-      wagered,
-    };
-    previousNet = net;
-    previousWagered = snapshot.wagered;
-    return point;
-  });
-};
 
 export const casinoTotals = (inputs: readonly CasinoAccountInput[]): CasinoTotals => {
   let betResult = 0;

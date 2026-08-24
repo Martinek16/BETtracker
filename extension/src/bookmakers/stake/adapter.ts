@@ -512,7 +512,7 @@ const USER_WAGERED = `query BettrackerWagered {
  * `bet` is a union and every field has to be asked for on each member by name.
  * The members do not agree on what they carry: only `CasinoBet` declares
  * `active`, `EvolutionBet` declares no timestamp at all, and the studio behind a
- * game is on `ThirdPartyBet` rather than on the round's own `game`. Asking any
+ * game hangs off `ThirdPartyBet`'s own `game` rather than the round's. Asking any
  * type for a field it does not have fails the whole query, which is why this
  * follows the site's own document field for field.
  */
@@ -533,7 +533,7 @@ const CASINO_BET_LIST = `query BettrackerCasinoBets($offset: Int = 0, $limit: In
         ... on ThirdPartyBet {
           ${CASINO_COMMON}
           updatedAt
-          provider { name }
+          game { name provider { name } }
         }
         ... on ZooBet { ${CASINO_COMMON} updatedAt }
         ... on EvolutionBet { ${CASINO_COMMON} }
@@ -1005,7 +1005,7 @@ interface RawRound {
     currency?: string | null;
     updatedAt?: string | null;
     createdAt?: string | null;
-    provider?: { name?: string | null } | null;
+    game?: { name?: string | null; provider?: { name?: string | null } | null } | null;
   } | null;
 }
 
@@ -1035,9 +1035,9 @@ export const normalizeRound = (raw: RawRound, accountId: AccountId): CasinoRound
     game: toStringOrNull(raw.game?.name) ?? 'Unnamed game',
     gameSlug: toStringOrNull(raw.game?.slug) ?? 'unknown',
     kind,
-    // Only an outside studio's round names one, and it names it on the round
-    // rather than on the game.
-    provider: toStringOrNull(bet.provider?.name),
+    // Only an outside studio's round names one, and it names it on the game the
+    // round itself points at rather than on the one the list carries.
+    provider: toStringOrNull(bet.game?.provider?.name),
     stake,
     payout,
     // Stake's own figure where it gives one, so a round it prices differently

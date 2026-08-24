@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   casinoByGame,
-  casinoCurve,
   casinoNet,
   casinoRoundCurve,
   casinoRoundTotals,
@@ -114,56 +113,6 @@ describe('casinoTotals', () => {
     const totals = casinoTotals([account({ balance: 1200, wagered: 100 })]);
     expect(totals.net).toBe(200);
     expect(totals.shareOfLoss).toBeNull();
-  });
-});
-
-describe('casinoCurve', () => {
-  const txs = [deposit(1000, 't1')];
-
-  it('reads each balance reading as the casino result up to that moment', () => {
-    const curve = casinoCurve(
-      [
-        { at: '2026-02-01T00:00:00Z', held: 900, wagered: 500, reported: null },
-        { at: '2026-03-01T00:00:00Z', held: 700, wagered: 1200, reported: null },
-      ],
-      [],
-      txs,
-      [],
-    );
-    expect(curve.map((p) => p.cumulative)).toEqual([-100, -300]);
-    expect(curve.map((p) => p.profit)).toEqual([-100, -200]);
-    // The first reading has nothing to be a step from, so its turnover is unknown.
-    expect(curve.map((p) => p.wagered)).toEqual([null, 700]);
-  });
-
-  it('reads a slip that settled later as open then, not as money already won', () => {
-    const bet = makeBet({
-      placedAt: '2026-01-15T00:00:00Z',
-      settledAt: '2026-02-15T00:00:00Z',
-      status: 'won',
-      stake: 100,
-      actualReturn: 300,
-    });
-    const curve = casinoCurve(
-      [{ at: '2026-02-01T00:00:00Z', held: 900, wagered: null, reported: null }],
-      [bet],
-      txs,
-      [],
-    );
-    expect(curve[0]?.cumulative).toBe(0);
-  });
-
-  it('puts the readings in order whatever order they were stored in', () => {
-    const curve = casinoCurve(
-      [
-        { at: '2026-03-01T00:00:00Z', held: 700, wagered: null, reported: null },
-        { at: '2026-02-01T00:00:00Z', held: 900, wagered: null, reported: null },
-      ],
-      [],
-      txs,
-      [],
-    );
-    expect(curve.map((p) => p.date)).toEqual(['2026-02-01T00:00:00Z', '2026-03-01T00:00:00Z']);
   });
 });
 
