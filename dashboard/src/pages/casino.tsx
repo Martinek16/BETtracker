@@ -265,7 +265,7 @@ export const CasinoPage = (): JSX.Element => {
                 <span className="flex-1">Game</span>
                 <span className="w-10 text-center">Rounds</span>
                 <span className="w-16 text-center">Staked</span>
-                <span className="w-16 text-center">Result</span>
+                <span className="w-16 text-center">Paid out</span>
                 <span className="w-12 text-center">Return</span>
               </Row>
               <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
@@ -287,7 +287,7 @@ export const CasinoPage = (): JSX.Element => {
                         {formatMoney(game.staked, currency)}
                       </span>
                       <span className={cn('w-16 text-right tabular-nums', toneClass(game.net))}>
-                        {formatMoney(game.net, currency)}
+                        {formatMoney(game.returned, currency)}
                       </span>
                       <span className="w-12 text-right tabular-nums text-muted-foreground">
                         {game.rtp === null ? '—' : formatPercent(game.rtp * 100, 0)}
@@ -305,7 +305,7 @@ export const CasinoPage = (): JSX.Element => {
                 <span className="flex-1">Type</span>
                 <span className="w-10 text-center">Rounds</span>
                 <span className="w-16 text-center">Staked</span>
-                <span className="w-16 text-center">Result</span>
+                <span className="w-16 text-center">Paid out</span>
                 <span className="w-12 text-center">Return</span>
               </Row>
               <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
@@ -327,7 +327,7 @@ export const CasinoPage = (): JSX.Element => {
                         {formatMoney(kind.staked, currency)}
                       </span>
                       <span className={cn('w-16 text-right tabular-nums', toneClass(kind.net))}>
-                        {formatMoney(kind.net, currency)}
+                        {formatMoney(kind.returned, currency)}
                       </span>
                       <span className="w-12 text-right tabular-nums text-muted-foreground">
                         {kind.rtp === null ? '—' : formatPercent(kind.rtp * 100, 0)}
@@ -347,7 +347,7 @@ export const CasinoPage = (): JSX.Element => {
             <span className="flex-1">Game</span>
             <span className="w-16 text-center">Staked</span>
             <span className="w-12 text-center">Odds</span>
-            <span className="w-16 text-center">Result</span>
+            <span className="w-16 text-center">Paid out</span>
           </Row>
           <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
             {sessions.map((session) => (
@@ -378,13 +378,14 @@ export const CasinoPage = (): JSX.Element => {
                       <span className="w-12 text-right tabular-nums text-muted-foreground">
                         {round.multiplier.toFixed(2)}×
                       </span>
+                      {/* What came back, coloured by whether it beat the stake. */}
                       <span
                         className={cn(
                           'w-16 text-right tabular-nums',
                           toneClass(round.payout - round.stake),
                         )}
                       >
-                        {formatMoney(round.payout - round.stake, currency)}
+                        {formatMoney(round.payout, currency)}
                       </span>
                     </Row>
                   );
