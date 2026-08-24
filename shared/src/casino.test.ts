@@ -4,6 +4,7 @@ import {
   casinoNet,
   casinoRoundCurve,
   casinoRoundTotals,
+  casinoSessions,
   casinoTotals,
   type CasinoAccountInput,
 } from './casino';
@@ -167,6 +168,23 @@ describe('casinoByGame', () => {
     expect(rows[0]?.net).toBe(-20);
     expect(rows[0]?.share).toBeCloseTo(50 / 60);
     expect(rows[0]?.kind).toBe('slots');
+  });
+});
+
+describe('casinoSessions', () => {
+  it('breaks the sitting where the play stopped, newest sitting first', () => {
+    const sessions = casinoSessions([
+      round({ id: 'a', playedAt: '2026-02-01T20:00:00Z' }),
+      round({ id: 'b', playedAt: '2026-02-01T20:20:00Z' }),
+      // Two hours later is a different evening's play, not the same sitting.
+      round({ id: 'c', playedAt: '2026-02-01T22:20:00Z' }),
+    ]);
+    expect(sessions).toHaveLength(2);
+    expect(sessions[0]?.rounds.map((r) => r.id)).toEqual(['c']);
+    expect(sessions[1]?.rounds.map((r) => r.id)).toEqual(['b', 'a']);
+    expect(sessions[1]?.startedAt).toBe('2026-02-01T20:00:00Z');
+    expect(sessions[1]?.endedAt).toBe('2026-02-01T20:20:00Z');
+    expect(sessions[1]?.totals.staked).toBe(20);
   });
 });
 

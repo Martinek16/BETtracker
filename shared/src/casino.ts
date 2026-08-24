@@ -231,6 +231,52 @@ export const casinoByGame = (rounds: readonly CasinoRound[]): CasinoGroup[] =>
 export const casinoByKind = (rounds: readonly CasinoRound[]): CasinoGroup[] =>
   groupBy(rounds, (round) => round.kind);
 
+export interface CasinoSession {
+  startedAt: string;
+  endedAt: string;
+  totals: CasinoRoundTotals;
+  /** The sitting's own rounds, newest first like every list in the app. */
+  rounds: CasinoRound[];
+}
+
+/** Half an hour without a round ends the sitting. Long enough for a break. */
+export const SESSION_GAP_MS = 30 * 60 * 1000;
+
+/**
+ * The rounds cut into sittings, newest first. A site records no sitting of its
+ * own, so the only honest mark is the gap between rounds: play that stopped for
+ * half an hour was play that stopped.
+ */
+export const casinoSessions = (
+  rounds: readonly CasinoRound[],
+  gapMs: number = SESSION_GAP_MS,
+): CasinoSession[] => {
+  const sorted = [...rounds].sort((a, b) => a.playedAt.localeCompare(b.playedAt));
+  const groups: CasinoRound[][] = [];
+  for (const round of sorted) {
+    const current = groups[groups.length - 1];
+    const previous = current?.[current.length - 1];
+    if (
+      current &&
+      previous &&
+      Date.parse(round.playedAt) - Date.parse(previous.playedAt) <= gapMs
+    ) {
+      current.push(round);
+    } else {
+      groups.push([round]);
+    }
+  }
+
+  return groups
+    .map((group) => ({
+      startedAt: group[0]?.playedAt ?? '',
+      endedAt: group[group.length - 1]?.playedAt ?? '',
+      totals: casinoRoundTotals(group),
+      rounds: [...group].reverse(),
+    }))
+    .reverse();
+};
+
 /**
  * The casino round by round, oldest first. Unlike the balance curve above this
  * one owes nothing to the wallet: every step is a round the site wrote down.

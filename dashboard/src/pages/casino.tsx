@@ -5,12 +5,23 @@ import {
   casinoByKind,
   casinoRoundCurve,
   casinoRoundTotals,
+  casinoSessions,
   convertRounds,
   roundNet,
   type CasinoKind,
   type CasinoRound,
 } from '@betanal/shared';
-import { Coins, Dices, Percent, Target, TrendingUp } from 'lucide-react';
+import {
+  Coins,
+  Dices,
+  Gamepad2,
+  Joystick,
+  Percent,
+  Spade,
+  Target,
+  TrendingUp,
+  type LucideIcon,
+} from 'lucide-react';
 import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { RunningPlChart } from '@/components/dashboard/running-pl-chart';
@@ -18,7 +29,7 @@ import { useDashboard } from '@/context/dashboard-context';
 import { findAccount, useAllKnownAccounts } from '@/data/accounts';
 import { getRates, loadCasinoRounds } from '@/data/source';
 import { rangeCutoff, rangeEnd } from '@/lib/chart-data';
-import { cn, formatDateTime, formatMoney, formatPercent } from '@/lib/utils';
+import { cn, formatDate, formatMoney, formatPercent, formatTime } from '@/lib/utils';
 
 /**
  * The rounds a site wrote down one by one, priced in the display currency. Empty
@@ -45,6 +56,13 @@ const KIND_NAMES: Record<CasinoKind, string> = {
   slots: 'Slots',
   live: 'Live tables',
   provider: 'Other studios',
+};
+
+const KIND_ICONS: Record<CasinoKind, LucideIcon> = {
+  originals: Dices,
+  slots: Gamepad2,
+  live: Spade,
+  provider: Joystick,
 };
 
 const HEAD =
@@ -114,6 +132,7 @@ export const CasinoPage = (): JSX.Element => {
   const curve = useMemo(() => casinoRoundCurve(rounds), [rounds]);
   const games = useMemo(() => casinoByGame(rounds), [rounds]);
   const kinds = useMemo(() => casinoByKind(rounds), [rounds]);
+  const sessions = useMemo(() => casinoSessions(rounds), [rounds]);
 
   const money = (value: number | null): string =>
     value === null ? '—' : formatMoney(value, currency);
@@ -178,7 +197,7 @@ export const CasinoPage = (): JSX.Element => {
 
       <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-3">
         <div className="flex min-h-0 flex-col gap-3 xl:col-span-2">
-          <DashboardCard className="flex min-h-0 flex-[3] flex-col p-4">
+          <DashboardCard className="flex min-h-0 flex-[12] flex-col p-4">
             <DashboardCardHeading
               className="mb-3"
               title="Casino over time"
@@ -205,13 +224,9 @@ export const CasinoPage = (): JSX.Element => {
             </div>
           </DashboardCard>
 
-          <div className="grid min-h-0 flex-[2] gap-3 sm:grid-cols-2">
+          <div className="grid min-h-0 flex-[13] gap-3 sm:grid-cols-2">
             <DashboardCard className="flex min-h-0 flex-col p-4">
-              <DashboardCardHeading
-                className="mb-2"
-                title="Where it went"
-                subtitle="By game, most staked first"
-              />
+              <DashboardCardHeading className="mb-2" title="Games" />
               <Row className={HEAD}>
                 <span className="flex-1">Game</span>
                 <span className="w-10 text-right">Rounds</span>
@@ -220,34 +235,37 @@ export const CasinoPage = (): JSX.Element => {
                 <span className="w-12 text-right">Return</span>
               </Row>
               <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
-                {games.map((game) => (
-                  <Row key={game.label} className={ROW}>
-                    <span className="flex-1 truncate" title={game.provider ?? undefined}>
-                      {game.label}
-                    </span>
-                    <span className="w-10 text-right tabular-nums text-muted-foreground">
-                      {game.rounds}
-                    </span>
-                    <span className="w-16 text-right tabular-nums text-muted-foreground">
-                      {formatMoney(game.staked, currency)}
-                    </span>
-                    <span className={cn('w-16 text-right tabular-nums', toneClass(game.net))}>
-                      {formatMoney(game.net, currency)}
-                    </span>
-                    <span className="w-12 text-right tabular-nums text-muted-foreground">
-                      {game.rtp === null ? '—' : formatPercent(game.rtp * 100, 0)}
-                    </span>
-                  </Row>
-                ))}
+                {games.map((game) => {
+                  const Icon = KIND_ICONS[game.kind];
+                  return (
+                    <Row key={game.label} className={ROW}>
+                      <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <span
+                        className="flex-1 truncate first-letter:uppercase"
+                        title={game.provider ?? undefined}
+                      >
+                        {game.label}
+                      </span>
+                      <span className="w-10 text-right tabular-nums text-muted-foreground">
+                        {game.rounds}
+                      </span>
+                      <span className="w-16 text-right tabular-nums text-muted-foreground">
+                        {formatMoney(game.staked, currency)}
+                      </span>
+                      <span className={cn('w-16 text-right tabular-nums', toneClass(game.net))}>
+                        {formatMoney(game.net, currency)}
+                      </span>
+                      <span className="w-12 text-right tabular-nums text-muted-foreground">
+                        {game.rtp === null ? '—' : formatPercent(game.rtp * 100, 0)}
+                      </span>
+                    </Row>
+                  );
+                })}
               </div>
             </DashboardCard>
 
             <DashboardCard className="flex min-h-0 flex-col p-4">
-              <DashboardCardHeading
-                className="mb-2"
-                title="By type"
-                subtitle="What the site calls each corner of its casino"
-              />
+              <DashboardCardHeading className="mb-2" title="By type" />
               <Row className={HEAD}>
                 <span className="flex-1">Type</span>
                 <span className="w-10 text-right">Rounds</span>
@@ -256,65 +274,92 @@ export const CasinoPage = (): JSX.Element => {
                 <span className="w-12 text-right">Return</span>
               </Row>
               <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
-                {kinds.map((kind) => (
-                  <Row key={kind.label} className={ROW}>
-                    <span
-                      className="flex-1 truncate"
-                      title={`${formatPercent(kind.share * 100, 0)} of the turnover`}
-                    >
-                      {KIND_NAMES[kind.kind]}
-                    </span>
-                    <span className="w-10 text-right tabular-nums text-muted-foreground">
-                      {kind.rounds}
-                    </span>
-                    <span className="w-16 text-right tabular-nums text-muted-foreground">
-                      {formatMoney(kind.staked, currency)}
-                    </span>
-                    <span className={cn('w-16 text-right tabular-nums', toneClass(kind.net))}>
-                      {formatMoney(kind.net, currency)}
-                    </span>
-                    <span className="w-12 text-right tabular-nums text-muted-foreground">
-                      {kind.rtp === null ? '—' : formatPercent(kind.rtp * 100, 0)}
-                    </span>
-                  </Row>
-                ))}
+                {kinds.map((kind) => {
+                  const Icon = KIND_ICONS[kind.kind];
+                  return (
+                    <Row key={kind.label} className={ROW}>
+                      <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <span
+                        className="flex-1 truncate"
+                        title={`${formatPercent(kind.share * 100, 0)} of the turnover`}
+                      >
+                        {KIND_NAMES[kind.kind]}
+                      </span>
+                      <span className="w-10 text-right tabular-nums text-muted-foreground">
+                        {kind.rounds}
+                      </span>
+                      <span className="w-16 text-right tabular-nums text-muted-foreground">
+                        {formatMoney(kind.staked, currency)}
+                      </span>
+                      <span className={cn('w-16 text-right tabular-nums', toneClass(kind.net))}>
+                        {formatMoney(kind.net, currency)}
+                      </span>
+                      <span className="w-12 text-right tabular-nums text-muted-foreground">
+                        {kind.rtp === null ? '—' : formatPercent(kind.rtp * 100, 0)}
+                      </span>
+                    </Row>
+                  );
+                })}
               </div>
             </DashboardCard>
           </div>
         </div>
 
         <DashboardCard className="flex h-full min-h-0 flex-col p-4">
-          <DashboardCardHeading className="mb-2" title="Rounds" subtitle="Newest first" />
+          <DashboardCardHeading className="mb-2" title="Rounds" />
           <Row className={HEAD}>
-            <span className="w-24">When</span>
             <span className="flex-1">Game</span>
             <span className="w-16 text-right">Staked</span>
+            <span className="w-12 text-right">Odds</span>
             <span className="w-16 text-right">Result</span>
           </Row>
           <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
-            {[...rounds]
-              .sort((a, b) => b.playedAt.localeCompare(a.playedAt))
-              .map((round) => (
-                <Row key={round.id} className={ROW} title={`${round.multiplier.toFixed(2)}×`}>
-                  <span className="w-24 shrink-0 tabular-nums text-[11px] text-muted-foreground">
-                    {formatDateTime(round.playedAt)}
+            {sessions.map((session) => (
+              <div key={session.startedAt}>
+                <Row className="mt-3 first:mt-2">
+                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {formatDate(session.startedAt)}
                   </span>
-                  <span className="flex-1 truncate" title={round.provider ?? undefined}>
-                    {round.game}
-                  </span>
-                  <span className="w-16 text-right tabular-nums text-muted-foreground">
-                    {formatMoney(round.stake, currency)}
-                  </span>
+                  <span className="h-px flex-1 bg-border/60" />
                   <span
                     className={cn(
-                      'w-16 text-right tabular-nums',
-                      toneClass(round.payout - round.stake),
+                      'shrink-0 text-[11px] tabular-nums',
+                      toneClass(session.totals.net),
                     )}
                   >
-                    {formatMoney(round.payout - round.stake, currency)}
+                    {formatMoney(session.totals.net, currency)}
                   </span>
                 </Row>
-              ))}
+                {session.rounds.map((round) => {
+                  const Icon = KIND_ICONS[round.kind];
+                  return (
+                    <Row key={round.id} className={ROW} title={formatTime(round.playedAt)}>
+                      <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <span
+                        className="flex-1 truncate first-letter:uppercase"
+                        title={round.provider ?? undefined}
+                      >
+                        {round.game}
+                      </span>
+                      <span className="w-16 text-right tabular-nums text-muted-foreground">
+                        {formatMoney(round.stake, currency)}
+                      </span>
+                      <span className="w-12 text-right tabular-nums text-muted-foreground">
+                        {round.multiplier.toFixed(2)}×
+                      </span>
+                      <span
+                        className={cn(
+                          'w-16 text-right tabular-nums',
+                          toneClass(round.payout - round.stake),
+                        )}
+                      >
+                        {formatMoney(round.payout - round.stake, currency)}
+                      </span>
+                    </Row>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </DashboardCard>
       </div>
