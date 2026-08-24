@@ -33,6 +33,11 @@ interface RunningPlChartProps {
    * that whole evening is a single vertical wall with nothing readable in it.
    */
   byIndex?: boolean;
+  /**
+   * Mark this entry as if the cursor were on it. A list beside the chart is the
+   * same events in another shape, so pointing at a row there points at the chart.
+   */
+  markedId?: string | null;
 }
 
 const GRADIENT_ID = 'running-pl-fill';
@@ -50,6 +55,7 @@ export const RunningPlChart = ({
   totalLabel = 'Running total',
   noSource = false,
   byIndex = false,
+  markedId = null,
 }: RunningPlChartProps): JSX.Element => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -120,8 +126,10 @@ export const RunningPlChart = ({
     return <ChartEmpty noSource={noSource} />;
   }
 
-  const isHovering = hoveredIndex !== null;
-  const activeIndex = isHovering ? hoveredIndex : null;
+  // The cursor's own point wins: a stale mark from a list would otherwise fight
+  // the point being pointed at.
+  const markedIndex = markedId === null ? -1 : series.findIndex((p) => p.betId === markedId);
+  const activeIndex = hoveredIndex ?? (markedIndex < 0 ? null : markedIndex);
   const active = activeIndex !== null ? plotPoints[activeIndex] : null;
   // Flip the tooltip below the point when the point sits high in the plot, so
   // it never escapes the clipped chart box and stays readable.
@@ -256,7 +264,7 @@ export const RunningPlChart = ({
               strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
             />
-            {isHovering && active ? (
+            {active ? (
               <line
                 x1={active.x}
                 y1={0}
@@ -272,7 +280,7 @@ export const RunningPlChart = ({
 
           {/* Solid, in the colour of the curve it sits on: a ringed marker on a
                 white plate reads as its own mark rather than a point on the line. */}
-          {isHovering && active ? (
+          {active ? (
             <span
               className="pointer-events-none absolute z-[5] h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{
@@ -286,7 +294,7 @@ export const RunningPlChart = ({
           {/* Pinned to whichever edge the point isn't near, same as the timeline
                 chart. Anchoring the box to the point's own position runs it out
                 of the clipped plot at the edges, where it can't be read at all. */}
-          {isHovering && active ? (
+          {active ? (
             <ChartTooltip
               title={formatDate(active.point.date)}
               style={{

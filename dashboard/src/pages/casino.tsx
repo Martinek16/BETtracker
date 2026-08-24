@@ -115,27 +115,37 @@ const Row = ({
   className,
   title,
   onClick,
+  onHover,
   children,
 }: {
   className?: string;
   title?: string;
   onClick?: () => void;
+  /** Called with the row on entry and with `false` on exit. */
+  onHover?: (over: boolean) => void;
   children: ReactNode;
-}): JSX.Element =>
-  onClick ? (
+}): JSX.Element => {
+  const hover =
+    onHover === undefined
+      ? {}
+      : { onMouseEnter: () => onHover(true), onMouseLeave: () => onHover(false) };
+
+  return onClick ? (
     <button
       type="button"
       onClick={onClick}
       className={cn('flex w-full items-center gap-2 text-left', className)}
       title={title}
+      {...hover}
     >
       {children}
     </button>
   ) : (
-    <div className={cn('flex items-center gap-2', className)} title={title}>
+    <div className={cn('flex items-center gap-2', className)} title={title} {...hover}>
       {children}
     </div>
   );
+};
 
 const signTone = (value: number): 'profit' | 'loss' | 'neutral' =>
   value > 0 ? 'profit' : value < 0 ? 'loss' : 'neutral';
@@ -472,6 +482,9 @@ export const CasinoPage = (): JSX.Element => {
   // One game's own run, picked from the table below. A game the period no longer
   // holds narrows to nothing, so the pick is dropped rather than drawn empty.
   const [game, setGame] = useState<string | null>(null);
+  // The round the sittings list is being pointed at, marked on the curve so the
+  // two panels are read as one thing rather than two.
+  const [markedRound, setMarkedRound] = useState<string | null>(null);
   const shown = useMemo(
     () =>
       game === null || !games.some((group) => group.label === game)
@@ -571,6 +584,7 @@ export const CasinoPage = (): JSX.Element => {
                   series={curve}
                   currency={currency}
                   byIndex
+                  markedId={markedRound}
                   deltaLabel="This round"
                   totalLabel="Casino result"
                 />
@@ -637,7 +651,12 @@ export const CasinoPage = (): JSX.Element => {
                 {session.rounds.map((round) => {
                   const Icon = gameIcon(round.game, round.kind);
                   return (
-                    <Row key={round.id} className={ROW} title={formatTime(round.playedAt)}>
+                    <Row
+                      key={round.id}
+                      className={cn(ROW, 'rounded px-1', markedRound === round.id && 'bg-muted/60')}
+                      title={formatTime(round.playedAt)}
+                      onHover={(over) => setMarkedRound(over ? round.id : null)}
+                    >
                       <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
                       <span
                         className="flex-1 truncate first-letter:uppercase"
