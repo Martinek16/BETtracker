@@ -10,6 +10,7 @@ import {
   type CasinoKind,
   type CasinoRound,
   type CasinoRoundTotals,
+  type CasinoSession,
 } from '@betanal/shared';
 import {
   ArrowUpDown,
@@ -34,13 +35,17 @@ import {
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
+import { ChartViewToggle, type TimelineChartView } from '@/components/dashboard/chart-view-toggle';
 import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
 import { MetricCard } from '@/components/dashboard/metric-card';
+import { ProfitTimelineChart } from '@/components/dashboard/profit-timeline-chart';
 import { RunningPlChart } from '@/components/dashboard/running-pl-chart';
 import { useDashboard } from '@/context/dashboard-context';
 import { findAccount, useAllKnownAccounts } from '@/data/accounts';
 import { getRates, loadCasinoRounds } from '@/data/source';
-import { rangeCutoff, rangeEnd } from '@/lib/chart-data';
+import { rangeCutoff, rangeEnd, type AxisTick, type ChartBucket } from '@/lib/chart-data';
+import { usePersistedState } from '@/lib/persisted-state';
+import { pickXLabelIndices } from '@/lib/profit-chart-scale';
 import {
   cn,
   formatDate,
@@ -55,7 +60,7 @@ import {
  * The rounds a site wrote down one by one, priced in the display currency. Empty
  * at every site that keeps no such record, which is all but one of them.
  */
-const useRounds = (currency: string): CasinoRound[] => {
+const useRounds = (currency: string, nonce: number): CasinoRound[] => {
   const [rounds, setRounds] = useState<CasinoRound[]>([]);
 
   useEffect(() => {
@@ -66,7 +71,7 @@ const useRounds = (currency: string): CasinoRound[] => {
     return () => {
       active = false;
     };
-  }, [currency]);
+  }, [currency, nonce]);
 
   return rounds;
 };
@@ -109,16 +114,28 @@ const ROW = 'py-1 text-xs';
 const Row = ({
   className,
   title,
+  onClick,
   children,
 }: {
   className?: string;
   title?: string;
+  onClick?: () => void;
   children: ReactNode;
-}): JSX.Element => (
-  <div className={cn('flex items-center gap-2', className)} title={title}>
-    {children}
-  </div>
-);
+}): JSX.Element =>
+  onClick ? (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn('flex w-full items-center gap-2 text-left', className)}
+      title={title}
+    >
+      {children}
+    </button>
+  ) : (
+    <div className={cn('flex items-center gap-2', className)} title={title}>
+      {children}
+    </div>
+  );
 
 const signTone = (value: number): 'profit' | 'loss' | 'neutral' =>
   value > 0 ? 'profit' : value < 0 ? 'loss' : 'neutral';
@@ -230,6 +247,28 @@ const stakeBands = (rounds: readonly CasinoRound[], currency: string): StakeBand
   }));
 };
 
+/**
+ * A sitting a bar, oldest first. There is no calendar bucket that fits a casino:
+ * a day holding one evening's play is that evening drawn with its date blurred,
+ * and a day holding none is a gap the play never had.
+ */
+const sessionBuckets = (sessions: readonly CasinoSession[]): ChartBucket[] =>
+  [...sessions].reverse().map((session) => ({
+    key: session.startedAt,
+    label: formatDate(session.startedAt),
+    periodLabel: `${formatDate(session.startedAt)} · ${formatTime(session.startedAt)} – ${formatTime(session.endedAt)}`,
+    wins: session.rounds.reduce((sum, round) => sum + Math.max(roundNet(round), 0), 0),
+    losses: session.rounds.reduce((sum, round) => sum + Math.max(-roundNet(round), 0), 0),
+    profit: session.totals.net,
+    bets: session.totals.rounds,
+  }));
+
+const sessionTicks = (buckets: readonly ChartBucket[]): AxisTick[] =>
+  pickXLabelIndices(buckets.length, 6).map((index) => ({
+    index,
+    label: buckets[index]?.label ?? '',
+  }));
+
 type GroupSort = 'label' | 'rounds' | 'staked' | 'returned' | 'rtp';
 
 const GROUP_COLUMNS: readonly { key: GroupSort; label: string; width: string }[] = [
@@ -283,6 +322,8 @@ const GroupTable = <T extends GroupRow>({
   titleOf,
   compareLabel,
   defaultSort = 'staked',
+  picked,
+  onPick,
   currency,
 }: {
   title: string;
@@ -296,6 +337,9 @@ const GroupTable = <T extends GroupRow>({
   compareLabel?: (a: T, b: T) => number;
   /** The column the table opens on, where the biggest row is not the first one. */
   defaultSort?: GroupSort;
+  /** The row the chart above is currently narrowed to, if any. */
+  picked?: string | null;
+  onPick?: (group: T) => void;
   currency: string;
 }): JSX.Element => {
   const [sort, setSort] = useState<GroupSort>(defaultSort);
@@ -344,7 +388,15 @@ const GroupTable = <T extends GroupRow>({
         {sorted.map((group) => {
           const Icon = iconOf?.(group);
           return (
-            <Row key={group.label} className={ROW}>
+            <Row
+              key={group.label}
+              className={cn(
+                ROW,
+                onPick && 'rounded px-1 hover:bg-muted/40',
+                picked === group.label && 'bg-muted/60',
+              )}
+              onClick={onPick && (() => onPick(group))}
+            >
               {Icon && <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />}
               <span className="flex-1 truncate first-letter:uppercase" title={titleOf(group)}>
                 {nameOf(group)}
@@ -378,9 +430,9 @@ const GroupTable = <T extends GroupRow>({
  * which is why nothing on it contradicts the picker above it.
  */
 export const CasinoPage = (): JSX.Element => {
-  const { bookmaker, currency, days, until } = useDashboard();
+  const { bookmaker, currency, days, until, nonce } = useDashboard();
   const logins = useAllKnownAccounts();
-  const allRounds = useRounds(currency);
+  const allRounds = useRounds(currency, nonce);
 
   const casinoKeys = useMemo(
     () =>
@@ -408,10 +460,28 @@ export const CasinoPage = (): JSX.Element => {
   }, [allRounds, casinoKeys, days, until]);
 
   const played = useMemo(() => casinoRoundTotals(rounds), [rounds]);
-  const curve = useMemo(() => casinoRoundCurve(rounds), [rounds]);
   const games = useMemo(() => casinoByGame(rounds), [rounds]);
   const bands = useMemo(() => stakeBands(rounds, currency), [rounds, currency]);
   const sessions = useMemo(() => casinoSessions(rounds), [rounds]);
+
+  const [chartView, setChartView] = usePersistedState<TimelineChartView>(
+    'casino.chartView',
+    'line',
+    ['bars', 'line'],
+  );
+  // One game's own run, picked from the table below. A game the period no longer
+  // holds narrows to nothing, so the pick is dropped rather than drawn empty.
+  const [game, setGame] = useState<string | null>(null);
+  const shown = useMemo(
+    () =>
+      game === null || !games.some((group) => group.label === game)
+        ? rounds
+        : rounds.filter((round) => round.game === game),
+    [rounds, games, game],
+  );
+  const curve = useMemo(() => casinoRoundCurve(shown), [shown]);
+  const buckets = useMemo(() => sessionBuckets(casinoSessions(shown)), [shown]);
+  const ticks = useMemo(() => sessionTicks(buckets), [buckets]);
 
   const money = (value: number | null): string =>
     value === null ? '—' : formatMoney(value, currency);
@@ -477,16 +547,41 @@ export const CasinoPage = (): JSX.Element => {
       <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-3">
         <div className="flex min-h-0 flex-col gap-3 xl:col-span-2">
           <DashboardCard className="flex min-h-0 flex-[12] flex-col p-4">
-            <DashboardCardHeading className="mb-3" title="Casino over time" />
+            <DashboardCardHeading
+              className="mb-3"
+              title={
+                game === null ? (
+                  'Round by round'
+                ) : (
+                  <span className="first-letter:uppercase">{game}</span>
+                )
+              }
+              subtitle={
+                game === null
+                  ? chartView === 'line'
+                    ? 'Running casino result, a step per round'
+                    : 'What each sitting finished at'
+                  : 'This game alone — pick it again for all of them'
+              }
+              action={<ChartViewToggle value={chartView} onChange={setChartView} />}
+            />
             <div className="min-h-0 flex-1 overflow-hidden">
-              <RunningPlChart
-                series={curve}
-                currency={currency}
-                days={days}
-                until={until}
-                deltaLabel="This round"
-                totalLabel="Casino result"
-              />
+              {chartView === 'line' ? (
+                <RunningPlChart
+                  series={curve}
+                  currency={currency}
+                  byIndex
+                  deltaLabel="This round"
+                  totalLabel="Casino result"
+                />
+              ) : (
+                <ProfitTimelineChart
+                  data={buckets}
+                  currency={currency}
+                  ticks={ticks}
+                  countLabel="Rounds"
+                />
+              )}
             </div>
           </DashboardCard>
 
@@ -498,6 +593,8 @@ export const CasinoPage = (): JSX.Element => {
               nameOf={(group) => group.label}
               iconOf={(group) => gameIcon(group.label, group.kind)}
               titleOf={(group) => group.provider ?? undefined}
+              picked={game}
+              onPick={(group) => setGame(game === group.label ? null : group.label)}
               currency={currency}
             />
             <GroupTable
