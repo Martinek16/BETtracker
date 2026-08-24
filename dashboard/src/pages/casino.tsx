@@ -133,8 +133,13 @@ const toneClass = (value: number | null): string =>
 const MIN_BAND_ROUNDS = 15;
 const MAX_BANDS = 8;
 
+/** The marks a stake is actually chosen at: 1, 2, 5 and their decades. */
+const STAKE_MARKS: readonly number[] = [
+  0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000,
+];
+
 interface StakeBand extends GroupRow {
-  /** The band's cheapest round, which is also the order the ladder is read in. */
+  /** Where the band starts, which is also the order the ladder is read in. */
   floor: number;
 }
 
@@ -143,42 +148,61 @@ interface StakeBand extends GroupRow {
  * was played on, which is the only grouping that answers whether the money went
  * on the big rounds or was ground away by the small ones.
  *
- * The rungs are cut from the play itself, not fixed in advance: fixed bands put
- * every round of a small-stakes player in one row and say nothing. Enough play
- * buys more rungs, up to the point where a rung would be too thin to read.
+ * The rungs stand at round prices, because that is where stakes are chosen, but
+ * which of them are used depends on the play: a rung is only cut where enough
+ * rounds sit above it to make the row worth reading, so a thin stretch of the
+ * ladder stays one wide band and a busy one is split as finely as the marks go.
  */
 const stakeBands = (rounds: readonly CasinoRound[], currency: string): StakeBand[] => {
   if (rounds.length === 0) return [];
   const symbol = symbolOf(currency);
-  const money = (value: number): string => `${symbol}${formatNumber(value, value < 10 ? 2 : 0)}`;
+  const money = (value: number): string => `${symbol}${formatNumber(value, value < 1 ? 2 : 0)}`;
+  const label = (floor: number, ceiling: number | null): string =>
+    ceiling === null
+      ? floor === 0
+        ? 'All stakes'
+        : `${money(floor)} and up`
+      : floor === 0
+        ? `under ${money(ceiling)}`
+        : `${money(floor)} – ${money(ceiling)}`;
 
   const sorted = [...rounds].sort((a, b) => a.stake - b.stake);
-  const count = Math.min(MAX_BANDS, Math.max(1, Math.floor(sorted.length / MIN_BAND_ROUNDS)));
-  const target = sorted.length / count;
+  const minRounds = Math.max(MIN_BAND_ROUNDS, Math.ceil(sorted.length / MAX_BANDS));
 
-  const groups: CasinoRound[][] = [];
-  let current: CasinoRound[] = [];
+  const bands: { floor: number; ceiling: number | null; group: CasinoRound[] }[] = [];
+  let floor = 0;
+  let group: CasinoRound[] = [];
+  let mark = 0;
   for (const round of sorted) {
-    const last = current[current.length - 1];
-    // One price belongs to one band: cutting mid-stake would put the same round
-    // in two rows and make the boundary a lie.
-    if (current.length >= target && groups.length < count - 1 && last?.stake !== round.stake) {
-      groups.push(current);
-      current = [];
+    while (mark < STAKE_MARKS.length && round.stake >= (STAKE_MARKS[mark] ?? 0)) {
+      const crossed = STAKE_MARKS[mark] ?? 0;
+      mark += 1;
+      // A mark only becomes a boundary once the band below it has enough rounds;
+      // otherwise it is swallowed, and an empty band just slides up to it.
+      if (group.length >= minRounds) {
+        bands.push({ floor, ceiling: crossed, group });
+        group = [];
+        floor = crossed;
+      } else if (group.length === 0) {
+        floor = crossed;
+      }
     }
-    current.push(round);
+    group.push(round);
   }
-  groups.push(current);
 
-  return groups.map((group) => {
-    const low = group[0]?.stake ?? 0;
-    const high = group[group.length - 1]?.stake ?? 0;
-    return {
-      ...casinoRoundTotals(group),
-      floor: low,
-      label: low === high ? money(low) : `${money(low)} – ${money(high)}`,
-    };
-  });
+  const last = bands[bands.length - 1];
+  if (group.length >= minRounds || last === undefined) {
+    bands.push({ floor, ceiling: null, group });
+  } else {
+    last.ceiling = null;
+    last.group = [...last.group, ...group];
+  }
+
+  return bands.map((band) => ({
+    ...casinoRoundTotals(band.group),
+    floor: band.floor,
+    label: label(band.floor, band.ceiling),
+  }));
 };
 
 type GroupSort = 'label' | 'rounds' | 'staked' | 'returned' | 'rtp';
