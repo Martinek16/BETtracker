@@ -29,25 +29,35 @@
 
 ***
 
-Every bookmaker shows you its own balance and its own last few pages. None of
-them shows the rest. So the one question you actually have, **am I up or am I
-down**, has no answer on any screen.
+Every bookmaker shows you its own balance. None of them shows the rest - so
+**am I up or am I down** has no answer on any screen.
 
-BETtracker answers it. Sign in at each bookmaker as you always do, and it reads
-the history that is already yours: bets, balances, deposits and withdrawals,
-from as many accounts as you play at, added up together across currencies.
+BETtracker answers it. Sign in as you always do; it reads the history that is
+already yours and adds it up. In your browser, on your disk. No account, no
+server, no subscription.
 
-It lives in your browser and writes to your own disk. No account to make, no
-server, no subscription, nothing to switch on.
+## What you see
 
-**It reads two bookmakers today: bet-at-home and Stake.** Not a shortlist of
-the big names - the two the author plays at. A site is written from a recording
-of a real signed-in session there, so the list grows by who turns up, not by
-who is popular. Yours is quite possibly not read yet, and there is no partial
-support for anything else: it is these two or nothing. Adding one is a real
-thing you can do - [how, in detail](#add-your-bookmaker) - and it needs someone
-with an account at that site and a history worth recording. Better to know that
-now than after the install.
+- **Am I up?** Profit, ROI, turnover and win rate across every account, in one
+  currency, with the whole curve behind it.
+- **What actually works?** Sports, leagues, markets, odds and stakes ranked by
+  what they earn you - and whether you chase after a loss.
+- **The casino too**, where the site records it: every round, every game, every
+  evening. Counted apart from your bets.
+- **Everything in one place** - bets, deposits, withdrawals, bonuses, and live
+  scores while a bet is running.
+
+No tips, no predictions, nothing to buy. It only looks backwards.
+[**Screen by screen**](docs/HOW_IT_WORKS.md)
+
+## Before you install
+
+**It only reads the bookmakers on [the list below](#bookmakers-it-can-read),
+and the list is short.** Those are the sites somebody actually plays at, not
+the big names - each one is written from a real signed-in session there. Yours
+is quite possibly not on it yet, and there is no half-support for anything
+else. [Adding one](#add-your-bookmaker) is a real thing you can do, and it
+needs an account at that site. Better to know now than after the install.
 
 ## Install
 
@@ -60,14 +70,13 @@ now than after the install.
 > There is no Chrome listing because Google removes gambling related extensions from its store, even ones that only read your own history. Edge accepted it. Download `bettracker.zip`, not **Source code**: the source has to be built first, and Chrome refuses it.
 
 Then open a bookmaker and say yes once when the extension asks whether it may
-read that account. Your bets appear. Repeat at the next bookmaker, and the two
-sit side by side. Older history fills in over the following visits, a page at a
-time. It only looks backwards: no tips, no predictions, no telling you what to
-bet. [**How it works, screen by screen**](docs/HOW_IT_WORKS.md)
+read that account. Your bets appear. Repeat at the next bookmaker, and they sit
+side by side. Older history fills in over the following visits, a page at a
+time.
 
 ## Bookmakers it can read
 
-Two. This is the whole list.
+This is the whole list. Anything not on it is not read at all.
 
 | Bookmaker | Bets | Balance | Money in and out | Bonuses | Casino rounds |
 |:--|:-:|:-:|:-:|:-:|:-:|
@@ -78,8 +87,8 @@ The last column is the rare one. Most sites keep no round-by-round casino
 history to read, and there the casino stays what it always was: the gap between
 what your bets and payments say you should have and what you do.
 
-Both work on all their addresses: country domains, numbered mirrors, and
-whatever they switch to next. Anywhere else, the extension knows nothing and
+Each works on all of its addresses: country domains, numbered mirrors, and
+whatever it switches to next. Anywhere else, the extension knows nothing and
 says so: it does not half-read a site it was never taught.
 
 Yours missing? Three ways forward, and none of them needs you to be a
@@ -110,13 +119,13 @@ No. It only reads pages you have already opened, and never sees your password.
 </details>
 
 <details>
-<summary><b>My bookmaker is not one of the two. What now?</b></summary><br>
+<summary><b>My bookmaker is not on the list. What now?</b></summary><br>
 Add it, ask for it, or record your history there and let somebody else write the code. The last one needs no terminal and no programming. <a href="docs/FAQ.md">The three routes, and what each costs you</a>.
 </details>
 
 <details>
 <summary><b>How many accounts can I have at once?</b></summary><br>
-As many as you like, at either of the two sites. They are added up together, and any one of them can be renamed, hidden or deleted on its own.
+As many as you like, at any site on the list. They are added up together, and any one of them can be renamed, hidden or deleted on its own.
 </details>
 
 <details>
@@ -126,7 +135,7 @@ Long histories are read backwards, one page at a time. Open the bookmaker and le
 
 <details>
 <summary><b>Is casino play counted?</b></summary><br>
-At a site that records rounds one by one - Stake does - yes, and it gets a page of its own: every spin, what it cost, what it paid, and which game took the money. Everywhere else the casino is still only the gap in the wallet.
+At a site that records its rounds one by one - the last column of the list says which - yes, and it gets a page of its own: every spin, what it cost, what it paid, and which game took the money. Everywhere else the casino is still only the gap in the wallet.
 </details>
 
 [**The rest of the questions**](docs/FAQ.md) - currencies and crypto, accounts
