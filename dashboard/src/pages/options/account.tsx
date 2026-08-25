@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { ExternalLink, Unlink } from 'lucide-react';
 import { accountKey, type AccountRef } from '@betanal/shared';
 import { DashboardCard } from '@/components/dashboard/dashboard-card';

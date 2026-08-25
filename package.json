@@ -28,11 +28,11 @@
     "check": "pnpm lint && pnpm test && pnpm build"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.18.0",
-    "@typescript-eslint/parser": "^8.18.0",
-    "eslint": "^9.17.0",
-    "prettier": "^3.4.2",
-    "typescript": "^5.7.2"
+    "@typescript-eslint/eslint-plugin": "^8.68.0",
+    "@typescript-eslint/parser": "^8.68.0",
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.3"
   },
   "packageManager": "pnpm@9.15.0",
   "_comment_overrides": "Patched versions their own dependents pin too tightly to reach. Both are denial-of-service advisories in build tooling, so the exposure is a hostile file fed to our own lint or install, not anything a user runs. Drop an entry once the dependent widens its range.",
