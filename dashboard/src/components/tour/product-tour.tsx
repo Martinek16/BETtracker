@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { X } from 'lucide-react';
 import { useDashboard } from '@/context/dashboard-context';
 import { useSettings } from '@/data/use-settings';

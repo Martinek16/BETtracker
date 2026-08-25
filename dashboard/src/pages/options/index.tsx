@@ -1,4 +1,4 @@
-import { NavLink, Route, Routes } from 'react-router-dom';
+import { NavLink, Route, Routes } from 'react-router';
 import { cn } from '@/lib/utils';
 import { AccountDetailPage } from '@/pages/options/account';
 import { AccountsPage } from '@/pages/options/accounts';

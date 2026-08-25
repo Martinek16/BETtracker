@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { DashboardCard } from '@/components/dashboard/dashboard-card';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { ACCOUNTS } from '@/data/accounts';

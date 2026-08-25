@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Check as CheckIcon, Download, Trash2 } from 'lucide-react';
 import {
   accountKey,
