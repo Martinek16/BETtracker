@@ -54,7 +54,7 @@ const QUESTIONS: readonly { question: string; answer: string }[] = [
   {
     question: 'Is casino play counted?',
     answer:
-      'Where the site hands out its rounds one at a time — Stake does — the Casino page reads them, kept apart from the sports figures. Elsewhere the casino is only the gap in the wallet.',
+      'Where the site hands out its rounds one at a time, the Casino page reads them, kept apart from the sports figures. Elsewhere the casino is only the gap in the wallet.',
   },
   {
     question: 'How do I keep a copy?',

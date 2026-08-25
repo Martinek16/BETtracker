@@ -5,12 +5,14 @@ No. It only reads pages you have already opened, and never sees your password.
 It cannot place a bet, deposit or withdraw.
 
 **Which bookmakers does it read?**
-Two: bet-at-home and Stake. That is the whole list, and it is not a shortlist
-of the big names - it is the two the author plays at. A site is written from a
-recording of a real signed-in session there, so the list grows by who turns up.
+The ones in the table in the
+[README](../README.md#bookmakers-it-can-read), and nothing else. It is not a
+shortlist of the big names - it is the sites somebody actually plays at, each
+written from a recording of a real signed-in session there, so the list grows
+by who turns up.
 
 **How many accounts can I track at once?**
-As many as you like, across those two sites. They are added up together, and
+As many as you like, across any of those sites. They are added up together, and
 any one of them can be renamed, hidden, or deleted on its own.
 
 **My bookmaker is not on the list - what now?**

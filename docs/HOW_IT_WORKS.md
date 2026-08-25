@@ -17,8 +17,8 @@ nine. Breakdowns by sport, league, market, odds band and stake size. Whether the
 prices you take are honest ones. Whether you chase after a loss, and what your
 worst run cost you.
 
-**Casino** - only at a site that records its rounds one by one, and only Stake
-does today. What the casino cost you, what came back per unit staked, how many
+**Casino** - only at a site that records its rounds one by one, and most do
+not. What the casino cost you, what came back per unit staked, how many
 rounds paid, and your best and worst. Which games took the money, what a round
 cost, what it paid as a multiple of the stake, and every evening read back as a
 sitting - so you can see the night it turned rather than a single lifetime
@@ -104,12 +104,13 @@ any host but the bookmaker's own.
 
 ## What it calls, and what it tells them
 
-Besides your bookmakers, exactly two addresses:
+Besides your bookmakers, exactly three addresses:
 
 | | |
 | --- | --- |
 | `api.frankfurter.dev` | Published daily exchange rates. Asked for a date range and a list of currency codes. |
 | `api.binance.com` | Published daily coin prices. Asked for a coin pair and a date. |
+| `api.github.com` | The newest release number, for a copy loaded from a folder rather than installed from a store. Asked for nothing - not even the version you are on. |
 
 Neither request carries anything about you - no id, no amount, no account.
 Nothing is sent anywhere else, and `privacy.test.ts` fails the build if a

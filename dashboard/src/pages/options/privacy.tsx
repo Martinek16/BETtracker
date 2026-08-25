@@ -65,8 +65,8 @@ export const PrivacyPage = (): JSX.Element => (
               Bonuses your account was already granted, what is left of one, and when it runs out.
             </Point>
             <Point term="Casino rounds, at a site that records them">
-              The game, when it resolved, the stake and what came back. Stake is the only one today.
-              A site that keeps no round history has none of this read.
+              The game, when it resolved, the stake and what came back. A site that keeps no round
+              history has none of this read.
             </Point>
             <Point term="Your balance">
               The figure shown on the site, and a note of it each time it changes, so the chart has

@@ -28,7 +28,7 @@ and every ten minutes in the background.
   your balance.
 - **Bonuses** — bonuses your account was already granted, what is left of one, and when it runs out.
 - **Casino rounds, at a site that records them** — the game, when it resolved, the stake and what
-  came back. Stake is the only one today. A site that keeps no round history has none of this read.
+  came back. A site that keeps no round history has none of this read.
 - **Your balance** — the figure shown on the site, and a note of it each time it changes.
 - **Which account it belongs to** — the account number or username the site itself reports, so two
   logins at one bookmaker stay apart.
