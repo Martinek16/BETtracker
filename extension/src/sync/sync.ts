@@ -134,6 +134,25 @@ const httpFailure = (status: number, url: string, body: string): Error => {
 };
 
 /**
+ * An answer that parsed as nothing, said so that it can be acted on.
+ *
+ * A site can answer 200 with a page rather than data - a login wall, a consent
+ * interstitial, a proxy's error page. The parser calls that "Unexpected token
+ * '<'", which names neither the site nor the request, and the run puts it in
+ * front of the reader exactly as it stands.
+ *
+ * The body is quoted where the caller still holds it; the worker's own fetch has
+ * spent it on the failed parse by then, and reading it twice is not worth a
+ * second copy of every page of bets.
+ */
+const notJson = (url: string, status: number, body?: string): Error =>
+  new Error(
+    `${url} answered ${status} with something other than JSON${
+      body === undefined ? '' : `: ${refusal(body)}`
+    }`,
+  );
+
+/**
  * Fetch + parse JSON, turning a rejected session into SessionExpiredError.
  *
  * `viaPage` is for sites the worker cannot speak to on its own (see above). With
@@ -156,7 +175,11 @@ export const authedJson = async (
     if (relayed.status === 0) throw new Error(`${url} unreachable from the page: ${relayed.body}`);
     if (relayed.status < 200 || relayed.status >= 300)
       throw httpFailure(relayed.status, url, relayed.body);
-    return JSON.parse(relayed.body);
+    try {
+      return JSON.parse(relayed.body);
+    } catch {
+      throw notJson(url, relayed.status, relayed.body);
+    }
   }
   const res = await fetch(url, init);
   if (res.status === 401 || res.status === 403)
@@ -165,7 +188,11 @@ export const authedJson = async (
       `from the worker, ${refusal(await res.text()) || 'with an empty body'}`,
     );
   if (!res.ok) throw httpFailure(res.status, url, await res.text());
-  return res.json();
+  try {
+    return await res.json();
+  } catch {
+    throw notJson(url, res.status);
+  }
 };
 
 /** Cursor APIs here expect `YYYY-MM-DDTHH:mm:ss` (no timezone suffix). */
