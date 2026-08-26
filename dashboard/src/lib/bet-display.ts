@@ -1,5 +1,27 @@
-import { formatOdds, type Bet, type BetLeg, type OddsFormat } from '@betanal/shared';
+import {
+  formatOdds,
+  type Bet,
+  type BetLeg,
+  type KnownAccount,
+  type OddsFormat,
+} from '@betanal/shared';
 import { formatDateTime } from '@/lib/utils';
+import { CATALOG } from '@bookmakers/catalog';
+
+/**
+ * How the page reads when the database holds no bet at all.
+ *
+ * Telling somebody to open their history at a site they hold no account with is
+ * worse than naming none, so the sentence names the logins the extension has
+ * actually seen rather than whichever bookmaker was written into it first.
+ */
+export const emptyBetsMessage = (known: readonly KnownAccount[]): string => {
+  const named = (id: string): string => CATALOG.find((meta) => meta.id === id)?.name ?? id;
+  const sites = [...new Set(known.map((account) => named(account.bookmaker)))];
+  if (sites.length === 0)
+    return 'No bets yet. Sign in at a supported bookmaker with the extension installed, and it reads your history from there.';
+  return `No bets yet. Open your bet history at ${sites.join(' or ')} while signed in, then force a full resync from the extension popup.`;
+};
 
 export const formatLegEvent = (leg: BetLeg): string => leg.event ?? '—';
 

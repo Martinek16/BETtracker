@@ -1,5 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { pickLabel } from './bet-display';
+import type { KnownAccount } from '@betanal/shared';
+import { emptyBetsMessage, pickLabel } from './bet-display';
+
+const login = (bookmaker: string): KnownAccount =>
+  ({
+    bookmaker,
+    accountId: `${bookmaker}-1`,
+    firstSeenAt: '2026-01-01T00:00:00.000Z',
+    lastSeenAt: '2026-01-02T00:00:00.000Z',
+  }) as KnownAccount;
+
+describe('emptyBetsMessage', () => {
+  it('names no site at all when the extension has seen no login', () => {
+    expect(emptyBetsMessage([])).not.toMatch(/bet-at-home|stake/i);
+  });
+
+  it('names the site the reader is signed in at, and no other', () => {
+    const said = emptyBetsMessage([login('stake')]);
+    expect(said).toContain('Stake');
+    expect(said).not.toContain('bet-at-home');
+  });
+
+  it('names each connected site once, however many logins it has', () => {
+    const said = emptyBetsMessage([login('stake'), login('bet-at-home'), login('stake')]);
+    expect(said).toContain('bet-at-home');
+    expect(said.match(/Stake/g)).toHaveLength(1);
+  });
+});
 
 describe('pickLabel', () => {
   it('names what a priced line is counted in', () => {
