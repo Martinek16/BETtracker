@@ -150,6 +150,15 @@ const BalanceReadout = ({
 );
 
 /**
+ * A wallet site leaves dust in every coin it has ever paid out, and a holding
+ * worth less than the display currency's smallest unit prints as a row of
+ * zeros - lines that carry no money and bury the ones that do. What counts as
+ * too small is the currency's own answer, so the test is what gets printed.
+ */
+export const worthReading = (worth: number, currency: string): boolean =>
+  /[1-9]/.test(formatAmount(worth, currency));
+
+/**
  * What the bookmaker page says is in each account. The scraped figure already
  * includes bonus money, so withdrawable is the remainder - clamped in case a
  * scrape and a bonus sync disagree for a moment. Without a bonus the breakdown
@@ -160,6 +169,7 @@ const liveBalances = (
   balances: readonly BalanceRow[],
   bonuses: readonly Bonus[],
   includeBonus: boolean,
+  currency: string,
 ): AccountBalance[] =>
   balances.map(({ bookmaker, key, amount, holdings }) => {
     // A wallet per coin makes its own breakdown: what is held, and what each
@@ -170,12 +180,14 @@ const liveBalances = (
         bookmaker,
         key,
         amount,
-        rows: holdings.map((h) => ({
-          label: h.currency,
-          value: h.amount,
-          currency: h.currency,
-          aside: h.worth,
-        })),
+        rows: holdings
+          .filter((h) => worthReading(h.worth, currency))
+          .map((h) => ({
+            label: h.currency,
+            value: h.amount,
+            currency: h.currency,
+            aside: h.worth,
+          })),
       };
     const bonus = bonuses.reduce(
       (sum, b) =>
@@ -255,7 +267,7 @@ const BalanceControl = (): JSX.Element => {
   // no number instead, which is the honest version of the same thing.
   const accounts = live
     ? [
-        ...liveBalances(accountBalances, bonuses, includeBonus),
+        ...liveBalances(accountBalances, bonuses, includeBonus, currency),
         ...unreadBalances.map((bookmaker) => ({
           bookmaker,
           key: bookmaker,

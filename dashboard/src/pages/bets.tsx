@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router';
 import { usePersistedState } from '@/lib/persisted-state';
-import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Search, Ticket, X } from 'lucide-react';
 import { profitOf, type Bet } from '@betanal/shared';
 import { BetTableRow } from '@/components/dashboard/bet-table-row';
 import { betSearchText, SLIP_KIND_LABEL, singleEventLabel, slipKind } from '@/lib/bet-display';
@@ -257,16 +258,29 @@ export const BetsPage = (): JSX.Element => {
                       colSpan={columnCount}
                       className="bg-muted/20 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
                     >
-                      <span className="flex items-baseline justify-between gap-2">
+                      <span className="flex items-center justify-between gap-2">
                         <span>Active · {openBets.length} open</span>
-                        {refreshedAt !== null && (
-                          <span className="font-normal normal-case tracking-normal">
-                            last refreshed{' '}
-                            <span className="tabular-nums">
-                              {formatTime(new Date(refreshedAt).toISOString())}
+                        {/* The way out of the table sits with the band that
+                            names what it leads to, not up in the card title. */}
+                        <span className="flex items-center gap-3">
+                          {refreshedAt !== null && (
+                            <span className="font-normal normal-case tracking-normal">
+                              last refreshed{' '}
+                              <span className="tabular-nums">
+                                {formatTime(new Date(refreshedAt).toISOString())}
+                              </span>
                             </span>
-                          </span>
-                        )}
+                          )}
+                          <Link
+                            to="/bets/open"
+                            title="Every open slip on one page"
+                            className="inline-flex items-center gap-1.5 rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-medium normal-case tracking-normal text-foreground transition-colors hover:bg-primary/20"
+                          >
+                            <Ticket className="h-3 w-3" />
+                            Open bets
+                            <ArrowRight className="h-3 w-3" />
+                          </Link>
+                        </span>
                       </span>
                     </TableCell>
                   </TableRow>

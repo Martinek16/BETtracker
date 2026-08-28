@@ -72,6 +72,27 @@ describe('stake adapter', () => {
     ).toBe(8);
   });
 
+  it('prices the buy-back off the stake, and only while the slip is open', () => {
+    const base = {
+      id: 'c1',
+      createdAt: '2026-01-01T00:00:00Z',
+      amount: 10,
+      currency: 'eur',
+      active: true,
+    };
+    expect(normalizeBet({ ...base, cashoutMultiplier: 1.4 }, 'acc-1')?.cashOutValue).toBeCloseTo(
+      14,
+    );
+    // Withdrawn offers arrive as a zero, and a settled slip has nothing to sell.
+    expect(normalizeBet({ ...base, cashoutMultiplier: 0 }, 'acc-1')?.cashOutValue).toBeUndefined();
+    expect(
+      normalizeBet(
+        { ...base, active: false, status: 'settled', payout: 0, cashoutMultiplier: 1.4 },
+        'acc-1',
+      )?.cashOutValue,
+    ).toBeUndefined();
+  });
+
   it('returns null instead of a half-built bet when ids are missing', () => {
     expect(normalizeBet({ amount: 1, currency: 'ltc' }, 'acc-1')).toBeNull();
   });

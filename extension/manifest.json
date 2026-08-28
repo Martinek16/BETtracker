@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BETtracker",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Private, offline dashboard for your own betting account history. No sign-up, nothing uploaded, no ads. Adults 18+.",
   "permissions": ["storage", "alarms", "scripting", "activeTab"],
   "optional_host_permissions": ["https://*/*"],

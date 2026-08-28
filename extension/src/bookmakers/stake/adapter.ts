@@ -397,6 +397,11 @@ const ACTIVE_BETS = `query ActiveBets($limit: Int!) {
       ${MONEY_FIELDS}
       status
       potentialMultiplier
+      # What the book would buy the slip back for, as a multiple of the stake -
+      # the same shape as the payout multiplier. Only SportBet declares it, so it
+      # is asked for here and not in the shared money fields, which the other two
+      # products share and would reject it in.
+      cashoutMultiplier
       ${PROMOTION_FIELD}
       outcomes { ${outcomeFields(LIVE_STATUS)} }
     }
@@ -616,6 +621,8 @@ interface RawBet {
   updatedAt?: string | null;
   status?: string | null;
   potentialMultiplier?: number | null;
+  /** Zero, or absent, whenever the book is not buying the slip back. */
+  cashoutMultiplier?: number | null;
   xStatus?: string | null;
   xPotentialMultiplier?: number | null;
   swishStatus?: string | null;
@@ -848,6 +855,11 @@ export const normalizeBet = (raw: RawBet, accountId: AccountId): Bet | null => {
   const updatedAt = toStringOrNull(raw.updatedAt);
   const settled = status !== 'pending' && updatedAt !== null ? normalizeTimestamp(updatedAt) : null;
 
+  // A multiple of the stake, as the payout is. Offered on open slips only, and
+  // withdrawn the moment the book stops buying - which reads as a zero, not as
+  // a missing field, so the figure is dropped rather than shown as nothing.
+  const cashOutValue = stake * toNumber(raw.cashoutMultiplier, 0);
+
   const first = legs[0];
   return {
     // Namespaced so an imported bet can never collide with another book's ids.
@@ -873,6 +885,7 @@ export const normalizeBet = (raw: RawBet, accountId: AccountId): Bet | null => {
     betType: mapBetType(raw),
     legs,
     currency: normalizeCurrency(raw.currency),
+    ...(status === 'pending' && cashOutValue > 0 ? { cashOutValue } : {}),
   };
 };
 
@@ -1824,7 +1837,7 @@ export const stake: BookmakerAdapter = {
     let oldest: string | null = null;
     let reachedEnd = false;
 
-    for (; pages < limit; ) {
+    for (; pages < limit;) {
       const data = await gql(creds, BET_LIST, { offset, limit: PAGE_LIMIT });
       const page = parseBetPage(data, account.accountId);
       pages += 1;

@@ -1,22 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { isLiveBet, type Bet } from '@betanal/shared';
-import { Ticket, X } from 'lucide-react';
+import { Maximize2, Ticket, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ActiveSlipCard } from '@/components/active-bets/active-slip-card';
-import { findAccount, siteLinkOf, useSiteOrigins } from '@/data/accounts';
+import { ActiveSlipCard, useOpenSlips } from '@/components/active-bets/active-slip-card';
+import { SlipTotals } from '@/components/active-bets/slip-totals';
+import { useDashboard } from '@/context/dashboard-context';
 import { useLiveBets } from '@/data/live-bets';
+import { useOpenBets } from '@/data/use-open-bets';
 import { cn } from '@/lib/utils';
-
-/** A slip belongs to the day its first match starts, not the day it was placed. */
-const kickoffOf = (bet: Bet): number => {
-  const starts = bet.legs.flatMap((leg) => {
-    const ms = leg.eventDate == null ? Number.NaN : Date.parse(leg.eventDate);
-    return Number.isNaN(ms) ? [] : [ms];
-  });
-  return starts.length > 0 ? Math.min(...starts) : Date.parse(bet.placedAt);
-};
 
 /**
  * Floating button plus the right-hand drawer of open slips.
@@ -30,28 +23,13 @@ export const ActiveBetsPanel = (): JSX.Element => {
   // null = follow the data: land on Live whenever something is in play. An
   // explicit click pins the choice for the rest of the session.
   const [picked, setPicked] = useState<'live' | 'open' | null>(null);
-  const { bets, scores, refreshedAt } = useLiveBets();
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!open) return;
-    setNow(Date.now());
-    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
-    return () => window.clearInterval(timer);
-  }, [open]);
-  // With the scores, so a slip whose match the book has called ended drops back
-  // to Open rather than sitting under Live until the book gets round to settling
-  // it. `now` ticks while the drawer is open, which is what re-runs this.
-  const live = bets.filter((bet) => isLiveBet(bet, now, scores));
-  const waiting = bets.filter((bet) => !isLiveBet(bet, now, scores));
+  const { bets } = useLiveBets();
+  const { currency } = useDashboard();
+  const slips = useOpenSlips();
+  const { live, waiting, scores, refreshedAt, now, siteLinkFor } = useOpenBets(open);
   const tab = picked ?? (live.length > 0 ? 'live' : 'open');
   const shown = tab === 'live' ? live : waiting;
-  // The mirror the browser actually reached the book on; its own address otherwise.
-  const origins = useSiteOrigins();
-  const siteUrlOf = (bet: Bet): string | null => {
-    const account = findAccount(bet.bookmaker);
-    if (account === undefined) return null;
-    return siteLinkOf(account, origins, account.betsPath).url;
-  };
+  const navigate = useNavigate();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -81,35 +59,64 @@ export const ActiveBetsPanel = (): JSX.Element => {
         >
           <header className="flex items-center justify-between px-4 py-3">
             <DialogTitle className="text-base font-semibold">My Bets</DialogTitle>
-            <DialogClose asChild>
-              <Button variant="ghost" size="icon" aria-label="Close">
-                <X className="h-4 w-4" />
+            <div className="flex items-center">
+              {/* The drawer is a column; the page lays the same slips out wide
+                  and shows both halves at once. */}
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Open full page"
+                title="Open full page"
+                onClick={() => {
+                  setOpen(false);
+                  void navigate('/bets/open');
+                }}
+              >
+                <Maximize2 className="h-4 w-4" />
               </Button>
-            </DialogClose>
+              <DialogClose asChild>
+                <Button variant="ghost" size="icon" aria-label="Close">
+                  <X className="h-4 w-4" />
+                </Button>
+              </DialogClose>
+            </div>
           </header>
 
-          <div className="mx-4 mb-2 grid grid-cols-2 gap-2">
-            {([
-              ['live', 'Live', live.length],
-              ['open', 'Open', waiting.length],
-            ] as const).map(([value, label, count]) => (
+          {/* Tabs rather than two boxes: the line under the chosen name says
+              which half the slips below belong to, without a border round each
+              word competing with the cards for the eye. The totals ride on the
+              same rule, so the bar is one line and the list starts sooner. */}
+          <div className="mx-4 mb-2 flex items-baseline gap-4 border-b border-border">
+            {(
+              [
+                ['live', 'Live', live.length],
+                ['open', 'Open', waiting.length],
+              ] as const
+            ).map(([value, label, count]) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setPicked(value)}
                 className={cn(
-                  'rounded-md border py-1.5 text-sm font-medium',
+                  '-mb-px border-b-2 pb-1.5 text-sm transition-colors',
                   tab === value
-                    ? 'border-foreground text-foreground'
-                    : 'border-border text-muted-foreground hover:text-foreground',
+                    ? 'border-foreground font-medium text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground',
                 )}
               >
                 {label}
-                <span className="ml-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-muted px-1 text-[10px] font-medium tabular-nums text-muted-foreground">
-                  {count}
-                </span>
+                <span className="ml-1.5 text-[11px] tabular-nums opacity-60">{count}</span>
               </button>
             ))}
+            <SlipTotals
+              staked={shown.reduce((sum, bet) => sum + bet.stake, 0)}
+              toWin={shown.reduce(
+                (sum, bet) => sum + (bet.currentPotentialReturn ?? bet.potentialReturn),
+                0,
+              )}
+              currency={currency}
+              className="ml-auto pb-1.5"
+            />
           </div>
 
           <div className="scroll-area flex-1 space-y-2 overflow-y-auto p-4">
@@ -126,18 +133,20 @@ export const ActiveBetsPanel = (): JSX.Element => {
                 </p>
               </div>
             ) : (
-              [...shown]
-                .sort((a, b) => kickoffOf(a) - kickoffOf(b))
-                .map((bet) => (
-                  <ActiveSlipCard
-                    key={bet.betId}
-                    bet={bet}
-                    scores={scores}
-                    now={now}
-                    refreshedAt={refreshedAt}
-                    siteUrl={siteUrlOf(bet)}
-                  />
-                ))
+              shown.map((bet) => (
+                <ActiveSlipCard
+                  key={bet.betId}
+                  expanded={slips.isOpen(bet.betId, false)}
+                  onToggle={() => {
+                    slips.toggle(bet.betId, false);
+                  }}
+                  bet={bet}
+                  scores={scores}
+                  now={now}
+                  refreshedAt={refreshedAt}
+                  siteUrl={siteLinkFor(bet.bookmaker)?.url ?? null}
+                />
+              ))
             )}
           </div>
         </DialogPrimitive.Content>
