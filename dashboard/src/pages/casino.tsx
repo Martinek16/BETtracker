@@ -623,7 +623,7 @@ export const CasinoPage = (): JSX.Element => {
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-hidden">
-      <div className="grid shrink-0 grid-cols-2 gap-3 xl:grid-cols-5">
+      <div data-tour="casino-kpis" className="grid shrink-0 grid-cols-2 gap-3 xl:grid-cols-5">
         <MetricCard
           icon={Dices}
           label="Casino result"
@@ -667,7 +667,7 @@ export const CasinoPage = (): JSX.Element => {
 
       <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-3">
         <div className="flex min-h-0 flex-col gap-3 xl:col-span-2">
-          <DashboardCard className="flex min-h-0 flex-[12] flex-col p-4">
+          <DashboardCard data-tour="casino-rounds" className="flex min-h-0 flex-[12] flex-col p-4">
             <DashboardCardHeading
               className="mb-3"
               title={
@@ -726,7 +726,7 @@ export const CasinoPage = (): JSX.Element => {
             </div>
           </DashboardCard>
 
-          <div className="grid min-h-0 flex-[13] gap-3 sm:grid-cols-2">
+          <div data-tour="casino-games" className="grid min-h-0 flex-[13] gap-3 sm:grid-cols-2">
             <GroupTable
               title="Games"
               nameLabel="Game"
@@ -788,7 +788,7 @@ export const CasinoPage = (): JSX.Element => {
           </div>
         </div>
 
-        <DashboardCard className="flex h-full min-h-0 flex-col p-4">
+        <DashboardCard data-tour="casino-sittings" className="flex h-full min-h-0 flex-col p-4">
           <DashboardCardHeading className="mb-2" title="Sittings" />
           {/* Reserves the body's scrollbar gutter so the columns stay aligned. */}
           <Row className={cn(HEAD, 'scroll-gutter overflow-y-scroll pr-2')}>

@@ -17,6 +17,10 @@ const EMPTY_MS = 250;
 const findAnchor = (step: TourStep): HTMLElement | null =>
   document.querySelector<HTMLElement>(`[data-tour="${step.anchor}"]`);
 
+/** A stop whose page is of no use to this reader: dropped before it is opened. */
+const skipped = (step: TourStep): boolean =>
+  step.onlyIf !== undefined && document.querySelector(`[data-tour="${step.onlyIf}"]`) === null;
+
 interface Box {
   top: number;
   left: number;
@@ -93,7 +97,7 @@ export const ProductTour = (): JSX.Element | null => {
   // The step asks for a route and, on analytics, for a view; both have to be in
   // place before its element exists to be measured.
   useEffect(() => {
-    if (step === null) return;
+    if (step === null || skipped(step)) return;
     if (location.pathname !== step.route) navigate(step.route);
     if (step.view !== undefined) setAnalyticsView(step.view);
     if (step.unit !== undefined) setAnalysisUnit(step.unit);
@@ -116,6 +120,13 @@ export const ProductTour = (): JSX.Element | null => {
   // when their data resolves, which is not tied to the route change.
   useEffect(() => {
     if (step === null) return undefined;
+    // A page the reader has no use for is not opened at all: walking onto it to
+    // find nothing there is a worse answer than never going.
+    if (skipped(step)) {
+      if (index === TOUR_STEPS.length - 1) close();
+      else move(1);
+      return undefined;
+    }
     let frame = 0;
     const started = performance.now();
 
