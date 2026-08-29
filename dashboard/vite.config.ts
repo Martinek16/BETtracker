@@ -97,11 +97,18 @@ const bookmakerLogosPlugin = (): Plugin => ({
 
 // base './' so built asset paths are relative — required when the dashboard is
 // loaded from chrome-extension://<id>/dashboard/index.html.
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   base: './',
   plugins: [react(), bookmakerLogosPlugin(), countryFlagsPlugin()],
   resolve: {
     alias: {
+      // The made-up history answers reads only while the dev server or the tests
+      // are running. A build resolves the module to an empty stand-in, so the
+      // dataset is absent from the zip rather than merely switched off: a branch
+      // that is never taken still ships the code behind it.
+      ...(command === 'build'
+        ? { '@/demo': fileURLToPath(new URL('./src/demo/off.ts', import.meta.url)) }
+        : {}),
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       // The catalogue lives beside the adapters so one folder holds everything a
       // bookmaker needs. Only its JSON metadata is read from here — the adapters
@@ -113,4 +120,4 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
   },
-});
+}));

@@ -175,10 +175,7 @@ const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
           onChange={(defaultRange) => void patch({ defaultRange })}
         />
       </Setting>
-      <Setting
-        label="Odds"
-        hint={`Prices are written ${formatOdds(1.85, settings?.oddsFormat)}.`}
-      >
+      <Setting label="Odds" hint={`Prices are written ${formatOdds(1.85, settings?.oddsFormat)}.`}>
         <SegmentedToggle
           className="text-xs"
           value={settings?.oddsFormat ?? 'decimal'}
@@ -669,10 +666,10 @@ const DataSection = ({ notify }: { notify: Notify }): JSX.Element => {
       >
         <SaveBackup onSaved={notify} />
       </Setting>
-      {/* The made-up history is a testing aid rather than a feature. An
-          installed copy shows the switch only once `demo=1` has turned it on,
-          so it can be turned off again; a development build always shows it. */}
-      {(import.meta.env.DEV || isDemoMode()) && (
+      {/* The made-up history is a testing aid rather than a feature: the module
+          behind it is not in a built copy at all, so the switch is offered only
+          while the dev server is running. */}
+      {import.meta.env.DEV && (
         <Setting
           label="Demo data"
           hint={
