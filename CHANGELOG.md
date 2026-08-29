@@ -15,7 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Demo mode is offered as a switch only in a development build, or once the demo has been enabled through the `demo=1` link. An installed copy no longer presents it, so invented figures cannot be mistaken for real ones.
 - Casino return is stated as a result against stake (−3%) rather than as a share of it (97%), on both the metric card and the per-game column, and is coloured like every other result on the page.
 - Bet history layout: **Bet** follows the date at the size of the surrounding columns and **Type** follows it; combinations of two to four selections are named Double, Triple and Quadruple; columns and headings are centred, except fixture names, which keep a left edge; the profit colour is carried by **Return** rather than by **P/L**.
 - An expanded slip reads as a sequence of fixtures rather than a list of dates: the date is written once per day, each fixture carries its kickoff time, the result is carried by the colour of the sport icon, and a rule appears only where the day changes. A bet builder's combined price is shown beside the fixture it was struck for instead of in the **Odds** column.
@@ -30,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rakeback begins accruing again the moment it is claimed, so an emptied account still reported a fraction of a coin and was offered as a claim that had already been made. Amounts below what the display currency can express are ignored.
 - Values under one cent are omitted rather than printed as `0,00` or `< 0,01`, which put a line on screen for money that cannot be acted on.
 - Whether a balance holds non-withdrawable bonus money was inferred from the presence of coin holdings, a different question that happened to give the right answer. It is now declared per bookmaker.
-- Open bets shown in demo mode were overwritten by the extension with the real ones, which on a fresh install is none.
 - Sort headings sat slightly left of the columns they name, because the sort arrow shared the label's box.
 
 ### Removed
@@ -41,15 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Demo mode toggle in **Settings → Your data**. Demo mode persists across pages and reloads until it is switched off; the `demo=1` URL parameter enables the toggle instead of applying to a single page view.
-- Demo dataset covering one year of betting across two accounts, generated rather than hand-written: bookmaker-formatted bet references, market-appropriate odds, bet builders priced below the product of their legs, and outcomes drawn against the bookmaker margin. Includes singles, doubles, accumulators, cash-outs, voided slips, deposits, withdrawals, bonuses and open bets.
-- Demo casino history: over 1,000 rounds across nine games, grouped into sessions, with a negative expected return.
 - Casino stops in the guided tour; they are skipped for accounts whose bookmaker has no casino.
-- Header banner marking demo mode as active on every page.
 
 ### Changed
 
-- Demo mode replaces only what pages read. Stored history is never overwritten and is restored when demo mode is switched off.
 - Consolidated duplicate UI components: the collapsible search control (three implementations) and the sortable table header (two implementations) are now shared, so they behave identically on every page.
 - An empty bonuses page shows an explanatory message instead of blank space.
 - Monetary values in the bet table are right-aligned, consistent with other tables.
