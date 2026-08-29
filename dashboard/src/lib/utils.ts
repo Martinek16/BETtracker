@@ -100,6 +100,14 @@ export const formatMoney = (value: number, currency = 'EUR'): string =>
   withSymbol(formatAmount(value, currency), value < 0, currency);
 
 /**
+ * Money that is real but too small to print. Rewards paid in coin arrive as
+ * fractions of a cent, and rounding those down to 0,00 answers the one question
+ * the figure is there for - is anything waiting - with the wrong word.
+ */
+export const smallMoney = (value: number, currency = 'EUR'): string =>
+  value > 0 && value < 0.005 ? `< ${formatMoney(0.01, currency)}` : formatMoney(value, currency);
+
+/**
  * Money for a row that cannot grow: the cents of a four-figure sum say nothing
  * a punter reads, and carrying them is what pushes the figure onto a second line.
  */

@@ -5,7 +5,7 @@ import { useDashboard, type BalanceRow } from '@/context/dashboard-context';
 import { findAccount } from '@/data/accounts';
 import { useUpdateNotice } from '@/data/update';
 import { isDemoMode } from '@/demo';
-import { cn, formatAmount, formatMoney } from '@/lib/utils';
+import { cn, formatAmount, formatMoney, smallMoney } from '@/lib/utils';
 
 interface Row {
   label: string;
@@ -101,8 +101,8 @@ const AccountGroup = ({
         balance and no sync will move it there. */}
     {account.waiting != null && (
       <div className="mt-1 flex items-center justify-between gap-6 pl-[22px] text-muted-foreground">
-        <span>Rakeback waiting to be claimed</span>
-        <span className="tabular-nums">{formatMoney(account.waiting, currency)}</span>
+        <span>Rakeback</span>
+        <span className="tabular-nums">{smallMoney(account.waiting, currency)}</span>
       </div>
     )}
   </div>
