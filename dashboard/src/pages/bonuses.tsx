@@ -139,7 +139,7 @@ const BonusFacts = ({
 );
 
 export const BonusesPage = (): JSX.Element => {
-  const { days, until, bonuses, transactions, currency, activeBookmakers, claimable, loading } =
+  const { days, until, bonuses, transactions, currency, activeBookmakers, loading } =
     useDashboard();
   // Naming the account only means something when there is more than one.
   const showAccount = activeBookmakers.length >= 2;
@@ -169,21 +169,6 @@ export const BonusesPage = (): JSX.Element => {
   );
   const summary = useMemo(() => summarizeBonuses(history), [history]);
 
-  /**
-   * What the house edge handed back. A claim is a payment like any other and
-   * already sits in the history below, but one line among the grants answers
-   * nothing: rakeback is many small payments, and the question asked of it is
-   * how much has come back and how much is sitting there uncollected. The site
-   * itself only ever shows what is waiting right now.
-   */
-  const claimed = useMemo(() => history.filter((b) => b.type === 'rakeback'), [history]);
-  const waiting = claimable.reduce((sum, reward) => sum + (reward.worth ?? 0), 0);
-  const collected = claimed.reduce((sum, b) => sum + b.grantedAmount, 0);
-  const lastClaim = claimed.reduce<string | null>(
-    (latest, b) => (latest === null || b.grantedAt > latest ? b.grantedAt : latest),
-    null,
-  );
-
   if (!loading && active.length === 0 && history.length === 0) {
     return (
       <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
@@ -198,22 +183,6 @@ export const BonusesPage = (): JSX.Element => {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 pb-2">
-      {(waiting > 0 || claimed.length > 0) && (
-        <DashboardCard className="flex flex-wrap items-center gap-x-10 gap-y-4 p-5">
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold">Rakeback</h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              A share of the house edge, paid back on every bet and handed over when it is
-              claimed.
-            </p>
-          </div>
-          <Fact label="Waiting to claim" value={formatMoney(waiting, currency)} />
-          <Fact label="Claimed in this period" value={formatMoney(collected, currency)} />
-          <Fact label="Claims" value={String(claimed.length)} />
-          <Fact label="Last claim" value={lastClaim === null ? '—' : formatDate(lastClaim)} />
-        </DashboardCard>
-      )}
-
       {active.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold">Active bonuses</h2>
