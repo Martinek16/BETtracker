@@ -38,7 +38,7 @@ import {
 import { BOOKMAKER_IDS } from '@bookmakers/catalog';
 import { filterBetsByRange, rangeCutoff, rangeEnd } from '@/lib/chart-data';
 import { hasStored, usePersistedState } from '@/lib/persisted-state';
-import { setNumberFormat } from '@/lib/utils';
+import { setNumberFormat, worthReading } from '@/lib/utils';
 import {
   getKnownAccounts,
   getRates,
@@ -443,6 +443,11 @@ export const DashboardProvider = ({ children }: { children: ReactNode }): JSX.El
             }
             worth += priced;
           }
+          // Rakeback starts building again the moment it is claimed, so a site
+          // that has just been emptied still reports a sliver of a coin. Money
+          // that cannot be written in the display currency cannot be claimed as
+          // anything either, so it is not a reward and is not offered as one.
+          if (!Number.isNaN(worth) && !worthReading(worth, target)) return [];
           return [
             {
               bookmaker: p.bookmaker,

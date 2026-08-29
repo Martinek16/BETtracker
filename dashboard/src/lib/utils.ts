@@ -100,6 +100,19 @@ export const formatMoney = (value: number, currency = 'EUR'): string =>
   withSymbol(formatAmount(value, currency), value < 0, currency);
 
 /**
+ * Whether a figure says anything once written in its currency. A wallet site
+ * leaves dust in every coin it has ever paid out, and a row of zeros carries
+ * nothing and buries the lines that do. What counts as too small is the
+ * currency's own answer, so the test is what gets printed.
+ *
+ * A coin is judged on its own figure, not on what it is worth: a holding of a
+ * tenth of a cent is still the holding the site is showing, and hiding it made
+ * a wallet spread over four coins read as if it held one.
+ */
+export const worthReading = (value: number, currency: string): boolean =>
+  /[1-9]/.test(formatAmount(value, currency));
+
+/**
  * Money that is real but too small to print. Rewards paid in coin arrive as
  * fractions of a cent, and rounding those down to 0,00 answers the one question
  * the figure is there for - is anything waiting - with the wrong word.

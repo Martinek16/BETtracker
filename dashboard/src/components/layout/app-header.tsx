@@ -5,7 +5,7 @@ import { useDashboard, type BalanceRow } from '@/context/dashboard-context';
 import { findAccount } from '@/data/accounts';
 import { useUpdateNotice } from '@/data/update';
 import { isDemoMode } from '@/demo';
-import { cn, formatAmount, formatMoney, smallMoney } from '@/lib/utils';
+import { cn, formatAmount, formatMoney, smallMoney, worthReading } from '@/lib/utils';
 
 interface Row {
   label: string;
@@ -62,7 +62,7 @@ const BreakdownRow = ({
       </span>
       {row.aside !== undefined && (
         <span className="text-[9px] tabular-nums text-muted-foreground">
-          {formatMoney(row.aside, currency)}
+          {smallMoney(row.aside, currency)}
         </span>
       )}
     </span>
@@ -162,15 +162,6 @@ const BalanceReadout = ({
 );
 
 /**
- * A wallet site leaves dust in every coin it has ever paid out, and a holding
- * worth less than the display currency's smallest unit prints as a row of
- * zeros - lines that carry no money and bury the ones that do. What counts as
- * too small is the currency's own answer, so the test is what gets printed.
- */
-export const worthReading = (worth: number, currency: string): boolean =>
-  /[1-9]/.test(formatAmount(worth, currency));
-
-/**
  * What the bookmaker page says is in each account. The scraped figure already
  * includes bonus money, so withdrawable is the remainder - clamped in case a
  * scrape and a bonus sync disagree for a moment. Without a bonus the breakdown
@@ -181,7 +172,6 @@ const liveBalances = (
   balances: readonly BalanceRow[],
   bonuses: readonly Bonus[],
   includeBonus: boolean,
-  currency: string,
 ): AccountBalance[] =>
   balances.map(({ bookmaker, key, amount, holdings }) => {
     // A wallet per coin makes its own breakdown: what is held, and what each
@@ -193,7 +183,7 @@ const liveBalances = (
         key,
         amount,
         rows: holdings
-          .filter((h) => worthReading(h.worth, currency))
+          .filter((h) => worthReading(h.amount, h.currency))
           .map((h) => ({
             label: h.currency,
             value: h.amount,
@@ -284,7 +274,7 @@ const BalanceControl = (): JSX.Element => {
   // no number instead, which is the honest version of the same thing.
   const accounts = live
     ? [
-        ...liveBalances(accountBalances, bonuses, includeBonus, currency),
+        ...liveBalances(accountBalances, bonuses, includeBonus),
         ...unreadBalances.map((bookmaker) => ({
           bookmaker,
           key: bookmaker,

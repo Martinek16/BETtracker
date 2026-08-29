@@ -23,7 +23,7 @@ import {
   type AccountInfo,
   type SiteLink,
 } from '@/data/accounts';
-import { cn, formatDateTime, formatMoney, smallMoney } from '@/lib/utils';
+import { cn, formatDateTime, formatMoney } from '@/lib/utils';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { ConnectionLabel, Stat } from '@/pages/options/parts';
 import { isReleased } from '@bookmakers/released';
@@ -111,7 +111,7 @@ const AccountCard = ({
           <Stat
             label="Balance"
             value={balance === null ? '—' : formatMoney(balance, currency)}
-            note={waiting === null ? undefined : `+${smallMoney(waiting, currency)} to claim`}
+            note={waiting === null ? undefined : `${formatMoney(waiting, currency)} rakeback`}
           />
           <Stat label="Bets" value={String(bets.length)} />
           <Stat label="Deposits" value={formatMoney(deposits, currency)} />
