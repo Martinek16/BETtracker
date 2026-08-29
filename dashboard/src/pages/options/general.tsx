@@ -310,10 +310,16 @@ const AppearanceSection = (): JSX.Element => {
 /** Everything that decides what the figure at the top of the page counts. */
 const BalanceSection = ({ notify }: { notify: Notify }): JSX.Element => {
   const { settings, patch } = useSettings();
+  const { activeBookmakers } = useDashboard();
   const source = settings?.balanceSource ?? 'live';
   const layout = settings?.balanceLayout ?? 'total';
   const includeBonus = settings?.includeBonus ?? true;
   const showClaimable = settings?.showClaimable ?? true;
+  // Not every bookmaker has the thing the switch decides about, and a switch
+  // that changes nothing on any of the accounts connected here is a question
+  // the reader has no way of answering.
+  const has = (flag: 'hasBonusWallet' | 'hasRakeback'): boolean =>
+    activeBookmakers.some((id) => findAccount(id)?.[flag] === true);
 
   return (
     <Section title="Balance" tour="settings-balance">
@@ -340,32 +346,36 @@ const BalanceSection = ({ notify }: { notify: Notify }): JSX.Element => {
           onChange={(balanceLayout) => void patch({ balanceLayout })}
         />
       </Setting>
-      <Setting
-        label="Count bonus money"
-        hint={
-          includeBonus
-            ? 'Bonus money is counted in, the way the bookmaker counts it.'
-            : 'Only the money you could withdraw today is counted.'
-        }
-      >
-        <Switch
-          checked={includeBonus}
-          onCheckedChange={(next) => void patch({ includeBonus: next })}
-        />
-      </Setting>
-      <Setting
-        label="Show rewards waiting to be claimed"
-        hint={
-          showClaimable
-            ? 'Rakeback the bookmaker is holding is shown beside the balance until you claim it.'
-            : 'Only money already in the account is shown.'
-        }
-      >
-        <Switch
-          checked={showClaimable}
-          onCheckedChange={(next) => void patch({ showClaimable: next })}
-        />
-      </Setting>
+      {has('hasBonusWallet') && (
+        <Setting
+          label="Count bonus money"
+          hint={
+            includeBonus
+              ? 'Bonus money is counted in, the way the bookmaker counts it.'
+              : 'Only the money you could withdraw today is counted.'
+          }
+        >
+          <Switch
+            checked={includeBonus}
+            onCheckedChange={(next) => void patch({ includeBonus: next })}
+          />
+        </Setting>
+      )}
+      {has('hasRakeback') && (
+        <Setting
+          label="Show rewards waiting to be claimed"
+          hint={
+            showClaimable
+              ? 'Rakeback the bookmaker is holding is shown under the balance until you claim it.'
+              : 'Only money already in the account is shown.'
+          }
+        >
+          <Switch
+            checked={showClaimable}
+            onCheckedChange={(next) => void patch({ showClaimable: next })}
+          />
+        </Setting>
+      )}
     </Section>
   );
 };

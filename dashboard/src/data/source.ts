@@ -179,7 +179,10 @@ const inDisplayCurrency = async (bets: readonly Bet[]): Promise<Bet[]> => {
  * extension, and also when the worker is mid-restart and answers with nothing.
  */
 export const refreshOpenBets = async (): Promise<ActiveBetsSnapshot | null> => {
-  if (!isExtension()) return null;
+  // Inside the extension the worker would answer with the real open slips - none
+  // of them, on a fresh install - and that empty answer would replace the demo
+  // slips the panel was seeded with. Nothing to poll in a made-up history.
+  if (isDemoMode() || !isExtension()) return null;
   try {
     const res: unknown = await chrome.runtime.sendMessage({ type: 'REFRESH_OPEN' });
     const snapshot = (res as { snapshot?: unknown } | null)?.snapshot;

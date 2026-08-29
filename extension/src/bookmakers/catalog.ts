@@ -40,6 +40,20 @@ export interface BookmakerMeta {
    */
   hasCasino?: boolean;
   /**
+   * The site keeps bonus money inside the same figure as the cash and will not
+   * pay it out until it has been played through, so its balance reads higher
+   * than what can be withdrawn. Where there is no such wallet a bonus is paid
+   * in as cash, and splitting one off would invent a restriction the site does
+   * not have.
+   */
+  hasBonusWallet?: boolean;
+  /**
+   * The site holds a share of the turnover back and hands it over only when it
+   * is asked for. It is not in the balance and no sync moves it: the only thing
+   * that turns it into money is the player noticing.
+   */
+  hasRakeback?: boolean;
+  /**
    * Where the bookmaker keeps the punter's own slips, appended to whichever
    * mirror was reached. Absent when the site has no address for that page worth
    * relying on, which lands the reader on the front page instead.

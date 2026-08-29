@@ -5,6 +5,7 @@
   "brand": "#071824",
   "color": "#1A9AEF",
   "hasCasino": true,
+  "hasRakeback": true,
   "betsPath": "/my-bets/sports",
   "mirrors": [
     "stake.bet",

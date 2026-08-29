@@ -96,9 +96,12 @@ const AccountGroup = ({
         ))}
       </div>
     )}
+    {/* Under the account's own figure rather than added to it: the bookmaker is
+        holding this money back until it is asked for, so it is not in the
+        balance and no sync will move it there. */}
     {account.waiting != null && (
-      <div className="mt-1 flex items-center justify-between gap-6 pl-[22px] text-profit">
-        <span>Rakeback to claim</span>
+      <div className="mt-1 flex items-center justify-between gap-6 pl-[22px] text-muted-foreground">
+        <span>Rakeback waiting to be claimed</span>
         <span className="tabular-nums">{formatMoney(account.waiting, currency)}</span>
       </div>
     )}
@@ -190,6 +193,11 @@ const liveBalances = (
             aside: h.worth,
           })),
       };
+    // Only a site that keeps bonus money in a wallet of its own has a balance
+    // worth splitting. Elsewhere a bonus is paid in as cash and cannot be told
+    // apart from it, so a "bonus" row would be describing a restriction that
+    // bookmaker does not put on the money.
+    if (findAccount(bookmaker)?.hasBonusWallet !== true) return { bookmaker, key, amount, rows: [] };
     const bonus = bonuses.reduce(
       (sum, b) =>
         b.bookmaker === bookmaker && b.status === 'active' ? sum + b.currentAmount : sum,
@@ -316,39 +324,6 @@ const BalanceControl = (): JSX.Element => {
 };
 
 /**
- * Rewards the bookmaker is holding until they are collected. They are not in the
- * balance and no sync will move them, so the only thing that makes them money is
- * the player noticing - which is why they sit in the header rather than a page.
- */
-const ClaimableChip = (): JSX.Element | null => {
-  const { claimable, currency } = useDashboard();
-  if (claimable.length === 0) return null;
-  const total = claimable.reduce((sum, r) => sum + (r.worth ?? 0), 0);
-
-  return (
-    <div className="group relative flex items-center gap-1.5" tabIndex={0}>
-      <span className="rounded-full bg-profit/15 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-profit">
-        Rakeback {formatMoney(total, currency)}
-      </span>
-      <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 hidden w-56 rounded-lg border border-border bg-popover p-3 text-left text-[10px] text-popover-foreground shadow-lg group-hover:block group-focus-within:block">
-        <p className="mb-2 text-muted-foreground">Waiting to be claimed on the site.</p>
-        <div className="space-y-1">
-          {claimable.flatMap((reward) =>
-            reward.parts.map((part) => (
-              <BreakdownRow
-                key={`${reward.key}-${part.currency}`}
-                row={{ label: part.currency, value: part.amount, currency: part.currency }}
-                currency={currency}
-              />
-            )),
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/**
  * A newer release, for the copy that was installed from a folder and cannot go
  * and get one. It sits beside the balance rather than over it: nothing here is
  * broken, and a reader mid-way through their evening owes this no answer.
@@ -387,7 +362,6 @@ export const AppHeader = ({ bare = false }: { bare?: boolean }): JSX.Element => 
         {!bare && (
           <div className="flex items-center gap-4">
             <UpdateChip />
-            <ClaimableChip />
             <BalanceControl />
           </div>
         )}
