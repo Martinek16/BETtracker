@@ -649,16 +649,21 @@ const DataSection = ({ notify }: { notify: Notify }): JSX.Element => {
       >
         <SaveBackup onSaved={notify} />
       </Setting>
-      <Setting
-        label="Demo data"
-        hint={
-          isDemoMode()
-            ? 'Every page is showing a made-up history. Nothing of your own was touched, and switching this off brings it back.'
-            : 'Fill every page with a made-up history, to see what the app does before your own bets are in.'
-        }
-      >
-        <Switch checked={isDemoMode()} onCheckedChange={setDemoMode} />
-      </Setting>
+      {/* The made-up history is a testing aid rather than a feature. An
+          installed copy shows the switch only once `demo=1` has turned it on,
+          so it can be turned off again; a development build always shows it. */}
+      {(import.meta.env.DEV || isDemoMode()) && (
+        <Setting
+          label="Demo data"
+          hint={
+            isDemoMode()
+              ? 'Every page is showing a made-up history. Nothing of your own was touched, and switching this off brings it back.'
+              : 'Fill every page with a made-up history, to see what the app does before any bets are in.'
+          }
+        >
+          <Switch checked={isDemoMode()} onCheckedChange={setDemoMode} />
+        </Setting>
+      )}
       <Setting
         label="Delete everything"
         hint={storedSummary(betCount, transactions.length, activeBookmakers.length, earliestRecord)}
