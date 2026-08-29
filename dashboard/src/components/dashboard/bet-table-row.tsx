@@ -180,6 +180,8 @@ const LegRow = ({
   startsDay,
   endsDay,
   ruled,
+  hot,
+  onHot,
   showAccount,
   scores,
 }: {
@@ -200,6 +202,9 @@ const LegRow = ({
   endsDay: boolean;
   /** A day follows this one, so a rule closes it off. */
   ruled: boolean;
+  /** The pointer is over this fixture, on whichever of its picks. */
+  hot: boolean;
+  onHot: (over: boolean) => void;
   showAccount: boolean;
   scores: Record<string, LiveScore[]> | undefined;
 }): JSX.Element => {
@@ -214,12 +219,17 @@ const LegRow = ({
 
   return (
     <TableRow
+      onMouseEnter={() => onHot(true)}
+      onMouseLeave={() => onHot(false)}
       className={cn(
         // Marked the way an opened row is marked everywhere else in the app: a
         // rule down the left edge in the accent colour, over a shade faint
         // enough to be read on. The grey block it used to be read as a table
         // that had lost its rows rather than as one slip opened up.
-        'border-l-2 border-l-primary bg-primary/[0.06] hover:bg-primary/10',
+        'border-l-2 border-l-primary',
+        // Lit by the fixture rather than by the row: a builder is one match bet
+        // several ways, and lighting one of its lines cut it into pieces.
+        hot ? 'bg-primary/10' : 'bg-primary/[0.06]',
         // Ruled between days and nowhere else: a line under every match chopped
         // an evening into strips, and a transparent one still showed as a gap
         // in the shade, which is what drew those strips in the first place.
@@ -258,7 +268,9 @@ const LegRow = ({
               <span className="flex min-w-0 items-baseline gap-1.5">
                 <span
                   className={cn(
-                    'min-w-0 flex-1 truncate text-[11px] font-semibold leading-tight',
+                    // Not stretched: the group price that follows belongs to
+                    // the name and is read with it, not from the far edge.
+                    'min-w-0 truncate text-[11px] font-semibold leading-tight',
                     // A match that was called off is struck through and says
                     // nothing else: it has no clock and no count to report.
                     leg.status === 'void'
@@ -308,6 +320,7 @@ export const BetTableRow = ({
   scores,
 }: BetTableRowProps): JSX.Element => {
   const [expanded, setExpanded] = useState(false);
+  const [hotGroup, setHotGroup] = useState<number | null>(null);
   const { oddsFormat } = useDashboard();
   const pl = profitOf(bet);
   const expandable = bet.legs.length > 1;
@@ -415,6 +428,8 @@ export const BetTableRow = ({
                 startsDay={startsDay}
                 endsDay={endsDay}
                 ruled={ruled}
+                hot={hotGroup === group}
+                onHot={(over) => setHotGroup(over ? group : null)}
                 showAccount={showAccount}
                 scores={scores}
               />
