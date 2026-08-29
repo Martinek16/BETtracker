@@ -332,11 +332,15 @@ export const BetTableRow = ({
     <>
       <TableRow
         className={cn(
-          'border-border',
+          // Tighter than the table's own row: a history is read down, and the
+          // room a slip took was room between it and the next one.
+          'border-border [&>td]:py-2',
           expandable ? 'cursor-pointer' : '',
           // The slip an open block belongs to takes the same mark, so the two
-          // read as one thing rather than a row with strangers under it.
-          expanded ? 'border-l-2 border-l-primary bg-primary/[0.06]' : '',
+          // read as one thing rather than a row with strangers under it. Its
+          // hover is pinned: while the picks are out, the pointer is reading
+          // them, and lighting the summary above only said the pointer moved.
+          expanded ? 'border-l-2 border-l-primary bg-primary/[0.06] hover:bg-primary/[0.06]' : '',
         )}
         {...(expandable
           ? {
