@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Bet, BetLeg } from '@betanal/shared';
-import { legGroups } from './bet-table-row';
+import { legDays, legGroups } from './bet-table-row';
 
 const leg = (over: Partial<BetLeg> = {}): BetLeg => ({
   sport: 'Football',
@@ -43,5 +43,19 @@ describe('legGroups', () => {
   it('never folds together legs that name no fixture', () => {
     const groups = legGroups(bet([leg({ event: null }), leg({ event: null })]));
     expect(groups).toHaveLength(2);
+  });
+});
+
+describe('legDays', () => {
+  it('writes the date once a day and rules the day off at its last fixture', () => {
+    const days = legDays(
+      bet([
+        leg({ eventId: 'a', eventDate: '2026-06-07T10:00:00.000Z' }),
+        leg({ eventId: 'b', eventDate: '2026-06-07T20:00:00.000Z' }),
+        leg({ eventId: 'c', eventDate: '2026-06-08T10:00:00.000Z' }),
+      ]),
+    );
+    expect(days.map((d) => d.showDay)).toEqual([true, false, true]);
+    expect(days.map((d) => d.endsDay)).toEqual([false, true, true]);
   });
 });
