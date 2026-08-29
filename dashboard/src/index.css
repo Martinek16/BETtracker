@@ -67,6 +67,16 @@
     border-color: hsl(var(--border));
   }
 
+  /* A mouse with a volume wheel - the thumb wheel on a Logitech MX Master, say -
+     sends media keystrokes, and the browser reads any keystroke as a switch to
+     keyboard navigation: the last thing clicked lights up with a focus ring
+     while the volume goes up. The ring is kept for keys that actually move
+     focus; `data-keys` on the root says one of those was pressed. */
+  html:not([data-keys]) :focus-visible {
+    box-shadow: none;
+    outline: none;
+  }
+
   /* Follows the theme class, so native scrollbars and number spinners match. */
   html {
     color-scheme: light;
