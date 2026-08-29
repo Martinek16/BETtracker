@@ -51,7 +51,7 @@ const stream = (seed: number) => (): number => {
   return seed / 4_294_967_296;
 };
 
-const rnd = stream(20260829);
+let rnd = stream(20260829);
 const pick = <T>(xs: readonly T[]): T => xs[Math.floor(rnd() * xs.length)] as T;
 const between = (lo: number, hi: number): number => lo + rnd() * (hi - lo);
 const round2 = (value: number): number => Math.round(value * 100) / 100;
@@ -386,6 +386,10 @@ const multiplierOf = (kind: CasinoKind): number => {
 };
 
 const buildRounds = (): CasinoRound[] => {
+  // Reseeded rather than carried on from the bets: how often those draw depends
+  // on which weekday the 300 days happen to begin on, so a shared stream handed
+  // the casino a different year - and a different return - every midnight.
+  rnd = stream(864_209);
   const rounds: CasinoRound[] = [];
   let n = 1;
   for (let day = STAKE_FROM; day < DAYS; day++) {
