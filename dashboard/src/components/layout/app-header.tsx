@@ -4,6 +4,7 @@ import { AccountIcon } from '@/components/dashboard/account-icon';
 import { useDashboard, type BalanceRow } from '@/context/dashboard-context';
 import { findAccount } from '@/data/accounts';
 import { useUpdateNotice } from '@/data/update';
+import { isDemoMode } from '@/demo';
 import { cn, formatAmount, formatMoney } from '@/lib/utils';
 
 interface Row {
@@ -376,6 +377,13 @@ export const AppHeader = ({ bare = false }: { bare?: boolean }): JSX.Element => 
           <span className="font-bold uppercase tracking-[0.18em] text-foreground">Bet</span>
           <span className="font-light tracking-tight text-muted-foreground">tracker</span>
         </span>
+        {/* Said out loud on every page: a reader who forgot the switch would
+            otherwise read a made-up history as their own. */}
+        {isDemoMode() && (
+          <span className="rounded-full border border-border px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Demo data
+          </span>
+        )}
         {!bare && (
           <div className="flex items-center gap-4">
             <UpdateChip />

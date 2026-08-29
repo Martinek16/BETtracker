@@ -1,16 +1,15 @@
 import type { Bet, BetLeg, LiveScore } from '@betanal/shared';
+import { BAH, STAKE } from '@/demo/history';
 
 /**
- * Synthetic slips for eyeballing the panel and the bet table when nothing real
- * is in play.
+ * The slips of the demo history that are still running.
  *
- * Enabled by `demo=live` in the query or the hash. Each slip is here for one
- * shape no other slip has: singles, bet builders, cross-fixture combos, settled
- * and void legs, market-specific counts, names long enough to wrap - and, on the
- * scores, every state a bookmaker's clock is read in, from a running minute to a
- * set, a quarter, an interval and a match already over.
+ * Each one is here for a shape no other slip has: singles, bet builders,
+ * cross-fixture combos, settled and void legs, market-specific counts, names
+ * long enough to wrap - and, on the scores, every state a bookmaker's clock is
+ * read in, from a running minute to a set, a quarter, an interval and a match
+ * already over.
  */
-export const isDemoSlipEnabled = (): boolean => /[?&#]demo=(live|1)/.test(window.location.href);
 
 /**
  * Stands in for the moment a real poll answered, so the header's "last update"
@@ -36,8 +35,7 @@ const leg = (over: Partial<BetLeg>): BetLeg => ({
 
 const slip = (over: Partial<Bet>): Bet => ({
   betId: 'demo',
-  bookmaker: 'bet-at-home',
-  accountId: 'demo',
+  ...BAH,
   placedAt: minutesFromNow(-260),
   settledAt: null,
   cashedOutAt: null,
@@ -172,7 +170,7 @@ export const DEMO_BETS: Bet[] = [
   // was placed at - the only slip where the two returns differ.
   slip({
     betId: 'demo-combo-mixed',
-    bookmaker: 'stake',
+    ...STAKE,
     betType: 'accumulator',
     odds: 10.62,
     stake: 8,
@@ -271,7 +269,7 @@ export const DEMO_BETS: Bet[] = [
   single(
     {
       betId: 'demo-tennis',
-      bookmaker: 'stake',
+      ...STAKE,
       sport: 'Tennis',
       league: 'ATP Toronto',
       event: 'Alcaraz - Sinner',
@@ -315,7 +313,7 @@ export const DEMO_BETS: Bet[] = [
   single(
     {
       betId: 'demo-basketball',
-      bookmaker: 'stake',
+      ...STAKE,
       sport: 'Basketball',
       league: 'NBA',
       event: 'Boston Celtics - Denver Nuggets',
@@ -415,8 +413,7 @@ export const DEMO_BETS: Bet[] = [
   // A second login at the same site: the account is the unit, not the site.
   slip({
     betId: 'demo-open-combo',
-    bookmaker: 'stake',
-    accountId: 'demo-2',
+    ...STAKE,
     betType: 'accumulator',
     odds: 12.17,
     stake: 2,

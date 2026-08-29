@@ -1,7 +1,7 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { isLiveBet, isLiveLeg, type Bet, type LiveScore } from '@betanal/shared';
 import { useDashboard } from '@/context/dashboard-context';
-import { DEMO_REFRESHED_AT, DEMO_SCORES, isDemoSlipEnabled } from '@/data/demo-slip';
+import { DEMO_REFRESHED_AT, DEMO_SCORES, isDemoMode } from '@/demo';
 import { useActiveBets } from '@/data/use-active-bets';
 import { useLiveScores } from '@/data/use-live-scores';
 
@@ -42,7 +42,7 @@ export const LiveBetsProvider = ({ children }: { children: ReactNode }): JSX.Ele
     .flatMap((bet) => bet.legs.filter((leg) => isLiveLeg(leg)).flatMap((leg) => leg.eventId ?? []));
   // Demo ids belong to no bookmaker, so the socket stays shut while one is shown.
   const feedScores = useLiveScores(
-    liveEventIds.length > 0 && !isDemoSlipEnabled(),
+    liveEventIds.length > 0 && !isDemoMode(),
     liveEventIds,
   );
 
@@ -52,7 +52,7 @@ export const LiveBetsProvider = ({ children }: { children: ReactNode }): JSX.Ele
   const scores = {
     ...feedScores,
     ...polled,
-    ...(isDemoSlipEnabled() ? DEMO_SCORES : {}),
+    ...(isDemoMode() ? DEMO_SCORES : {}),
   };
 
   return (
@@ -62,7 +62,7 @@ export const LiveBetsProvider = ({ children }: { children: ReactNode }): JSX.Ele
         error,
         scores,
         // Nothing polls a bookmaker in demo, so the stamp is stood in for.
-        refreshedAt: refreshedAt ?? (isDemoSlipEnabled() ? DEMO_REFRESHED_AT : null),
+        refreshedAt: refreshedAt ?? (isDemoMode() ? DEMO_REFRESHED_AT : null),
       }}
     >
       {children}
