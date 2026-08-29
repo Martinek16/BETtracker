@@ -1,4 +1,5 @@
 import { Fragment, useMemo } from 'react';
+import { Gift } from 'lucide-react';
 import { usePersistedState } from '@/lib/persisted-state';
 import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from 'recharts';
 import {
@@ -138,7 +139,8 @@ const BonusFacts = ({
 );
 
 export const BonusesPage = (): JSX.Element => {
-  const { days, until, bonuses, transactions, currency, activeBookmakers } = useDashboard();
+  const { days, until, bonuses, transactions, currency, activeBookmakers, loading } =
+    useDashboard();
   // Naming the account only means something when there is more than one.
   const showAccount = activeBookmakers.length >= 2;
   const [openRow, setOpenRow] = usePersistedState<string | null>('bonuses.openRow', null);
@@ -167,8 +169,20 @@ export const BonusesPage = (): JSX.Element => {
   );
   const summary = useMemo(() => summarizeBonuses(history), [history]);
 
+  if (!loading && active.length === 0 && history.length === 0) {
+    return (
+      <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
+        <Gift className="h-8 w-8 text-muted-foreground" />
+        <p className="text-sm font-medium">No bonuses</p>
+        <p className="text-xs text-muted-foreground">
+          A free bet or deposit match appears here once the bookmaker grants one.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-full min-h-0 flex-col gap-5 pb-2">
+    <div className="flex h-full min-h-0 flex-col gap-4 pb-2">
       {active.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold">Active bonuses</h2>

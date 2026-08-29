@@ -12,6 +12,7 @@ import { bonusesByTransaction } from '@betanal/shared';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
 import { MetricCard } from '@/components/dashboard/metric-card';
+import { SegmentedToggle, type SegmentedOption } from '@/components/dashboard/segmented-toggle';
 import {
   Table,
   TableBody,
@@ -26,40 +27,22 @@ import { cn, formatDate, formatMoney, formatTime } from '@/lib/utils';
 
 type Filter = 'all' | 'deposit' | 'withdrawal' | 'bonus';
 
-const FILTERS: { value: Filter; label: string; icon: LucideIcon }[] = [
-  { value: 'all', label: 'All', icon: List },
-  { value: 'deposit', label: 'Deposits', icon: ArrowDownToLine },
-  { value: 'withdrawal', label: 'Withdrawals', icon: ArrowUpFromLine },
-  { value: 'bonus', label: 'With bonus', icon: Gift },
-];
-
-const FilterToggle = ({
+const filterOption = (
+  value: Filter,
+  label: string,
+  Icon: LucideIcon,
+): SegmentedOption<Filter> => ({
   value,
-  onChange,
-}: {
-  value: Filter;
-  onChange: (value: Filter) => void;
-}): JSX.Element => (
-  <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5 text-[11px]">
-    {FILTERS.map((option) => (
-      <button
-        key={option.value}
-        type="button"
-        onClick={() => onChange(option.value)}
-        title={option.label}
-        aria-label={option.label}
-        className={cn(
-          'rounded-[2px] px-2 py-1',
-          value === option.value
-            ? 'bg-foreground text-background'
-            : 'text-muted-foreground hover:text-foreground',
-        )}
-      >
-        <option.icon size={13} strokeWidth={1.75} />
-      </button>
-    ))}
-  </div>
-);
+  label: <Icon size={13} strokeWidth={1.75} />,
+  title: label,
+});
+
+const FILTERS: readonly SegmentedOption<Filter>[] = [
+  filterOption('all', 'All', List),
+  filterOption('deposit', 'Deposits', ArrowDownToLine),
+  filterOption('withdrawal', 'Withdrawals', ArrowUpFromLine),
+  filterOption('bonus', 'With bonus', Gift),
+];
 
 export const TransactionsPage = (): JSX.Element => {
   const { days, until, transactions, bonuses, currency, activeBookmakers } = useDashboard();
@@ -174,7 +157,7 @@ export const TransactionsPage = (): JSX.Element => {
         <DashboardCardHeading
           className="mb-1.5 items-center"
           title={<span className="normal-case">History log</span>}
-          action={<FilterToggle value={filter} onChange={setFilter} />}
+          action={<SegmentedToggle value={filter} options={FILTERS} onChange={setFilter} />}
         />
         {visible.length === 0 ? (
           <p className="text-sm text-muted-foreground">

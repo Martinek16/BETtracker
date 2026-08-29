@@ -15,7 +15,6 @@ import {
   getAllBonuses,
   getAllTransactions,
   getAllBalances,
-  getAllBalanceHistory,
   getAllCasinoRounds,
   getAllPerks,
   getAllSyncMeta as storedSyncMeta,
@@ -126,12 +125,6 @@ export const loadBetSummary = async (): Promise<{
   } catch (err) {
     log('warn', 'dashboard', `failed to summarise bets: ${(err as Error).message}`);
     return { count: 0, earliest: null, bookmakers: [] };
-  }
-};
-
-export const requestResync = (mode: 'incremental' | 'full'): void => {
-  if (isExtension()) {
-    void chrome.runtime.sendMessage({ type: 'SYNC_NOW', mode });
   }
 };
 
@@ -304,16 +297,6 @@ export const loadPerks = async (): Promise<AccountPerks[]> => {
     return await getAllPerks();
   } catch (err) {
     log('warn', 'dashboard', `failed to read perks: ${(err as Error).message}`);
-    return [];
-  }
-};
-
-/** Balance readings scraped from the bookmaker, used as a reality check. */
-export const loadBalanceHistory = async (): Promise<BalanceInfo[]> => {
-  try {
-    return await getAllBalanceHistory();
-  } catch (err) {
-    log('warn', 'dashboard', `failed to read balance history: ${(err as Error).message}`);
     return [];
   }
 };

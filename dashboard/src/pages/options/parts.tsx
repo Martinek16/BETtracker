@@ -95,7 +95,7 @@ export const Stat = ({
       {value}
     </p>
     {note !== undefined && (
-      <p className="truncate text-[10px] tabular-nums text-emerald-500">{note}</p>
+      <p className="truncate text-[10px] tabular-nums text-profit">{note}</p>
     )}
   </div>
 );

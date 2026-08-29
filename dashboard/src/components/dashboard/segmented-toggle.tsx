@@ -36,8 +36,10 @@ export const SegmentedToggle = <T extends string>({
         onClick={() => onChange(v)}
         title={title}
         aria-label={title}
+        aria-pressed={value === v}
         className={cn(
           'flex items-center rounded-[5px] px-2 font-medium leading-none',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           value === v
             ? 'bg-foreground text-background'
             : 'text-muted-foreground hover:text-foreground',

@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   accountKey,
   convertBets,
   convertBonuses,
   convertTransactions,
-  type AccountRef,
   type Bet,
   type Bonus,
   type Bookmaker,
@@ -338,42 +337,6 @@ const loadRecords = async (): Promise<StoredRecords> => {
 };
 
 export const useStoredRecords = (): StoredRecords => useStored(loadRecords, NO_RECORDS);
-
-/**
- * The whole history, minus the logins that are switched off - what a view falls
- * back to when the chosen period holds too few bets to say anything. Read only
- * once `enabled` turns true: this is the one load whose cost grows with the
- * history, and most periods never need it.
- */
-export const useVisibleHistory = (enabled: boolean): StoredRecords => {
-  const { settings } = useSettings();
-  const [records, setRecords] = useState<StoredRecords | null>(null);
-
-  useEffect(() => {
-    if (!enabled || records !== null) return;
-    let active = true;
-    void loadRecords().then((loaded) => {
-      if (active) setRecords(loaded);
-    });
-    return () => {
-      active = false;
-    };
-  }, [enabled, records]);
-
-  const hiddenKey = (settings?.hiddenAccounts ?? []).join('|');
-  return useMemo(() => {
-    if (records === null) return NO_RECORDS;
-    const hidden = new Set(hiddenKey === '' ? [] : hiddenKey.split('|'));
-    const shown = <T extends AccountRef>(rows: readonly T[]): T[] =>
-      rows.filter((row) => !hidden.has(accountKey(row)));
-    return {
-      ...records,
-      bets: shown(records.bets),
-      transactions: shown(records.transactions),
-      bonuses: shown(records.bonuses),
-    };
-  }, [records, hiddenKey]);
-};
 
 interface AccountNames {
   /** The stored label, empty when the login has none of its own. */

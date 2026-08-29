@@ -63,8 +63,6 @@ export const betDisplayTitle = (bet: Bet): string => {
   return comboBetLabel(bet);
 };
 
-export const isComboBet = (bet: Bet): boolean => bet.legs.length > 1;
-
 export const comboBetLabel = (bet: Bet): string => `Combo · ${bet.legs.length}`;
 
 /**

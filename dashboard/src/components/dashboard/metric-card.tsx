@@ -31,7 +31,8 @@ export const MetricCard = ({
   <DashboardCard
     className={cn(
       'flex flex-col gap-2 p-3.5',
-      onClick && 'cursor-pointer outline-none',
+      onClick &&
+        'cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background',
     )}
     onClick={onClick}
     role={onClick ? 'button' : undefined}

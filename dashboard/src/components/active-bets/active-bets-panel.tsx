@@ -108,15 +108,7 @@ export const ActiveBetsPanel = (): JSX.Element => {
                 <span className="ml-1.5 text-[11px] tabular-nums opacity-60">{count}</span>
               </button>
             ))}
-            <SlipTotals
-              staked={shown.reduce((sum, bet) => sum + bet.stake, 0)}
-              toWin={shown.reduce(
-                (sum, bet) => sum + (bet.currentPotentialReturn ?? bet.potentialReturn),
-                0,
-              )}
-              currency={currency}
-              className="ml-auto pb-1.5"
-            />
+            <SlipTotals bets={shown} currency={currency} className="ml-auto pb-1.5" />
           </div>
 
           <div className="scroll-area flex-1 space-y-2 overflow-y-auto p-4">

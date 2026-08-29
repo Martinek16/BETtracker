@@ -96,7 +96,7 @@ const AccountGroup = ({
       </div>
     )}
     {account.waiting != null && (
-      <div className="mt-1 flex items-center justify-between gap-6 pl-[22px] text-emerald-500">
+      <div className="mt-1 flex items-center justify-between gap-6 pl-[22px] text-profit">
         <span>Rakeback to claim</span>
         <span className="tabular-nums">{formatMoney(account.waiting, currency)}</span>
       </div>
@@ -326,7 +326,7 @@ const ClaimableChip = (): JSX.Element | null => {
 
   return (
     <div className="group relative flex items-center gap-1.5" tabIndex={0}>
-      <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-emerald-500">
+      <span className="rounded-full bg-profit/15 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-profit">
         Rakeback {formatMoney(total, currency)}
       </span>
       <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 hidden w-56 rounded-lg border border-border bg-popover p-3 text-left text-[10px] text-popover-foreground shadow-lg group-hover:block group-focus-within:block">

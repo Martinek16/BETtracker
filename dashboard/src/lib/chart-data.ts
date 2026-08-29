@@ -97,7 +97,7 @@ const ensureBucket = (map: Map<string, ChartBucket>, key: string, label: string)
   return bucket;
 };
 
-export const betDateRange = (bets: readonly Bet[]): { first: Date; last: Date } | null => {
+const betDateRange = (bets: readonly Bet[]): { first: Date; last: Date } | null => {
   if (bets.length === 0) return null;
   const sorted = [...bets].sort((a, b) => periodDate(a).localeCompare(periodDate(b)));
   const first = sorted[0];
@@ -106,7 +106,7 @@ export const betDateRange = (bets: readonly Bet[]): { first: Date; last: Date } 
   return { first: new Date(periodDate(first)), last: new Date(periodDate(last)) };
 };
 
-export const monthSpan = (bets: readonly Bet[]): number => {
+const monthSpan = (bets: readonly Bet[]): number => {
   const range = betDateRange(bets);
   if (!range) return 0;
   return (
@@ -120,7 +120,7 @@ export const monthSpan = (bets: readonly Bet[]): number => {
  * Midnight of the last day in the window. `until` is any moment inside that day;
  * `null` means the window runs to today, which is every range but a hand-picked one.
  */
-export const periodAnchor = (until: number | null = null): Date => {
+const periodAnchor = (until: number | null = null): Date => {
   const d = new Date(until ?? Date.now());
   d.setHours(0, 0, 0, 0);
   return d;
@@ -177,7 +177,7 @@ const iterateMonthKeys = (from: Date, to: Date): string[] => {
   return keys;
 };
 
-export const dailyBuckets = (
+const dailyBuckets = (
   bets: readonly Bet[],
   days: number,
   until: number | null = null,
@@ -206,7 +206,7 @@ export const dailyBuckets = (
   return dayKeys.map((k) => map.get(k)!);
 };
 
-export const weeklyBuckets = (
+const weeklyBuckets = (
   bets: readonly Bet[],
   days: number,
   until: number | null = null,
@@ -243,7 +243,7 @@ export const weeklyBuckets = (
   return weekKeys.map((k) => map.get(k)!);
 };
 
-export const yearlyBuckets = (bets: readonly Bet[]): ChartBucket[] => {
+const yearlyBuckets = (bets: readonly Bet[]): ChartBucket[] => {
   const range = betDateRange(bets);
   if (!range) return [];
 
@@ -268,7 +268,7 @@ export const yearlyBuckets = (bets: readonly Bet[]): ChartBucket[] => {
   return [...new Set(yearKeys)].sort().map((k) => map.get(k)!);
 };
 
-export const monthlyBuckets = (
+const monthlyBuckets = (
   bets: readonly Bet[],
   days: number | null,
   until: number | null = null,

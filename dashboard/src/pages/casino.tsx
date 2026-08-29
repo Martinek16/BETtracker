@@ -30,7 +30,6 @@ import {
   Joystick,
   Layers,
   Percent,
-  Search,
   Spade,
   Target,
   TrendingUp,
@@ -41,6 +40,7 @@ import { ChartViewToggle, type TimelineChartView } from '@/components/dashboard/
 import { SegmentedToggle, type SegmentedOption } from '@/components/dashboard/segmented-toggle';
 import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
 import { MetricCard } from '@/components/dashboard/metric-card';
+import { SearchBox } from '@/components/dashboard/search-box';
 import { ProfitTimelineChart } from '@/components/dashboard/profit-timeline-chart';
 import { RunningPlChart } from '@/components/dashboard/running-pl-chart';
 import { useDashboard } from '@/context/dashboard-context';
@@ -373,50 +373,6 @@ const SortHead = ({
 type GroupRow = CasinoRoundTotals & { label: string };
 
 /**
- * A way to find one game among the hundreds a slots player gets through. Kept
- * shut until it is asked for: a search box standing open in a card heading is a
- * control most readings of the page never need.
- */
-const SearchBox = ({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}): JSX.Element => {
-  const [open, setOpen] = useState(false);
-
-  return open ? (
-    <input
-      // Opened by a click, so the cursor belongs in what the click asked for.
-      autoFocus
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      onBlur={() => {
-        if (value === '') setOpen(false);
-      }}
-      onKeyDown={(event) => {
-        if (event.key !== 'Escape') return;
-        onChange('');
-        setOpen(false);
-      }}
-      placeholder="Find a game"
-      className="h-[23px] w-40 rounded-md border border-border bg-muted/30 px-2 text-[10px] text-foreground outline-none placeholder:text-muted-foreground focus:border-foreground/40"
-    />
-  ) : (
-    <button
-      type="button"
-      onClick={() => setOpen(true)}
-      title="Find a game"
-      aria-label="Find a game"
-      className="flex h-[23px] w-[23px] items-center justify-center rounded-md border border-border bg-muted/30 text-muted-foreground hover:text-foreground"
-    >
-      <Search className="h-3 w-3" />
-    </button>
-  );
-};
-
-/**
  * One of the breakdowns, sorted by whichever column was last clicked. They hold
  * the same figures over different groupings, so they are one table read twice
  * rather than two tables kept in step by hand.
@@ -486,7 +442,9 @@ const GroupTable = <T extends GroupRow>({
         action={
           searchable || action ? (
             <div className="flex items-center gap-2">
-              {searchable && <SearchBox value={query} onChange={setQuery} />}
+              {searchable && (
+                <SearchBox value={query} onChange={setQuery} placeholder="Find a game" width="w-40" />
+              )}
               {action}
             </div>
           ) : undefined
@@ -836,11 +794,16 @@ export const CasinoPage = (): JSX.Element => {
           <Row className={cn(HEAD, 'scroll-gutter overflow-y-scroll pr-2')}>
             <span className="w-3 shrink-0" />
             <span className="flex-1">Game</span>
-            <span className="w-16 text-center">Staked</span>
-            <span className="w-12 text-center">Odds</span>
-            <span className="w-16 text-center">Paid out</span>
+            <span className="w-16 text-right">Staked</span>
+            <span className="w-12 text-right">Odds</span>
+            <span className="w-16 text-right">Paid out</span>
           </Row>
           <div className="scroll-area min-h-0 flex-1 overflow-y-auto pr-2">
+            {sessions.length === 0 ? (
+              <p className="mt-3 text-xs text-muted-foreground">
+                No rounds in this period, or none the filters leave standing.
+              </p>
+            ) : null}
             {sessions.map((session) => (
               <div key={session.startedAt}>
                 {/* The divider is the sitting itself: clicking it narrows the

@@ -2,14 +2,6 @@ import type { ReactNode } from 'react';
 import { CardNote } from '@/components/analytics/card-note';
 import { DashboardCard } from '@/components/dashboard/dashboard-card';
 
-export const TOOLTIP_STYLE = {
-  background: 'hsl(var(--popover))',
-  border: '1px solid hsl(var(--border))',
-  borderRadius: 8,
-  color: 'hsl(var(--popover-foreground))',
-  fontSize: 12,
-} as const;
-
 interface ChartTooltipProps<T> {
   /** What to write under the heading. One line per fact, shortest first. */
   lines: (row: T) => readonly string[];
