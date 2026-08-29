@@ -464,6 +464,37 @@ const bonus = (over: Partial<Bonus> & Pick<Bonus, 'id' | 'name' | 'type' | 'trig
   ...over,
 });
 
+/**
+ * Rakeback comes back a little at a time and is collected when the player
+ * remembers to, so one claim says nothing: what the reader is after is how much
+ * a year of it added up to. A claim every week or so, and a couple of gaps where
+ * it went uncollected for a fortnight.
+ */
+const rakebackClaims = (): Bonus[] => {
+  const rnd = stream(97_531);
+  const claims: Bonus[] = [];
+  for (let day = 12; day < DAYS - 3; day += rnd() < 0.2 ? 14 : 7) {
+    // Claimed rakeback is money on landing: nothing to play through, so what was
+    // granted is also what it was worth.
+    const paid = round2(0.8 + rnd() * 3.4);
+    claims.push(
+      bonus({
+        ...STAKE,
+        id: `stake-rakeback-${day}`,
+        name: 'Rakeback',
+        description: 'Cashback on bets',
+        type: 'rakeback',
+        trigger: 'wager',
+        status: 'released',
+        grantedAmount: paid,
+        currentAmount: paid,
+        grantedAt: at(start + day * DAY + 19 * HOUR),
+      }),
+    );
+  }
+  return claims;
+};
+
 const BONUSES: readonly Bonus[] = [
   bonus({
     id: 'bah-bonus-1',
@@ -495,15 +526,7 @@ const BONUSES: readonly Bonus[] = [
     grantedAt: at(Date.now() - 5 * DAY),
     expiresAt: at(Date.now() + 9 * DAY),
   }),
-  bonus({
-    ...STAKE,
-    id: 'stake-bonus-1',
-    name: 'Rakeback claim',
-    type: 'rakeback',
-    trigger: 'claim',
-    grantedAmount: 12.8,
-    grantedAt: at(start + 190 * DAY),
-  }),
+  ...rakebackClaims(),
   bonus({
     ...STAKE,
     id: 'stake-bonus-2',
