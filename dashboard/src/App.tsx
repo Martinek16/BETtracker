@@ -2,7 +2,13 @@ import { Route, Routes, useLocation } from 'react-router';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { PeriodToolbar } from '@/components/layout/period-toolbar';
-import { ConnectionToast, NewBookmakerToast, SyncToast, Toasts } from '@/components/layout/toasts';
+import {
+  ConnectionToast,
+  NewBookmakerToast,
+  RakebackToast,
+  SyncToast,
+  Toasts,
+} from '@/components/layout/toasts';
 import { ActiveBetsPanel } from '@/components/active-bets/active-bets-panel';
 import { DashboardProvider } from '@/context/dashboard-context';
 import { LiveBetsProvider } from '@/data/live-bets';
@@ -40,6 +46,7 @@ export const App = (): JSX.Element => {
               <NewBookmakerToast />
               <ConnectionToast />
               <SyncToast />
+              <RakebackToast />
             </Toasts>
             {!welcome && <AppSidebar />}
             <main
