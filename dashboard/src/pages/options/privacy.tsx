@@ -64,6 +64,10 @@ export const PrivacyPage = (): JSX.Element => (
             <Point term="Bonuses">
               Bonuses your account was already granted, what is left of one, and when it runs out.
             </Point>
+            <Point term="Rewards waiting to be claimed, at a site that pays them">
+              Rakeback and the like: how much the site is holding for you, and the claims it has
+              already paid out. Read from the same rewards page the site shows you.
+            </Point>
             <Point term="Casino rounds, at a site that records them">
               The game, when it resolved, the stake and what came back. A site that keeps no round
               history has none of this read.
@@ -222,9 +226,10 @@ export const PrivacyPage = (): JSX.Element => (
 
         <Section title="This policy">
           <Prose>
-            Version 1.1.0, in force from August 2026. It is written from what the code does, and
+            Version 1.1.3, in force from August 2026. It is written from what the code does, and
             every claim in it can be checked against the permissions the extension asks for. What
-            changed since 1.0.0: casino rounds are read at a site that records them one by one.
+            changed since 1.1.0: rewards a site is holding until they are claimed, such as rakeback,
+            are read where the site reports them.
           </Prose>
           <Prose>
             Your data is never sold, never used for advertising, never used to train anything, and
