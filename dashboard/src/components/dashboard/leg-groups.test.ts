@@ -58,4 +58,14 @@ describe('legDays', () => {
     expect(days.map((d) => d.showDay)).toEqual([true, false, true]);
     expect(days.map((d) => d.endsDay)).toEqual([false, true, true]);
   });
+
+  it('leaves the date off a slip played out in one day', () => {
+    const days = legDays(
+      bet([
+        leg({ eventId: 'a', eventDate: '2026-06-07T10:00:00.000Z' }),
+        leg({ eventId: 'b', eventDate: '2026-06-07T20:00:00.000Z' }),
+      ]),
+    );
+    expect(days.map((d) => d.showDay)).toEqual([false, false]);
+  });
 });

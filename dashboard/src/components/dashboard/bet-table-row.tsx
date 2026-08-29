@@ -27,7 +27,7 @@ import {
 import { StatusBadge } from '@/components/ui/badge';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { useDashboard } from '@/context/dashboard-context';
-import { cn, formatDate, formatDateTime, formatMoney, formatTime } from '@/lib/utils';
+import { cn, formatDate, formatMoney, formatTime } from '@/lib/utils';
 
 interface BetTableRowProps {
   bet: Bet;
@@ -118,15 +118,19 @@ export const legGroups = (bet: Bet): BetLeg[][] => {
  */
 export const legDays = (
   bet: Bet,
-): { legs: BetLeg[]; showDay: boolean; endsDay: boolean; ruled: boolean }[] => {
+): { legs: BetLeg[]; showDay: boolean; startsDay: boolean; endsDay: boolean; ruled: boolean }[] => {
   const groups = legGroups(bet);
   const days = groups.map((legs) => {
     const at = legs[0]?.eventDate;
     return at == null ? null : formatDate(at);
   });
+  // A slip played out in one day has no day to tell apart, and the date over
+  // it only repeated the one the slip is already filed under.
+  const spansDays = new Set(days).size > 1;
   return groups.map((legs, index) => ({
     legs,
-    showDay: index === 0 || days[index] !== days[index - 1],
+    showDay: spansDays && (index === 0 || days[index] !== days[index - 1]),
+    startsDay: index === 0 || days[index] !== days[index - 1],
     endsDay: index === groups.length - 1 || days[index] !== days[index + 1],
     // A rule falls between two days and nowhere else - not under the last
     // fixture of the slip, where the shade already says the block has ended.
@@ -173,6 +177,7 @@ const LegRow = ({
   status,
   groupOdds,
   showDay,
+  startsDay,
   endsDay,
   ruled,
   showAccount,
@@ -187,8 +192,10 @@ const LegRow = ({
   status: string;
   /** Price of the whole fixture group, on its first row only. */
   groupOdds: number | null;
-  /** First fixture of its day, and so the only one to spell the date out. */
+  /** Spells the date out, which only a slip spanning more than one day does. */
   showDay: boolean;
+  /** First fixture of its day, which is given room above it. */
+  startsDay: boolean;
   /** Last fixture of its day, which is given a little more room below it. */
   endsDay: boolean;
   /** A day follows this one, so a rule closes it off. */
@@ -203,18 +210,20 @@ const LegRow = ({
   const odds = lead ? groupOdds : null;
   // A day is given room above and below it; inside one, every pick is spaced
   // alike, so a fixture bet three ways reads as three lines of one thing.
-  const pad = cn(lead && showDay ? 'pt-2.5' : 'pt-0', last && endsDay ? 'pb-2.5' : 'pb-0');
+  const pad = cn(lead && startsDay ? 'pt-2.5' : 'pt-0', last && endsDay ? 'pb-2.5' : 'pb-0');
 
   return (
     <TableRow
       className={cn(
-        // Lifted off the table it sits in: what a slip opens into is one block
-        // of detail, and a shade of its own is what says where it ends.
-        'bg-muted/40 hover:bg-muted/50',
+        // Marked the way an opened row is marked everywhere else in the app: a
+        // rule down the left edge in the accent colour, over a shade faint
+        // enough to be read on. The grey block it used to be read as a table
+        // that had lost its rows rather than as one slip opened up.
+        'border-l-2 border-l-primary bg-primary/[0.06] hover:bg-primary/10',
         // Ruled between days and nowhere else: a line under every match chopped
         // an evening into strips, and a transparent one still showed as a gap
         // in the shade, which is what drew those strips in the first place.
-        last && ruled ? 'border-border' : 'border-b-0',
+        last && ruled ? 'border-b-border' : 'border-b-0',
       )}
     >
       {showAccount ? <TableCell className={pad} /> : null}
@@ -303,9 +312,9 @@ export const BetTableRow = ({
         className={cn(
           'border-border',
           expandable ? 'cursor-pointer' : '',
-          // The slip an open block belongs to takes the same shade, so the two
+          // The slip an open block belongs to takes the same mark, so the two
           // read as one thing rather than a row with strangers under it.
-          expanded ? 'bg-muted/40' : '',
+          expanded ? 'border-l-2 border-l-primary bg-primary/[0.06]' : '',
         )}
         {...(expandable
           ? {
@@ -329,8 +338,12 @@ export const BetTableRow = ({
             <AccountIcon bookmaker={bet.bookmaker} className="h-5 w-5 text-[10px]" />
           </TableCell>
         ) : null}
+        {/* The day the slip was struck, with the hour behind it in smaller
+            type: two slips of one evening are told apart by the time, but it
+            is the date that the column is read and ordered by. */}
         <TableCell className="whitespace-nowrap text-center text-xs text-muted-foreground">
-          {formatDateTime(bet.placedAt)}
+          {formatDate(bet.placedAt)}{' '}
+          <span className="text-[10px] text-muted-foreground/70">{formatTime(bet.placedAt)}</span>
         </TableCell>
         {/* What the slip is on runs down the left edge of its column: read as a
             list of names, a centred column of them has no edge to run down. */}
@@ -372,7 +385,7 @@ export const BetTableRow = ({
       {/* In kickoff order, as the slip panel lists them: a slip reads as the
           evening it plays out rather than the order the picks were added in. */}
       {expanded
-        ? legDays(bet).flatMap(({ legs, showDay, endsDay, ruled }, group) => {
+        ? legDays(bet).flatMap(({ legs, showDay, startsDay, endsDay, ruled }, group) => {
             // One price for the group where the picks were priced as a builder,
             // and it belongs on the fixture, not on any one pick inside it.
             const groupOdds = legs.length > 1 ? (legs[0]?.groupOdds ?? null) : null;
@@ -387,6 +400,7 @@ export const BetTableRow = ({
                 status={status}
                 groupOdds={groupOdds}
                 showDay={showDay}
+                startsDay={startsDay}
                 endsDay={endsDay}
                 ruled={ruled}
                 showAccount={showAccount}
