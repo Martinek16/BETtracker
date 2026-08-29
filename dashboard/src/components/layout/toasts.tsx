@@ -250,14 +250,17 @@ export const RakebackToast = (): JSX.Element | null => {
 
   useEffect(() => {
     if (loading) return;
-    const seen = Number(localStorage.getItem(SEEN_RAKEBACK_KEY) ?? '0');
-    try {
-      localStorage.setItem(SEEN_RAKEBACK_KEY, String(waiting));
-    } catch {
-      /* private mode: the same figure is reported again next visit */
-    }
-    // A cent of drift is the conversion rate moving, not rakeback accruing.
-    if (waiting > seen + 0.01) setAnnounced(waiting);
+    void getSettings().then((settings) => {
+      const seen = Number(localStorage.getItem(SEEN_RAKEBACK_KEY) ?? '0');
+      try {
+        localStorage.setItem(SEEN_RAKEBACK_KEY, String(waiting));
+      } catch {
+        /* private mode: the same figure is reported again next visit */
+      }
+      // A cent of drift is the conversion rate moving, not rakeback accruing -
+      // and a reward too small to print is not worth interrupting anyone for.
+      if (settings.rakebackAlerts && waiting > seen + 0.01) setAnnounced(waiting);
+    });
   }, [loading, waiting]);
 
   if (announced <= 0) return null;

@@ -110,6 +110,8 @@ export interface AppSettings {
   syncAlerts: boolean;
   /** Toast when a connected account stopped syncing or signed itself out. */
   connectionAlerts: boolean;
+  /** Toast when a bookmaker is holding more rakeback than it last reported. */
+  rakebackAlerts: boolean;
   /** Figures switched off on the account page. Ids, not labels - labels change. */
   hiddenAccountStats: string[];
   /** What the user calls each account, keyed by account key. */
@@ -143,6 +145,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   showCasino: true,
   syncAlerts: true,
   connectionAlerts: true,
+  rakebackAlerts: true,
   hiddenAccountStats: [],
   accountNames: {},
   minPicks: 20,

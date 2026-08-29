@@ -389,15 +389,16 @@ const NotificationsSection = ({ notify }: { notify: Notify }): JSX.Element => {
 
   const syncAlerts = settings?.syncAlerts ?? true;
   const connectionAlerts = settings?.connectionAlerts ?? true;
+  const rakebackAlerts = settings?.rakebackAlerts ?? true;
 
   return (
     <Section title="Notifications" tour="settings-notifications">
       <SettingGroup
         label="Accounts"
         hint="Messages about what came in from a bookmaker, and what stopped coming in."
-        on={syncAlerts || connectionAlerts}
+        on={syncAlerts || connectionAlerts || rakebackAlerts}
         onToggle={(on) => {
-          void patch({ syncAlerts: on, connectionAlerts: on });
+          void patch({ syncAlerts: on, connectionAlerts: on, rakebackAlerts: on });
           notify(on ? 'Account messages are back on.' : 'Account messages are off.');
         }}
       >
@@ -408,6 +409,15 @@ const NotificationsSection = ({ notify }: { notify: Notify }): JSX.Element => {
           <Switch
             checked={connectionAlerts}
             onCheckedChange={(on) => void patch({ connectionAlerts: on })}
+          />
+        </Setting>
+        <Setting
+          label="Rakeback waiting"
+          hint="When a bookmaker is holding more of it than you were last told. Silent when there is none."
+        >
+          <Switch
+            checked={rakebackAlerts}
+            onCheckedChange={(on) => void patch({ rakebackAlerts: on })}
           />
         </Setting>
       </SettingGroup>
