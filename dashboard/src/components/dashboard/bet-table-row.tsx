@@ -228,8 +228,10 @@ const LegRow = ({
         // that had lost its rows rather than as one slip opened up.
         'border-l-2 border-l-primary',
         // Lit by the fixture rather than by the row: a builder is one match bet
-        // several ways, and lighting one of its lines cut it into pieces.
-        hot ? 'bg-primary/10' : 'bg-primary/[0.06]',
+        // several ways, and lighting one of its lines cut it into pieces. The
+        // table's own row hover is pinned to the same shade, or the line under
+        // the pointer would still be a shade apart from its own fixture.
+        hot ? 'bg-primary/10 hover:bg-primary/10' : 'bg-primary/[0.06] hover:bg-primary/[0.06]',
         // Ruled between days and nowhere else: a line under every match chopped
         // an evening into strips, and a transparent one still showed as a gap
         // in the shade, which is what drew those strips in the first place.
