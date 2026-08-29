@@ -75,7 +75,7 @@ const BALANCE_SOURCES: readonly SegmentedOption<BalanceSource>[] = [
 
 const BALANCE_SOURCE_HINTS: Record<BalanceSource, string> = {
   live: 'The money in your accounts right now, as the bookmaker shows it.',
-  derived: 'Whether you are up or down: everything you took out, less everything you paid in.',
+  derived: 'Whether you are up or down: what you took out, less what you paid in.',
 };
 
 const BALANCE_LAYOUTS: readonly SegmentedOption<BalanceLayout>[] = [
@@ -149,7 +149,7 @@ const SettingGroup = ({
 const MIN_PICKS: readonly SegmentedOption<string>[] = MIN_PICKS_CHOICES.map((picks) => ({
   value: String(picks),
   label: picks === 1 ? 'All' : String(picks),
-  ...(picks === 1 ? { title: 'Rank every group, however few picks it holds' } : {}),
+  ...(picks === 1 ? { title: 'Rank everything, however few bets it holds' } : {}),
 }));
 
 const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
@@ -165,8 +165,8 @@ const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
   return (
     <Section title="Preferences" tour="settings-preferences">
       <Setting
-        label="Timeline"
-        hint={`Pages open on the ${periodLabel(settings?.defaultRange ?? '7d')}.`}
+        label="Time range"
+        hint={`Every page opens on the ${periodLabel(settings?.defaultRange ?? '7d')}.`}
       >
         <SegmentedToggle
           className="text-xs"
@@ -177,7 +177,7 @@ const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
       </Setting>
       <Setting
         label="Odds"
-        hint={`A 1.85 price is written ${formatOdds(1.85, settings?.oddsFormat)}.`}
+        hint={`Prices are written ${formatOdds(1.85, settings?.oddsFormat)}.`}
       >
         <SegmentedToggle
           className="text-xs"
@@ -217,7 +217,7 @@ const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
       </Setting>
       <Setting
         label="Currency symbol"
-        hint={`Ten ${currency} reads ${
+        hint={`Amounts are written ${
           settings?.symbolPosition === 'before' ? `${symbol}10` : `10 ${symbol}`
         }.`}
       >
@@ -229,11 +229,11 @@ const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
         />
       </Setting>
       <Setting
-        label="Picks before a group is ranked"
+        label="Ranking in Analytics"
         hint={
           minPicks <= 1
-            ? 'Analytics ranks every group, down to the one you bet once.'
-            : `Analytics sorts a group under ${minPicks} picks last, so one lucky bet cannot top the table.`
+            ? 'Every league, sport and market is ranked, even one you bet once.'
+            : `A league or market you bet under ${minPicks} times is sorted last, so one lucky bet cannot top the table.`
         }
       >
         <SegmentedToggle
@@ -292,8 +292,8 @@ const AppearanceSection = (): JSX.Element => {
         label="Casino page"
         hint={
           showCasino
-            ? 'Shown for accounts whose casino runs off the betting wallet.'
-            : 'Hidden. The casino is still counted, it just has no page of its own.'
+            ? 'A page of its own for accounts that also have a casino.'
+            : 'Hidden. Casino money is still counted everywhere else.'
         }
       >
         <Switch checked={showCasino} onCheckedChange={(next) => void patch({ showCasino: next })} />
@@ -323,7 +323,7 @@ const BalanceSection = ({ notify }: { notify: Notify }): JSX.Element => {
 
   return (
     <Section title="Balance" tour="settings-balance">
-      <Setting label="What it shows" hint={BALANCE_SOURCE_HINTS[source]}>
+      <Setting label="What the balance shows" hint={BALANCE_SOURCE_HINTS[source]}>
         <SegmentedToggle
           className="text-xs"
           value={source}
@@ -338,7 +338,7 @@ const BalanceSection = ({ notify }: { notify: Notify }): JSX.Element => {
           }}
         />
       </Setting>
-      <Setting label="How it is split" hint={BALANCE_LAYOUT_HINTS[layout]}>
+      <Setting label="How the balance is split" hint={BALANCE_LAYOUT_HINTS[layout]}>
         <SegmentedToggle
           className="text-xs"
           value={layout}
@@ -363,11 +363,11 @@ const BalanceSection = ({ notify }: { notify: Notify }): JSX.Element => {
       )}
       {has('hasRakeback') && (
         <Setting
-          label="Show rewards waiting to be claimed"
+          label="Rakeback"
           hint={
             showClaimable
-              ? 'Rakeback the bookmaker is holding is shown under the balance until you claim it.'
-              : 'Only money already in the account is shown.'
+              ? 'Shown under the balance until you claim it on the site.'
+              : 'Hidden. Only money already in the account is shown.'
           }
         >
           <Switch
@@ -395,7 +395,7 @@ const NotificationsSection = ({ notify }: { notify: Notify }): JSX.Element => {
     <Section title="Notifications" tour="settings-notifications">
       <SettingGroup
         label="Accounts"
-        hint="Messages about what came in from a bookmaker, and what stopped coming in."
+        hint="Short messages in the corner of the app, about your bookmakers."
         on={syncAlerts || connectionAlerts || rakebackAlerts}
         onToggle={(on) => {
           void patch({ syncAlerts: on, connectionAlerts: on, rakebackAlerts: on });
@@ -405,7 +405,7 @@ const NotificationsSection = ({ notify }: { notify: Notify }): JSX.Element => {
         <Setting label="New data" hint="What each bookmaker brought in since your last visit.">
           <Switch checked={syncAlerts} onCheckedChange={(on) => void patch({ syncAlerts: on })} />
         </Setting>
-        <Setting label="Signed out" hint="When an account quietly stops updating.">
+        <Setting label="Signed out" hint="When a bookmaker stops updating and needs a sign-in.">
           <Switch
             checked={connectionAlerts}
             onCheckedChange={(on) => void patch({ connectionAlerts: on })}
@@ -413,7 +413,7 @@ const NotificationsSection = ({ notify }: { notify: Notify }): JSX.Element => {
         </Setting>
         <Setting
           label="Rakeback waiting"
-          hint="When a bookmaker is holding more of it than you were last told. Silent when there is none."
+          hint="When a bookmaker is holding rakeback you have not claimed yet."
         >
           <Switch
             checked={rakebackAlerts}
@@ -677,7 +677,7 @@ const DataSection = ({ notify }: { notify: Notify }): JSX.Element => {
           label="Demo data"
           hint={
             isDemoMode()
-              ? 'Every page is showing a made-up history. Nothing of your own was touched, and switching this off brings it back.'
+              ? 'Every page is showing a made-up history. Your own data is untouched - switch this off to see it again.'
               : 'Fill every page with a made-up history, to see what the app does before any bets are in.'
           }
         >
