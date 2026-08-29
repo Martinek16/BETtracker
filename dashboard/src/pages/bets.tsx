@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { useDashboard } from '@/context/dashboard-context';
 import { useLiveBets } from '@/data/live-bets';
-import { formatTime } from '@/lib/utils';
+import { cn, formatTime } from '@/lib/utils';
 
 type SortKey = 'date' | 'type' | 'bet' | 'odds' | 'stake' | 'return' | 'pl' | 'status';
 type SortDir = 'asc' | 'desc';
@@ -82,18 +82,22 @@ const SortHead = ({ column, sort, onSort }: SortHeadProps): JSX.Element => {
       className="text-center text-[11px] uppercase tracking-wide"
       aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
     >
-      {/* Centred over the column it heads, arrow included: the arrow is part of
-          the label, so it moves with it rather than pinning the head to an edge. */}
+      {/* The label alone is centred over its column: carried inline, the arrow
+          took its half of the width off the label and left every head sitting
+          a little left of the figures it heads. */}
       <button
         type="button"
         onClick={() => onSort(column.key)}
-        className="group mx-auto flex items-center gap-1 uppercase transition-colors hover:text-foreground"
+        className="group relative mx-auto flex items-center uppercase transition-colors hover:text-foreground"
       >
         {column.label}
         <Arrow
           size={12}
           strokeWidth={2}
-          className={active ? 'text-foreground' : 'opacity-0 group-hover:opacity-40'}
+          className={cn(
+            'absolute -right-3.5',
+            active ? 'text-foreground' : 'opacity-0 group-hover:opacity-40',
+          )}
         />
       </button>
     </TableHead>
