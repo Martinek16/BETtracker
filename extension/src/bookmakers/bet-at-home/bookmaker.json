@@ -4,6 +4,7 @@
   "site": "bet-at-home.com",
   "brand": "#f7f8f9",
   "color": "#76BC21",
+  "hasBonusWallet": true,
   "mirrors": [
     "Its country addresses, such as bet-at-home.de",
     "Its numbered mirrors, such as bah24.si"

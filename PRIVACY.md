@@ -1,7 +1,8 @@
 # BETtracker Privacy Policy
 
-**Version 1.1.0 — in force from August 2026**
-Changed since 1.0.0: casino rounds are read at a site that records them one by one.
+**Version 1.1.3 — in force from August 2026**
+Changed since 1.1.0: rewards a site is holding until they are claimed, such as rakeback, are read
+where the site reports them.
 Contact: info.m04studio@gmail.com
 
 ## The short version
@@ -27,6 +28,9 @@ and every ten minutes in the background.
 - **Money in and out** — deposits and withdrawals, so your betting result can be told apart from
   your balance.
 - **Bonuses** — bonuses your account was already granted, what is left of one, and when it runs out.
+- **Rewards waiting to be claimed, at a site that pays them** — rakeback and the like: how much the
+  site is holding for you, and the claims it has already paid out. Read from the same rewards page
+  the site shows you.
 - **Casino rounds, at a site that records them** — the game, when it resolved, the stake and what
   came back. A site that keeps no round history has none of this read.
 - **Your balance** — the figure shown on the site, and a note of it each time it changes.
@@ -101,15 +105,15 @@ your browser and operating system up to date, and lock the account you use.
 
 ## What each permission is for
 
-| Permission | Why it is needed |
-| --- | --- |
-| The bookmaker sites you grant | Reading your bets, payments and bonuses off pages you have open |
-| `storage` | Keeping those records in this browser |
-| `alarms` | Looking for new records every ten minutes |
-| `scripting`, `activeTab` | Running the reader inside the bookmaker page you are on |
-| `https://api.frankfurter.dev/*` | Exchange rates for accounts in another currency |
-| `https://api.binance.com/*` | Coin prices for a wallet held in crypto |
-| `https://api.github.com/*` | The newest release number, for a copy installed from a folder |
+| Permission                         | Why it is needed                                                                                                                                                                                                                 |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The bookmaker sites you grant      | Reading your bets, payments and bonuses off pages you have open                                                                                                                                                                  |
+| `storage`                          | Keeping those records in this browser                                                                                                                                                                                            |
+| `alarms`                           | Looking for new records every ten minutes                                                                                                                                                                                        |
+| `scripting`, `activeTab`           | Running the reader inside the bookmaker page you are on                                                                                                                                                                          |
+| `https://api.frankfurter.dev/*`    | Exchange rates for accounts in another currency                                                                                                                                                                                  |
+| `https://api.binance.com/*`        | Coin prices for a wallet held in crypto                                                                                                                                                                                          |
+| `https://api.github.com/*`         | The newest release number, for a copy installed from a folder                                                                                                                                                                    |
 | Optional access to other addresses | Nothing is held up front. A site is granted one at a time, by you, from the popup, on the page you are standing on — together with the backend that page reads its bets from, such as bet-at-home's `sports-api.everymatrix.com` |
 
 ## Limited use

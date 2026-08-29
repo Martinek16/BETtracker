@@ -50,6 +50,7 @@ const buildSectors = (
   bonuses: readonly Bonus[],
   balance: number | null,
   vault: number | null,
+  waiting: number | null,
   wagered: Wagered | null,
   result: Wagered | null,
   currency: string,
@@ -117,6 +118,10 @@ const buildSectors = (
   // Its own line rather than folded into the balance: the site keeps the two
   // apart, and a single figure would hide how much is out of betting reach.
   if (vault !== null) wallet.push({ id: 'sum.vault', label: 'In the vault', value: money(vault) });
+  // Below the balance and not in it: the site holds this until it is asked for,
+  // and no sync moves it across - claiming on the site is what does that.
+  if (waiting !== null)
+    wallet.push({ id: 'sum.rakeback', label: 'Rakeback to claim', value: money(waiting) });
 
   const betStats: StatDef[] = [
     { id: 'bets.count', label: 'Bets placed', value: String(bets.length) },
@@ -199,6 +204,7 @@ export const AccountStats = ({
   bonuses,
   balance,
   vault,
+  waiting,
   wagered,
   result,
   currency,
@@ -209,6 +215,8 @@ export const AccountStats = ({
   bonuses: Bonus[];
   balance: number | null;
   vault: number | null;
+  /** Rakeback the site is holding. Not in the balance until it is claimed. */
+  waiting: number | null;
   wagered: Wagered | null;
   result: Wagered | null;
   currency: string;
@@ -221,6 +229,7 @@ export const AccountStats = ({
       bonuses,
       balance,
       vault,
+      waiting,
       wagered,
       result,
       currency,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { profitOf, resolutionDate } from '@betanal/shared';
+import { isLiveBet, isLiveLeg, profitOf, resolutionDate } from '@betanal/shared';
 import { demoHistory } from '@/demo/history';
+import { DEMO_BETS, DEMO_SCORES } from '@/demo/live';
 
 const { bets, rounds, transactions } = demoHistory();
 
@@ -47,5 +48,17 @@ describe('the demo history', () => {
 
   it('is drawn once and stays put', () => {
     expect(demoHistory().bets).toBe(bets);
+  });
+});
+
+describe('the demo slips still running', () => {
+  it('leaves matches in play, with a score to read them by', () => {
+    const live = DEMO_BETS.filter((bet) => isLiveBet(bet));
+    expect(live.length).toBeGreaterThan(0);
+    for (const bet of live) {
+      expect(bet.status).toBe('pending');
+      const ids = bet.legs.filter((leg) => isLiveLeg(leg)).flatMap((leg) => leg.eventId ?? []);
+      expect(ids.some((id) => DEMO_SCORES[id] !== undefined)).toBe(true);
+    }
   });
 });

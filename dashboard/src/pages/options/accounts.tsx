@@ -111,7 +111,7 @@ const AccountCard = ({
           <Stat
             label="Balance"
             value={balance === null ? '—' : formatMoney(balance, currency)}
-            note={waiting === null ? undefined : `+${formatMoney(waiting, currency)} to claim`}
+            note={waiting === null ? undefined : `${formatMoney(waiting, currency)} rakeback`}
           />
           <Stat label="Bets" value={String(bets.length)} />
           <Stat label="Deposits" value={formatMoney(deposits, currency)} />

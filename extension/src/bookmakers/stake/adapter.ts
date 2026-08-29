@@ -1189,17 +1189,21 @@ const DEPOSIT_BONUS_LEDGER = `query BettrackerDepositBonuses($limit: Int!, $offs
   }
 }`;
 
-/** Everything that only ever has a value right now, in one round trip. */
+/**
+ * Everything that only ever has a value right now, in one round trip.
+ *
+ * Asks for no more than the site's own page does. A rakeback `rate` reads fine
+ * for some accounts and is refused for others, and the refusal does not cost one
+ * field: the server answers `user: null`, so a single unreadable number took the
+ * whole snapshot with it and the rewards waiting on the account were never seen.
+ */
 const PERKS = `query BettrackerPerks {
   user {
     rakeback {
       enabled
-      rate
       balances {
         currency
         availableAmount
-        receivedAmount
-        totalAmount
       }
     }
     faucet {
@@ -1421,8 +1425,6 @@ export const depositBonusGrant = (
 interface RawRakebackBalance {
   currency?: string | null;
   availableAmount?: number | null;
-  receivedAmount?: number | null;
-  totalAmount?: number | null;
 }
 
 export const parsePerks = (

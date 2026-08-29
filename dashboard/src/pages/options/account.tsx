@@ -162,7 +162,7 @@ export const AccountDetailPage = (): JSX.Element => {
   const stored = useStoredRecords();
   const metas = useSyncMetaByAccount();
   const origins = useSiteOrigins();
-  const { accountBalances } = useDashboard();
+  const { accountBalances, claimable } = useDashboard();
   const { isVisible, setVisible } = useAccountVisibility();
   const { nameFor } = useAccountNames();
 
@@ -270,6 +270,7 @@ export const AccountDetailPage = (): JSX.Element => {
           bonuses={bonuses}
           balance={balance}
           vault={read?.vault ?? null}
+          waiting={claimable.find((reward) => reward.key === key)?.worth ?? null}
           wagered={read?.wagered ?? null}
           result={read?.result ?? null}
           currency={stored.currency}

@@ -27,11 +27,7 @@ import { cn, formatDate, formatMoney, formatTime } from '@/lib/utils';
 
 type Filter = 'all' | 'deposit' | 'withdrawal' | 'bonus';
 
-const filterOption = (
-  value: Filter,
-  label: string,
-  Icon: LucideIcon,
-): SegmentedOption<Filter> => ({
+const filterOption = (value: Filter, label: string, Icon: LucideIcon): SegmentedOption<Filter> => ({
   value,
   label: <Icon size={13} strokeWidth={1.75} />,
   title: label,
@@ -197,7 +193,8 @@ export const TransactionsPage = (): JSX.Element => {
                 const isDeposit = t.kind === 'deposit';
                 const bonus = bonusByDeposit.get(t.id);
                 return (
-                  <TableRow key={t.id}>
+                  // Read down like the bet history, at the same height.
+                  <TableRow key={t.id} className="[&>td]:py-2">
                     {showAccount ? (
                       <TableCell className="pr-0">
                         <AccountIcon bookmaker={t.bookmaker} className="h-5 w-5 text-[10px]" />

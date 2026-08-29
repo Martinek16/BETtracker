@@ -1,305 +1,186 @@
 # Changelog
 
-## 1.1.2 — August 2026
+All notable changes to BETtracker are documented in this file.
 
-A release about the app before it has anything of yours in it. The demo used to
-be a link you had to keep retyping; it is now a switch, and what it shows is a
-year of betting shaped the way the bookmakers hand it over.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### Demo data
+## [1.1.3] — August 2026
 
-- **A switch in Settings, under Your data.** The demo used to need `demo=1` in
-  the address, and every click that dropped it dropped the demo with it, so only
-  the page it was typed on could be looked at. Once switched on it stays on
-  across every page and reload, until it is switched off. The old link still
-  works — it now turns the switch on rather than the page.
-- **The header says so on every page.** A made-up history read as a real one is
-  worse than no demo at all.
-- **A year of betting on both accounts**, generated rather than written out by
-  hand: bookmaker-shaped bet references, odds that sit where the market they
-  belong to sits, a bet builder priced below the product of its legs the way the
-  books price one, and outcomes drawn against the bookmaker's margin — so the
-  punter ends the year slightly down, which is the story the app is for.
-  Singles, doubles, accumulators, cash-outs and voided slips are all in there,
-  along with deposits, withdrawals, bonuses and slips still running.
-- **A casino that pays back less than it takes**, over a thousand rounds across
-  nine games, in sittings rather than scattered one at a time.
-- **Nothing of yours is touched.** The demo replaces what the pages read; it
-  never writes over the stored history, and switching it off brings it back.
+### Added
 
-### The rest
+- Rakeback tracking for bookmakers that pay it (currently Stake): the amount waiting to be claimed appears in the balance breakdown and on the account page, stated apart from the balance, since the bookmaker holds it until it is asked for.
+- Notice when uncollected rakeback grows beyond the amount last reported, so a reward left sitting is noticed. It repeats only on growth, names no deadline, and can be switched off in **Settings**.
+- Bookmaker capability flags for a bonus wallet and for rakeback. Settings and balance rows that depend on either are shown only for accounts that have them.
 
-- **The tour walks the casino too**, and drops those stops for a reader whose
-  bookmaker has no casino, rather than walking them onto an empty page.
-- **One search box and one sort header.** The collapsing search was written
-  three times and the sort header twice, so the same control behaved slightly
-  differently depending on which page it stood on.
-- **The open-bets cards sit on a card surface again** — in the dark theme they
-  were drawn on the page's own background, so the wall lost its edges.
-- **A page of no bonuses says so** instead of standing empty, money in the bet
-  table is right-aligned like money everywhere else, and the clickable figures
-  on Overview show a focus ring when tabbed to.
+### Changed
 
-## 1.1.1 — August 2026
+- Demo mode is offered as a switch only in a development build, or once the demo has been enabled through the `demo=1` link. An installed copy no longer presents it, so invented figures cannot be mistaken for real ones.
+- Casino return is stated as a result against stake (−3%) rather than as a share of it (97%), on both the metric card and the per-game column, and is coloured like every other result on the page.
+- Bet history layout: **Bet** follows the date at the size of the surrounding columns and **Type** follows it; combinations of two to four selections are named Double, Triple and Quadruple; columns and headings are centred, except fixture names, which keep a left edge; the profit colour is carried by **Return** rather than by **P/L**.
+- An expanded slip reads as a sequence of fixtures rather than a list of dates: the date is written once per day, each fixture carries its kickoff time, the result is carried by the colour of the sport icon, and a rule appears only where the day changes. A bet builder's combined price is shown beside the fixture it was struck for instead of in the **Odds** column.
+- An expanded slip and an expanded bonus are marked with a left rule and a faint accent tint in place of a grey block. Hovering any selection highlights the whole fixture, so a bet builder is not split into separate lines under the pointer.
+- Cashflow and bonuses tables use the same row height as the bet history.
+- Balance breakdown lists a holding on the coin's own amount rather than on its converted value, so a wallet spread across several coins is no longer reduced to one line.
+- Settings labels name what each control changes and state the result, instead of naming the mechanism behind it.
 
-Bets that have not been decided yet get a page of their own. The drawer that
-held them was a column you scrolled; a page is a wall you read.
+### Fixed
 
-### Open bets
+- The Stake rewards query requested the rakeback rate, which some accounts may not read. The refusal returns the entire user object as null, so every reward went missing and nothing was reported as waiting while the site showed money available. The query now asks for no more than Stake's own page does.
+- Rakeback begins accruing again the moment it is claimed, so an emptied account still reported a fraction of a coin and was offered as a claim that had already been made. Amounts below what the display currency can express are ignored.
+- Values under one cent are omitted rather than printed as `0,00` or `< 0,01`, which put a line on screen for money that cannot be acted on.
+- Whether a balance holds non-withdrawable bonus money was inferred from the presence of coin holdings, a different question that happened to give the right answer. It is now declared per bookmaker.
+- Open bets shown in demo mode were overwritten by the extension with the real ones, which on a fresh install is none.
+- Sort headings sat slightly left of the columns they name, because the sort arrow shared the label's box.
 
-- **A page for every slip still running**, at Bets → Open bets. The slips are
-  laid out as cards across the width of the window rather than stacked in a
-  drawer, so a dozen of them are read in one pass instead of a dozen scrolls.
-- **Live and Open are two counts, not two lists.** The toggle picks which half
-  is on the wall, and the totals beside it — what those slips cost and what they
-  pay if they land — answer to whatever is filtered, sorted or searched.
-- **Sort by time, stake or what it pays**, filter to one account, and search
-  across teams, leagues, markets and picks.
-- **A card shut is one line per fixture** with one figure against it: the score
-  once there is one, and until then the time the match is due. A card opened is
-  every pick, its price, and what the book would buy the slip back for.
-- **Open or shut them all with one button**, or click a single card. Either way
-  the columns re-pack so they end at roughly the same height, and the cards
-  still read left to right in the order the sort put them.
-- **Singles are laid out exactly as multiples are.** They used to carry a price
-  and a market on the front of the card, which made a page of mixed slips look
-  like two different pages.
+### Removed
 
-### Live matches
+- Rakeback figure in the navigation bar. Placed next to the balance it read as money in the account; it now appears under the account it is waiting at.
 
-- **A sport that waits its turn no longer goes live on the clock.** Tennis,
-  darts, snooker, boxing, chess and the rest are played one after another on the
-  same court or table, and the time on the slip is when the match was due up,
-  not when it started. A five-setter before it puts everything behind it back an
-  hour, and the book never rewrites the kickoff it sold the bet at. Those slips
-  now move to Live when the book itself says the match is running.
-- **A scoreline on its own counts as running.** Not every feed sends a clock; a
-  bookmaker that pushes only the set score was saying nothing the app
-  recognised.
-- **"Scheduled" and "Start delayed" are understood** as a match that has not
-  begun, alongside the words already known.
-- **The clock reads before the score**, in that order wherever either appears.
-- **A called-off fixture keeps its row in the bet table**, struck through — it
-  is what the rest of the slip now hangs on.
+## [1.1.2] — August 2026
 
-### The rest
+### Added
 
-- **Stake's cash-out figure is read from the site** rather than left blank, and
-  it disappears the moment the book stops buying the slip back.
-- **Coin dust is out of the balance breakdown.** A wallet site leaves a trace of
-  every coin it has ever paid out, and a holding worth less than a cent printed
-  as a row of zeros, burying the lines that carried actual money.
+- Demo mode toggle in **Settings → Your data**. Demo mode persists across pages and reloads until it is switched off; the `demo=1` URL parameter enables the toggle instead of applying to a single page view.
+- Demo dataset covering one year of betting across two accounts, generated rather than hand-written: bookmaker-formatted bet references, market-appropriate odds, bet builders priced below the product of their legs, and outcomes drawn against the bookmaker margin. Includes singles, doubles, accumulators, cash-outs, voided slips, deposits, withdrawals, bonuses and open bets.
+- Demo casino history: over 1,000 rounds across nine games, grouped into sessions, with a negative expected return.
+- Casino stops in the guided tour; they are skipped for accounts whose bookmaker has no casino.
+- Header banner marking demo mode as active on every page.
 
-## 1.1.0 — August 2026
+### Changed
 
-The casino gets a page. Until now this app had one honest thing to say about
-slots: your balance is lower than your bets explain, and the difference went
-somewhere. That is still all most bookmakers will tell anyone. Stake is
-different — it hands out its casino rounds one at a time, the same way it hands
-out bets — so where the site keeps that history, it is now read and read
-properly.
+- Demo mode replaces only what pages read. Stored history is never overwritten and is restored when demo mode is switched off.
+- Consolidated duplicate UI components: the collapsible search control (three implementations) and the sortable table header (two implementations) are now shared, so they behave identically on every page.
+- An empty bonuses page shows an explanatory message instead of blank space.
+- Monetary values in the bet table are right-aligned, consistent with other tables.
 
-### The casino
+### Fixed
 
-- **A page of its own, built out of rounds.** What the casino cost you, what
-  came back for every unit staked, how many rounds paid more than they took, and
-  your best round beside your worst. The period picker cuts it the way it cuts
-  bets, because every figure on it is counted from individual rounds rather than
-  from a balance.
-- **None of it touches your sports figures.** A spin is not a bet. Profit, ROI,
-  win rate and every breakdown under Analytics read exactly as they did before,
-  whatever happened at the tables. The two are added up in one place only — the
-  account card, which is where the question "am I up" actually lives.
-- **Which games took the money.** One row per game with rounds, stake, payout
-  and what came back per unit, sortable on any column. Blackjack, roulette,
-  mines, plinko and the rest carry their own mark; anything else carries the mark
-  of the part of the casino it was played in.
-- **What a round cost, and what it paid.** Two ladders on one switch. By stake,
-  the rungs are cut from the play itself — round prices, only the ones your
-  rounds actually cross, and no band left holding a quarter of the turnover. By
-  payout, they are multiples of the stake, from nothing back to a hundred times.
-- **Your evenings, read back as evenings.** Rounds fall into sittings — half an
-  hour without a round ends one — newest first, each with its own result. No site
-  records a sitting; it is inferred, because "1,400 rounds this month" is not
-  something anybody can act on and "that Friday cost you 180" is.
-- **Click a game or a sitting and the chart narrows to it**, with its name over
-  the top and one click back out. Hovering a round in the list marks it on the
-  curve.
-- **The chart draws rounds evenly, not by the clock.** An evening puts hundreds
-  of spins inside an hour, and a time axis draws that as a vertical wall.
-- **The account's casino result is Stake's own figure now**, where the site
-  states one, instead of being inferred from the gap in the wallet.
-- **The page can be switched off** under Settings, Appearance, and it only
-  appears at all if one of your accounts is at a site with a casino.
+- Open-bets cards were drawn on the page background instead of the card surface in dark theme.
+- Clickable figures on the Overview page showed no focus ring when reached by keyboard.
 
-Two honest limits. **Live-casino tables are missing from the page**: Stake sends
-those rounds without a time, and a round with no time cannot be put on a period
-or on a curve, so it is dropped rather than stamped with a guess. And the
-history reaches back only as far as the site still hands out, so the page's
-total can be smaller than the lifetime casino result on the account card. Both
-of those are the site's limit, not a setting.
+## [1.1.1] — August 2026
 
-### Analytics
+### Added
 
-- **"Did your picks beat the price?" answers with the whole curve now.** It used
-  to be one bar and a sentence, with a separate card underneath listing the odds
-  bands. They are one thing: every band drawn, your hit rate against what the
-  price promised, and the gap named in the tooltip. One card fewer, and the
-  reading is no longer split across two of them.
-- **A middle answer exists.** The verdict was Yes, No, or too close to call, and
-  "No" fired at anyone whose gap was negative by any amount at all — which is
-  nearly everyone, because the price already carries the bookmaker's cut of
-  about 5%. It now reads **Level** where you are doing what a fair bettor should
-  expect to do, and **No** is kept for actually losing to the price.
-- **The threshold for trusting a row follows Settings.** The cards had ten picks
-  hardcoded while Settings offered 20, 50, 100 or off. It is one number now, and
-  the text on screen quotes the one you chose.
-- **The breakdowns lead with the answer.** "Which sports?" is now "Which sports
-  beat their price?", and the rows are ordered by how far above or below their
-  price they came in rather than by how often you backed them. Rows too thin to
-  trust sit under the ones that are not, drawn faint. Where nothing clears your
-  threshold the card names the front-runner in grey instead of showing nothing.
-- **Leagues carry their country's flag and teams their sport's mark**, the lists
-  are as long as the page can hold rather than cut at four, and their column
-  headings stay put while you scroll them.
+- **Open bets page** (Bets → Open bets): every undecided slip as a card grid instead of a scrolling drawer.
+- Live/Open toggle with separate counts, plus total stake and total potential return, all responding to the active filter, sort and search.
+- Sorting by start time, stake or potential return; filtering by account; search across teams, leagues, markets and picks.
+- Collapsed cards show one line per fixture with either the current score or the scheduled start time; expanded cards show every pick, its price and the current cash-out value.
+- Expand-all / collapse-all control; columns re-pack to roughly equal heights while preserving sort order.
 
-### The rest
+### Changed
 
-- **The privacy policy moves to 1.1.0** and says what is now true: casino rounds
-  are read at a site that records them one by one, and nothing about the casino
-  is stored anywhere else. It is the one document in the project that has to be
-  right about this, so it names what changed since 1.0.0 rather than quietly
-  reading differently.
-- **A copy installed by hand now says when a new version is out.** Chrome will
-  not carry a betting extension, so outside Edge this is loaded from a folder
-  and no browser will ever update it. When your browser opens it reads the
-  project's newest release number and, if that release is a version ahead — 1.2
-  to 1.3, not 1.2 to 1.2.1 — the header carries a link to it. The Edge copy
-  updates itself and is left alone.
-- **Bonus codes claimed at Stake arrive now.** They were read off the list of
-  codes rather than off the payments, and a code the site no longer resolves
-  left nothing to read them by — so a coupon that had paid out simply never
-  appeared. They come out of the wallet ledger, the same place the site itself
-  reads them, and the bonus drops handed out in chat come with them.
-- **A bookmaker that moves its API is an error, not an empty history.** The
-  account card says the site has changed and the adapter needs an update, and
-  the figures stay where they were instead of quietly reading as "no more bets".
-- **A blocked database upgrade no longer stalls the dashboard** on "Loading…"
-  when the app is open in a second tab.
-- **The sidebar reads in the order the questions come** — Overview, Analytics,
-  Bets, Casino, Cashflow, Bonuses — with the groups ruled apart.
-- **The break-even line is visible again** on the profit charts, instead of
-  blending into the grid behind it.
-- **A sideways flick of a mouse wheel no longer outlines the table in white.**
-  Chrome treats every scrolling box as something you can tab to, and draws its
-  own heavy ring around one the moment a wheel touches it. A thin line in the
-  theme's own colour does that job now, so a keyboard can still find its way
-  without a table lighting up every time the wheel moves.
-- **Bonuses only turn green when they are actually finished.** A bonus still
-  being wagered was badged the same as one you had cleared, and a bonus the
-  extension never watched being played through showed its face value in profit
-  colours as though it were money you had won. Both read plainly now, and the
-  description column has the room it needed.
-- **The Firefox target is gone from the build.** There was never a Firefox
-  listing to install from, so it was a target nobody could ever have used.
-  Chromium is what this ships to.
+- Singles use the same card layout as multiples and no longer show price and market on the collapsed card.
+- Start time is displayed before score wherever both appear.
+- A cancelled fixture keeps its row in the bet table, struck through.
 
-## 1.0.2 — August 2026
+### Fixed
 
-Nothing to click, money that shows up when it happens, and analytics you can
-trust to say the same thing twice.
+- Sports played sequentially on the same court or table (tennis, darts, snooker, boxing, chess) were marked live from their scheduled start time, which the bookmaker does not update when an earlier match overruns. Such slips now move to Live only when the bookmaker reports the match as in play.
+- A scoreline sent without a clock was not recognised as an in-play match.
+- The statuses "Scheduled" and "Start delayed" were not recognised as not-yet-started.
+- Stake's cash-out value was left blank instead of being read from the site; it is now also cleared as soon as cash-out is withdrawn.
+- Crypto holdings worth less than one cent were listed as zero-value rows in the balance breakdown, pushing meaningful lines out of view.
 
-### Analytics
+## [1.1.0] — August 2026
 
-- **A league keeps its name and its flag whichever bookmaker you filter to.** The
-  row's name and country were read off the bets on screen, so narrowing to one
-  book could rename a competition or take its flag away. They are read off every
-  bet now. A country your books spell their own way is recognised too.
-- **A one-off group no longer tops the table.** Settings has a threshold — 20
-  picks by default, or 50, 100, or off. Below it a group is sorted under the
-  ranked ones, behind a line saying why, rather than heading a profit sort on a
-  single lucky bet. It applies to any breakdown with more than 15 rows.
-- **The Odds column is the price in the middle, not the average.** One 50.00 punt
-  used to make a group of evens bets read as long odds.
-- **"Did the prices hold up?" was reading the promise wrong.** It measured what
-  the average price promises instead of what the prices promised on average —
-  which flattered every band holding one long shot.
-- **Stake bands are cut where your bets actually sit.** A band holding most of
-  the period is split at a round number near the middle of it, so it stops being
-  one row you cannot act on.
-- **Slips open in their own order** — single before combo, small stake before
-  large — instead of most-backed first. Any other order is one click on a column
-  away.
-- **The wide column switches between money and hit rate** when you click its
-  heading, and a record a run of luck would explain just as well is drawn faint.
+### Added
 
-### The rest
+- **Casino page** built from individual rounds, available where the bookmaker records them (currently Stake): total cost, return per unit staked, share of winning rounds, and best round against worst. The period picker applies as it does to bets.
+- Per-game breakdown with rounds, stake, payout and return per unit, sortable on any column. Known games (blackjack, roulette, mines, plinko and others) carry their own icon; the rest are marked by casino section.
+- Two distribution views on one toggle: by stake, with buckets derived from the round prices actually played, and by payout multiple, from 0x to 100x.
+- Session grouping: 30 minutes without a round starts a new session. Sessions are listed newest first, each with its own result.
+- Filtering the chart by game or session with one click, and highlighting a round on the curve on hover.
+- Option to disable the Casino page in **Settings → Appearance**. The page appears only if at least one account is at a site with a casino.
+- Update check for manually installed copies: on browser start the extension reads the latest release number and links to it when a new minor version is available (1.2 → 1.3, not 1.2 → 1.2.1). Store-installed copies update themselves and are unaffected.
 
-- **Settings, About and Privacy read tighter**, and the guided tour sits with
-  Appearance where it belongs.
-- **The bonus expiry notice is gone.** It fired on a date the site rarely gives
-  and told you nothing you could act on.
+### Changed
 
-### Reading your accounts
+- Casino results are excluded from all sports figures — profit, ROI, win rate and every Analytics breakdown are unchanged by casino activity. The two are combined only on the account card.
+- The casino chart plots rounds evenly rather than on a time axis, so a single evening does not collapse into a vertical line.
+- The account casino result uses Stake's own reported figure where the site states one, instead of being inferred from wallet movements.
+- "Did your picks beat the price?" combines the former summary card and odds-band card into one chart: every band, hit rate against implied probability, and the gap named in the tooltip.
+- Added a **Level** verdict for results within the bookmaker margin (approximately 5%). **No** is reserved for genuine underperformance against the price, rather than firing on any negative gap.
+- The minimum-sample threshold on the Analytics cards follows the Settings value (20 / 50 / 100 / off) instead of a hardcoded 10, and the on-screen text quotes the selected value.
+- Analytics breakdowns are ordered by performance against price rather than by bet count. Low-sample rows are drawn faint below the ranked ones; where nothing clears the threshold, the leading row is named in grey.
+- League rows carry their country flag and team rows their sport icon. Lists run as long as the page allows instead of being cut at four, and column headings stay fixed while scrolling.
+- Sidebar order follows the reading order: Overview, Analytics, Bets, Casino, Cashflow, Bonuses, with groups separated by rules.
+- Privacy policy updated to 1.1.0: it documents that casino rounds are read where the site records them individually, that no casino data is stored elsewhere, and what changed since 1.0.0.
 
-- **A supported site is read the moment you open it.** 1.0.1 asked you to open
-  the popup and grant the site first, on a page the extension already knew.
-- **A deposit is in the app before you leave the page.** bet-at-home was watched
-  only through the figure in its header, and the cashier does not always redraw
-  it - so the deposit waited for the next scheduled read.
-- **Deposits and bonuses no longer need a trip to the payments page.**
-  bet-at-home keeps them on a session of its own, which it offers on every page
-  it loads - but it offers it before the extension has asked whether you want
-  this site read at all, and the answer arriving second meant the session had
-  already been thrown away. It is held until you answer now, and dropped if you
-  say no.
-- **No more being told to sign in while you are signed in.** The extension read
-  "no session captured yet" as "signed out", and the session is not on every
-  page of a site - on the cashier it is on none of them. The page is asked now,
-  and asked again when it changes, so signing in without reloading is noticed.
-- **An account already read stays on screen.** A page that had not yet made the
-  site's authenticated call put a line about your session over everything the
-  extension already knew about the account. That line is now only for a site
-  nothing has ever been read from.
-- **A session running out is no longer reported as a fault.** These sites hand
-  out tokens that expire roughly hourly whether or not anyone signed out, and
-  each one marked a healthy account as stuck and put a warning in the log - over
-  something the extension repaired by itself seconds later. Only a revival that
-  comes back empty is reported now.
-- **Read again always reads again.** After one reload that came back without a
-  session, the site was never reloaded again for the rest of the browser
-  session: the button ran, found nothing to work with, and said nothing at all
-  until the popup gave up 45 seconds later with "No answer from the site". The
-  reload is now held off for a minute rather than for good, and a run with no
-  session to use says so at once.
-- **A lost session says what to do about it.** It used to read "Stopped part-way
-  - check the log", which named no cause and pointed at a log that had nothing
-  actionable in it.
-- **The site list is only sites that exist.** A dead address and a duplicate came
-  out of it.
+### Fixed
 
-## 1.0.1 — August 2026
+- Bonus codes claimed at Stake were read from the promo-code list instead of the wallet ledger, so a code the site no longer resolved never appeared. They are read from the ledger, together with bonus drops handed out in chat.
+- A bookmaker changing its API is reported as an error on the account card ("site changed, adapter needs an update") instead of reading as an empty history. Existing figures are retained.
+- A blocked IndexedDB upgrade left the dashboard on "Loading…" when the app was open in a second tab.
+- The break-even line was not distinguishable from the grid on profit charts.
+- Horizontal wheel scrolling triggered Chrome's default focus ring around scrollable tables; it is replaced by a thin themed outline that keeps the element keyboard-reachable.
+- Bonuses still being wagered were badged as completed, and bonuses the extension had not tracked showed their face value in profit colours. Both now display accurately, and the description column was widened.
 
-Fixes to the part where you add a bookmaker of your own.
+### Removed
 
-- **The right name on the popup.** A newly added bookmaker introduced itself
-  under the name of the one its folder was copied from.
-- **Recording a site now records it.** A recording started on a page that had
-  already loaded caught nothing, so the page is reloaded and asks again.
-- **Your name comes off the recording**, including at sites that do not label
-  their fields in English - the tool asks which words are yours.
-- **And nothing else does.** It had been rewriting long endpoint names and
-  double-encoding addresses, breaking recordings it had just cleaned.
+- The Firefox build target. No Firefox listing existed, so the build could not be installed from anywhere. Chromium is the only target.
 
-## 1.0.0 — August 2026
+### Known limitations
 
-The first release. Everything you need to see how your betting is really going.
+- Live-casino rounds are excluded: Stake reports them without a timestamp, and an untimed round cannot be assigned to a period or plotted on a curve.
+- Casino history reaches back only as far as the site still serves it, so the page total can be lower than the lifetime casino result on the account card.
 
-- **One dashboard** for every bookmaker account you play at.
-- **Your real result** — profit, ROI, turnover and win rate, in one currency.
-- **Profit over time**, by day, week, month or a period you pick.
-- **What is working** — sports, leagues, odds and stake sizes, ranked by what they earned you.
-- **Running bets** with live scores.
-- **Deposits, withdrawals and bonuses**, counted properly.
-- **A backup file** of everything, saved to your computer.
-- **All of it local.** No account, no server, no tracking.
+## [1.0.2] — August 2026
+
+### Changed
+
+- League name and country are resolved from all bets rather than from the bets currently on screen, so filtering to one bookmaker no longer renames a competition or removes its flag. Bookmaker-specific country spellings are recognised.
+- Groups below the Settings sample threshold (default 20; also 50, 100 or off) are sorted below the ranked ones behind an explanatory divider, instead of topping a profit sort on a single lucky bet. Applies to any breakdown with more than 15 rows.
+- The Odds column shows the median price instead of the mean, so one 50.00 outsider no longer makes a group of even-money bets read as long odds.
+- A stake band holding most of the period is split at a round number near its middle.
+- Bet slips expand in a fixed order — single before combo, smaller stake before larger — instead of most-backed first. Any other order is one column click away.
+- The wide Analytics column toggles between money and hit rate on heading click, and a record that variance would equally explain is drawn faint.
+- Settings, About and Privacy pages were shortened, and the guided tour moved to Appearance.
+- A supported site is read as soon as it is opened; 1.0.1 required opening the popup and granting the site first.
+
+### Fixed
+
+- "Did the prices hold up?" measured the implied probability of the average price instead of the average implied probability, which flattered every band holding a long shot.
+- bet-at-home deposits were detected only through the header balance, which the cashier does not always redraw, so a deposit waited for the next scheduled read.
+- bet-at-home deposits and bonuses required a visit to the payments page. The site offers its session on every page, but before the extension has asked for site permission, so the session was discarded. It is now held until permission is answered, and dropped on refusal.
+- The extension reported a signed-out state when no session had been captured yet, although a session is not exposed on every page — and on none of the cashier pages. The page is queried directly and re-queried on change, so signing in without reloading is detected.
+- A page that had not yet made the site's authenticated call covered known account data with a session warning. That warning now appears only for sites nothing has ever been read from.
+- Hourly token expiry was logged as a fault and marked healthy accounts as stuck, although the extension recovered from it automatically. Only a failed recovery is reported.
+- After one reload that returned no session, the site was never reloaded again for the rest of the browser session: "Read again" ran, found nothing to work with, and reported nothing until the popup timed out after 45 seconds. The reload is deferred for one minute, and a run with no usable session reports it immediately.
+- A lost session reported "Stopped part-way — check the log", which named no cause and pointed at a log with nothing actionable in it.
+
+### Removed
+
+- The bonus expiry notice, which fired on a date the site rarely provides.
+- A dead address and a duplicate entry in the supported-site list.
+
+## [1.0.1] — August 2026
+
+### Fixed
+
+- A newly added bookmaker appeared in the popup under the name of the template it was copied from.
+- A recording started on an already-loaded page captured nothing; the page is reloaded and re-recorded.
+- Personal names were not removed from recordings at sites that do not label their fields in English. The tool now asks which values belong to the user.
+- The recorder rewrote long endpoint names and double-encoded addresses, corrupting recordings it had just sanitised.
+
+## [1.0.0] — August 2026
+
+### Added
+
+- Unified dashboard for every bookmaker account in use.
+- Profit, ROI, turnover and win rate, converted to a single currency.
+- Profit over time by day, week, month or a custom period.
+- Breakdowns by sport, league, odds range and stake size.
+- Open bets with live scores.
+- Deposits, withdrawals and bonuses.
+- Backup export to a local file.
+- Fully local processing: no account, no server, no tracking.
+
+[1.1.3]: https://github.com/Martinek16/BETtracker/compare/v1.1.2...v1.1.3
+[1.1.2]: https://github.com/Martinek16/BETtracker/compare/v1.1.1...v1.1.2
+[1.1.1]: https://github.com/Martinek16/BETtracker/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/Martinek16/BETtracker/compare/v1.0.2...v1.1.0
+[1.0.2]: https://github.com/Martinek16/BETtracker/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/Martinek16/BETtracker/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/Martinek16/BETtracker/releases/tag/v1.0.0

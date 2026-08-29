@@ -100,6 +100,15 @@ export const formatMoney = (value: number, currency = 'EUR'): string =>
   withSymbol(formatAmount(value, currency), value < 0, currency);
 
 /**
+ * Whether a figure says anything once written in the display currency. A wallet
+ * site leaves dust in every coin it has ever paid out, and a row that reads
+ * 0,00 € carries nothing and buries the lines that do. What counts as too small
+ * is the currency's own answer, so the test is what gets printed.
+ */
+export const worthReading = (value: number, currency: string): boolean =>
+  /[1-9]/.test(formatAmount(value, currency));
+
+/**
  * Money for a row that cannot grow: the cents of a four-figure sum say nothing
  * a punter reads, and carrying them is what pushes the figure onto a second line.
  */

@@ -93,6 +93,19 @@ export const slipKind = (bet: Bet): SlipKind => {
   return sharedEventName(bet) !== null ? 'betBuilder' : 'combo';
 };
 
+/**
+ * A short combo is named by its size, the way a punter says it out loud - a
+ * double, a triple. Past four the word stops being common and the count is the
+ * clearer thing, so those stay Combo and say how many beside the fixture.
+ */
+const COMBO_SIZE_LABEL: Record<number, string> = { 2: 'Double', 3: 'Triple', 4: 'Quadruple' };
+
+/** What the slip is called in the Type column. */
+export const slipLabel = (bet: Bet): string => {
+  const kind = slipKind(bet);
+  return (kind === 'combo' ? COMBO_SIZE_LABEL[bet.legs.length] : undefined) ?? SLIP_KIND_LABEL[kind];
+};
+
 /** Fixture of a single, falling back to the slip summary when legs are absent. */
 export const singleEventLabel = (bet: Bet): string => bet.legs[0]?.event ?? bet.event ?? '—';
 
@@ -112,6 +125,7 @@ export const betSearchText = (bet: Bet): string =>
     bet.placedAt,
     formatDateTime(bet.placedAt),
     SLIP_KIND_LABEL[slipKind(bet)],
+    slipLabel(bet),
     bet.event,
     bet.sport,
     bet.league,

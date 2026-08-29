@@ -276,7 +276,7 @@ export const BonusesPage = (): JSX.Element => {
                       className={cn(
                         'cursor-pointer [&>td]:py-2',
                         openRow === b.id &&
-                          'border-b-0 border-l-2 border-l-primary bg-muted/40 hover:bg-muted/40',
+                          'border-b-0 border-l-2 border-l-primary bg-primary/[0.06] hover:bg-primary/[0.06]',
                       )}
                       onClick={() => setOpenRow((id) => (id === b.id ? null : b.id))}
                     >
@@ -313,7 +313,7 @@ export const BonusesPage = (): JSX.Element => {
                       </TableCell>
                     </TableRow>
                     {openRow === b.id && (
-                      <TableRow className="border-l-2 border-l-primary bg-muted/40 hover:bg-muted/40">
+                      <TableRow className="border-l-2 border-l-primary bg-primary/[0.06] hover:bg-primary/[0.06]">
                         <TableCell
                           colSpan={showAccount ? 7 : 6}
                           className={cn('py-2.5', showAccount ? 'pl-[19%]' : 'pl-[14%]')}

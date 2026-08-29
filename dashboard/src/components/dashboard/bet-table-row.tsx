@@ -2,20 +2,19 @@ import { useState } from 'react';
 import {
   formatOdds,
   isLiveBet,
-  isLiveLeg,
   profitOf,
   type Bet,
   type BetLeg,
   type LiveScore,
 } from '@betanal/shared';
 import {
-  SLIP_KIND_LABEL,
   formatLegEvent,
-  formatLegSelection,
+  pickLabel,
   sharedEventName,
   singleEventLabel,
   singlePickLabel,
   slipKind,
+  slipLabel,
 } from '@/lib/bet-display';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import {
@@ -28,7 +27,7 @@ import {
 import { StatusBadge } from '@/components/ui/badge';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { useDashboard } from '@/context/dashboard-context';
-import { cn, formatDateTime, formatMoney } from '@/lib/utils';
+import { cn, formatDate, formatMoney, formatTime } from '@/lib/utils';
 
 interface BetTableRowProps {
   bet: Bet;
@@ -79,13 +78,13 @@ const BetCell = ({ bet }: BetTableRowProps): JSX.Element => {
   const kind = slipKind(bet);
   const fixture = kind === 'single' ? singleEventLabel(bet) : sharedEventName(bet);
   if (lead === undefined || fixture === null) {
-    return <p className="truncate text-sm">{`${bet.legs.length} selections`}</p>;
+    return <p className="truncate text-xs">{`${bet.legs.length} selections`}</p>;
   }
 
   return (
     <div className="flex min-w-0 items-baseline gap-1.5">
-      <span className="truncate text-sm font-medium text-foreground">{fixture}</span>
-      <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+      <span className="truncate text-xs text-foreground">{fixture}</span>
+      <span className="min-w-0 truncate text-[11px] text-muted-foreground">
         {kind === 'single' ? singlePickLabel(bet) : `${bet.legs.length} picks`}
       </span>
     </div>
@@ -113,27 +112,95 @@ export const legGroups = (bet: Bet): BetLeg[][] => {
 };
 
 /**
- * One pick of a slip, in the slip's own columns: price under Odds, result under
- * Status. `lead` is the first pick on its fixture and the only one to name it -
- * the picks that follow sit under that name, which is how a builder folded into
- * a bigger slip reads as one match bet several ways.
+ * The fixtures of a slip, told where each day of it starts and ends. Which
+ * kickoffs share a day is a question about the date as it is written, not about
+ * the instant behind it - two of them can be hours apart and still one evening.
+ */
+export const legDays = (
+  bet: Bet,
+): { legs: BetLeg[]; showDay: boolean; endsDay: boolean; ruled: boolean }[] => {
+  const groups = legGroups(bet);
+  const days = groups.map((legs) => {
+    const at = legs[0]?.eventDate;
+    return at == null ? null : formatDate(at);
+  });
+  // A slip played out in one day has no day to tell apart, and the date over
+  // it only repeated the one the slip is already filed under.
+  const spansDays = new Set(days).size > 1;
+  return groups.map((legs, index) => ({
+    legs,
+    showDay: spansDays && (index === 0 || days[index] !== days[index - 1]),
+    endsDay: index === groups.length - 1 || days[index] !== days[index + 1],
+    // A rule falls between two days and nowhere else - not under the last
+    // fixture of the slip, where the shade already says the block has ended.
+    ruled: index < groups.length - 1 && days[index] !== days[index + 1],
+  }));
+};
+
+/** The colour a settled pick carries now that it has no badge of its own. */
+const LEG_TONE: Record<string, string> = {
+  won: 'text-profit',
+  lost: 'text-loss',
+  void: 'text-muted-foreground/50',
+};
+
+const legTone = (status: string): string => LEG_TONE[status] ?? 'text-muted-foreground/70';
+
+/**
+ * How the fixture went, from the picks made on it: one loss settles it, and it
+ * is only won once every pick on it is. This is what the sport icon is coloured
+ * by, so a builder says its result once instead of once per pick.
+ */
+const groupStatus = (legs: readonly BetLeg[]): string => {
+  if (legs.some((leg) => leg.status === 'lost')) return 'lost';
+  if (legs.every((leg) => leg.status === 'won')) return 'won';
+  if (legs.every((leg) => leg.status === 'void')) return 'void';
+  return 'pending';
+};
+
+/**
+ * One pick of a slip, in the slip's own columns: price under Odds. `lead` is the
+ * first pick on its fixture and the only one to name it - the picks that follow
+ * sit under that name, which is how a builder folded into a bigger slip reads as
+ * one match bet several ways.
+ *
+ * The result is carried by colour rather than by a badge per fixture: a slip of
+ * five picks printed Won five times down its right edge, which is five readings
+ * of a thing the row already says.
  */
 const LegRow = ({
   bet,
   leg,
   lead,
   last,
+  status,
   groupOdds,
+  showDay,
+  endsDay,
+  ruled,
+  hot,
+  onHot,
   showAccount,
   scores,
 }: {
   bet: Bet;
   leg: BetLeg;
   lead: boolean;
-  /** Last pick on this fixture, so the rule below it closes the group. */
+  /** Last pick on this fixture, so the padding below it closes the group. */
   last: boolean;
+  /** How the whole fixture went, which is what its icon is coloured by. */
+  status: string;
   /** Price of the whole fixture group, on its first row only. */
   groupOdds: number | null;
+  /** Spells the date out, which only a slip spanning more than one day does. */
+  showDay: boolean;
+  /** Last fixture of its day, which is given a little more room below it. */
+  endsDay: boolean;
+  /** A day follows this one, so a rule closes it off. */
+  ruled: boolean;
+  /** The pointer is over this fixture, on whichever of its picks. */
+  hot: boolean;
+  onHot: (over: boolean) => void;
   showAccount: boolean;
   scores: Record<string, LiveScore[]> | undefined;
 }): JSX.Element => {
@@ -142,39 +209,55 @@ const LegRow = ({
   // The pick's own price is already beside its name; only the builder's
   // combined price is missing from the open rows, and it belongs to the fixture.
   const odds = lead ? groupOdds : null;
-  // Picks on one fixture are padded as a block, not one by one: the padding
-  // between two of them was the gap that made them read as separate bets.
-  const pad = cn(lead ? 'pt-1' : 'pt-0', last ? 'pb-1' : 'pb-0');
+  // Room is made for the date and for nothing else: without one there is no
+  // heading to clear, and the fixture takes the spacing every other one has.
+  const pad = cn(lead && showDay ? 'pt-2.5' : 'pt-0', last && endsDay ? 'pb-2.5' : 'pb-0');
 
   return (
     <TableRow
+      onMouseEnter={() => onHot(true)}
+      onMouseLeave={() => onHot(false)}
       className={cn(
-        // Lifted off the table it sits in: what a slip opens into is one block
-        // of detail, and a shade of its own is what says where it ends.
-        'bg-muted/40 hover:bg-muted/50',
-        // Ruled off per fixture, not per pick: a line between two picks on one
-        // match cuts apart the thing the grouping is there to hold together.
-        last ? 'border-border' : 'border-transparent',
+        // Marked the way an opened row is marked everywhere else in the app: a
+        // rule down the left edge in the accent colour, over a shade faint
+        // enough to be read on. The grey block it used to be read as a table
+        // that had lost its rows rather than as one slip opened up.
+        'border-l-2 border-l-primary',
+        // Lit by the fixture rather than by the row: a builder is one match bet
+        // several ways, and lighting one of its lines cut it into pieces. The
+        // table's own row hover is pinned to the same shade, or the line under
+        // the pointer would still be a shade apart from its own fixture.
+        hot ? 'bg-primary/10 hover:bg-primary/10' : 'bg-primary/[0.06] hover:bg-primary/[0.06]',
+        // Ruled between days and nowhere else: a line under every match chopped
+        // an evening into strips, and a transparent one still showed as a gap
+        // in the shade, which is what drew those strips in the first place.
+        last && ruled ? 'border-b-border' : 'border-b-0',
       )}
     >
       {showAccount ? <TableCell className={pad} /> : null}
-      {/* The kickoff, under the slip's own placement date: the column reads as
-          dates throughout, and it is what the order is by. Said once per
-          fixture, since every pick on it shares the one kickoff. */}
-      <TableCell
-        className={cn(
-          pad,
-          'whitespace-nowrap align-top text-[11px] leading-tight text-muted-foreground/70',
+      {/* The kickoff, under the slip's own placement date. The date is written
+          once a day, over the times it covers, and every fixture carries the
+          time alone - so a slip played out in one evening reads as times. */}
+      <TableCell className={cn(pad, 'whitespace-nowrap text-right align-top leading-tight')}>
+        {!lead || leg.eventDate == null ? null : (
+          <>
+            {showDay ? (
+              <span className="-mt-1 block text-center text-[11px] text-muted-foreground">
+                {formatDate(leg.eventDate)}
+              </span>
+            ) : null}
+            <span className="block text-[10px] text-muted-foreground/70">
+              {formatTime(leg.eventDate)}
+            </span>
+          </>
         )}
-      >
-        {!lead || leg.eventDate == null ? '' : formatDateTime(leg.eventDate)}
       </TableCell>
-      {/* Across Type and Bet: held in the Bet column alone the legs sat half a
+      {/* Across Bet and Type: held in the Bet column alone the legs sat half a
           table away from the date they are ordered by. */}
       <TableCell colSpan={2} className={cn(pad, 'overflow-hidden align-top')}>
         <div className="flex min-w-0 items-start gap-2">
           {lead ? (
-            <Sport aria-hidden className="mt-px h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+            <Sport aria-hidden className={cn('mt-px h-3.5 w-3.5 shrink-0', legTone(status))} />
           ) : (
             <span aria-hidden className="h-3.5 w-3.5 shrink-0" />
           )}
@@ -183,7 +266,9 @@ const LegRow = ({
               <span className="flex min-w-0 items-baseline gap-1.5">
                 <span
                   className={cn(
-                    'min-w-0 flex-1 truncate text-[11px] font-semibold leading-tight',
+                    // Not stretched: the group price that follows belongs to
+                    // the name and is read with it, not from the far edge.
+                    'min-w-0 truncate text-[11px] font-semibold leading-tight',
                     // A match that was called off is struck through and says
                     // nothing else: it has no clock and no count to report.
                     leg.status === 'void'
@@ -193,31 +278,36 @@ const LegRow = ({
                 >
                   {formatLegEvent(leg)}
                 </span>
+                {/* The builder's combined price, on the fixture it was struck
+                    for. Under Odds it sat in a column of slip prices and read
+                    as one of them; here it reads as what it is - the price of
+                    this match bet several ways. */}
+                {odds == null ? null : (
+                  <span className="shrink-0 tabular-nums text-[10px] leading-tight text-muted-foreground">
+                    {`@${formatOdds(odds, oddsFormat)}`}
+                  </span>
+                )}
                 <Live leg={leg} scores={scores} />
               </span>
             ) : null}
-            <span className="block truncate text-[11px] leading-tight text-muted-foreground/70">
-              {formatLegSelection(leg, oddsFormat)}
+            {/* Tinted by the pick's own result, which the fixture's icon cannot
+                say for a builder whose picks did not all go the same way. */}
+            {/* The price is set apart from the pick and written smaller: what
+                was backed is the line to be read, the number only prices it. */}
+            <span className={cn('block truncate text-[11px] leading-tight', legTone(leg.status))}>
+              {pickLabel(leg.marketType, leg.selection)}
+              {leg.odds == null ? null : (
+                <span className="ml-1 tabular-nums text-[10px] text-muted-foreground">
+                  {`@${formatOdds(leg.odds, oddsFormat)}`}
+                </span>
+              )}
             </span>
           </div>
         </div>
       </TableCell>
-      <TableCell
-        className={cn(
-          pad,
-          'text-right align-top tabular-nums text-[11px] leading-tight text-muted-foreground/70',
-        )}
-      >
-        {odds == null ? '' : formatOdds(odds, oddsFormat)}
-      </TableCell>
-      <TableCell className={pad} />
-      <TableCell className={pad} />
-      <TableCell className={pad} />
-      <TableCell className={cn(pad, 'align-top')}>
-        <span className="inline-block origin-left scale-[0.85]">
-          <StatusBadge status={leg.status} live={isLiveLeg(leg, Date.now(), scores)} />
-        </span>
-      </TableCell>
+      {/* Odds through Status: a pick has nothing to say in the slip's own
+          money columns, and its price now sits beside the fixture. */}
+      <TableCell colSpan={5} className={pad} />
     </TableRow>
   );
 };
@@ -228,6 +318,7 @@ export const BetTableRow = ({
   scores,
 }: BetTableRowProps): JSX.Element => {
   const [expanded, setExpanded] = useState(false);
+  const [hotGroup, setHotGroup] = useState<number | null>(null);
   const { oddsFormat } = useDashboard();
   const pl = profitOf(bet);
   const expandable = bet.legs.length > 1;
@@ -237,11 +328,15 @@ export const BetTableRow = ({
     <>
       <TableRow
         className={cn(
-          'border-border',
+          // Tighter than the table's own row: a history is read down, and the
+          // room a slip took was room between it and the next one.
+          'border-border [&>td]:py-2',
           expandable ? 'cursor-pointer' : '',
-          // The slip an open block belongs to takes the same shade, so the two
-          // read as one thing rather than a row with strangers under it.
-          expanded ? 'bg-muted/40' : '',
+          // The slip an open block belongs to takes the same mark, so the two
+          // read as one thing rather than a row with strangers under it. Its
+          // hover is pinned: while the picks are out, the pointer is reading
+          // them, and lighting the summary above only said the pointer moved.
+          expanded ? 'border-l-2 border-l-primary bg-primary/[0.06] hover:bg-primary/[0.06]' : '',
         )}
         {...(expandable
           ? {
@@ -265,35 +360,44 @@ export const BetTableRow = ({
             <AccountIcon bookmaker={bet.bookmaker} className="h-5 w-5 text-[10px]" />
           </TableCell>
         ) : null}
-        <TableCell className="whitespace-nowrap text-[11px] text-muted-foreground">
-          {formatDateTime(bet.placedAt)}
+        {/* The day the slip was struck, with the hour behind it in smaller
+            type: two slips of one evening are told apart by the time, but it
+            is the date that the column is read and ordered by. */}
+        <TableCell className="whitespace-nowrap text-center text-xs text-muted-foreground">
+          {formatDate(bet.placedAt)}{' '}
+          <span className="text-[10px] text-muted-foreground/70">{formatTime(bet.placedAt)}</span>
         </TableCell>
-        {/* Only two things in the row are read on every pass - what the slip is
-            on and what it did - so everything around them steps back a size. */}
-        <TableCell className="overflow-hidden text-xs text-muted-foreground">
-          {SLIP_KIND_LABEL[slipKind(bet)]}
-        </TableCell>
+        {/* What the slip is on runs down the left edge of its column: read as a
+            list of names, a centred column of them has no edge to run down. */}
         <TableCell className="overflow-hidden">
           {/* The score stays out of the shut row: what is on the slip fits the
               width, the fixture's own state is a click away with the picks. */}
           <BetCell bet={bet} />
         </TableCell>
-        <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
+        <TableCell className="overflow-hidden text-center text-xs text-muted-foreground">
+          {slipLabel(bet)}
+        </TableCell>
+        <TableCell className="text-center tabular-nums text-xs text-muted-foreground">
           {formatOdds(bet.odds, oddsFormat)}
         </TableCell>
-        <TableCell className="text-right tabular-nums text-sm">
+        <TableCell className="text-center tabular-nums text-sm">
           {formatMoney(bet.stake, bet.currency)}
         </TableCell>
-        <TableCell className="text-right tabular-nums text-sm">{formatReturn(bet)}</TableCell>
+        {/* The colour rides on what came back rather than on the difference:
+            what a punter looks for down this table is the money returned, and
+            the P/L beside it says the same thing in figures either way. */}
         <TableCell
           className={cn(
-            'text-right tabular-nums text-xs font-medium',
+            'text-center tabular-nums text-sm',
             bet.status === 'pending' ? undefined : pl >= 0 ? 'text-profit' : 'text-loss',
           )}
         >
+          {formatReturn(bet)}
+        </TableCell>
+        <TableCell className="text-center tabular-nums text-xs text-muted-foreground">
           {bet.status === 'pending' ? '—' : formatMoney(pl, bet.currency)}
         </TableCell>
-        <TableCell>
+        <TableCell className="text-center">
           {/* With the scores, so a slip reads Live only while its match is
               actually being played - the same rule the slip panel goes by. */}
           <StatusBadge status={bet.status} live={isLiveBet(bet, Date.now(), scores)} />
@@ -303,10 +407,16 @@ export const BetTableRow = ({
       {/* In kickoff order, as the slip panel lists them: a slip reads as the
           evening it plays out rather than the order the picks were added in. */}
       {expanded
-        ? legGroups(bet).flatMap((legs, group) => {
+        ? legDays(bet).flatMap(({ legs, showDay, endsDay, ruled }, group) => {
             // One price for the group where the picks were priced as a builder,
             // and it belongs on the fixture, not on any one pick inside it.
-            const groupOdds = legs.length > 1 ? (legs[0]?.groupOdds ?? null) : null;
+            // A book that names no group price still prices the slip, and where
+            // the whole slip is that one fixture the two are the same number.
+            const groupOdds =
+              legs.length > 1
+                ? (legs[0]?.groupOdds ?? (legs.length === bet.legs.length ? bet.odds : null))
+                : null;
+            const status = groupStatus(legs);
             return legs.map((leg, index) => (
               <LegRow
                 key={`${bet.betId}-leg-${group}-${index}`}
@@ -314,7 +424,13 @@ export const BetTableRow = ({
                 leg={leg}
                 lead={index === 0}
                 last={index === legs.length - 1}
+                status={status}
                 groupOdds={groupOdds}
+                showDay={showDay}
+                endsDay={endsDay}
+                ruled={ruled}
+                hot={hotGroup === group}
+                onHot={(over) => setHotGroup(over ? group : null)}
                 showAccount={showAccount}
                 scores={scores}
               />

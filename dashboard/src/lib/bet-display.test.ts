@@ -1,5 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { pickLabel } from './bet-display';
+import type { Bet, BetLeg } from '@betanal/shared';
+import { pickLabel, slipLabel } from './bet-display';
+
+const leg = (event: string): BetLeg =>
+  ({ event, eventId: event, odds: 1.5, status: 'won' }) as unknown as BetLeg;
+
+const slip = (events: string[]): Bet => ({ betId: 'b1', legs: events.map(leg) }) as unknown as Bet;
+
+describe('slipLabel', () => {
+  it('names a short combo by its size', () => {
+    expect(slipLabel(slip(['A - B', 'C - D']))).toBe('Double');
+    expect(slipLabel(slip(['A - B', 'C - D', 'E - F']))).toBe('Triple');
+  });
+
+  it('leaves a long combo and a one-fixture slip as they were', () => {
+    expect(slipLabel(slip(['A - B', 'C - D', 'E - F', 'G - H', 'I - J']))).toBe('Combo');
+    expect(slipLabel(slip(['A - B']))).toBe('Single');
+    // Every pick on one fixture is a builder however many there are.
+    expect(slipLabel(slip(['A - B', 'A - B']))).toBe('Bet Builder');
+  });
+});
 
 describe('pickLabel', () => {
   it('names what a priced line is counted in', () => {

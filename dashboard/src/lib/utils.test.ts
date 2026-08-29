@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { worthReading } from '@/components/layout/app-header';
+import { worthReading } from './utils';
 
 describe('worthReading', () => {
   it('drops a holding that prints as zero in the display currency', () => {

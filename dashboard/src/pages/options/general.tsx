@@ -75,7 +75,7 @@ const BALANCE_SOURCES: readonly SegmentedOption<BalanceSource>[] = [
 
 const BALANCE_SOURCE_HINTS: Record<BalanceSource, string> = {
   live: 'The money in your accounts right now, as the bookmaker shows it.',
-  derived: 'Whether you are up or down: everything you took out, less everything you paid in.',
+  derived: 'Whether you are up or down: what you took out, less what you paid in.',
 };
 
 const BALANCE_LAYOUTS: readonly SegmentedOption<BalanceLayout>[] = [
@@ -149,7 +149,7 @@ const SettingGroup = ({
 const MIN_PICKS: readonly SegmentedOption<string>[] = MIN_PICKS_CHOICES.map((picks) => ({
   value: String(picks),
   label: picks === 1 ? 'All' : String(picks),
-  ...(picks === 1 ? { title: 'Rank every group, however few picks it holds' } : {}),
+  ...(picks === 1 ? { title: 'Rank everything, however few bets it holds' } : {}),
 }));
 
 const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
@@ -165,8 +165,8 @@ const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
   return (
     <Section title="Preferences" tour="settings-preferences">
       <Setting
-        label="Timeline"
-        hint={`Pages open on the ${periodLabel(settings?.defaultRange ?? '7d')}.`}
+        label="Time range"
+        hint={`Every page opens on the ${periodLabel(settings?.defaultRange ?? '7d')}.`}
       >
         <SegmentedToggle
           className="text-xs"
@@ -177,7 +177,7 @@ const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
       </Setting>
       <Setting
         label="Odds"
-        hint={`A 1.85 price is written ${formatOdds(1.85, settings?.oddsFormat)}.`}
+        hint={`Prices are written ${formatOdds(1.85, settings?.oddsFormat)}.`}
       >
         <SegmentedToggle
           className="text-xs"
@@ -217,7 +217,7 @@ const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
       </Setting>
       <Setting
         label="Currency symbol"
-        hint={`Ten ${currency} reads ${
+        hint={`Amounts are written ${
           settings?.symbolPosition === 'before' ? `${symbol}10` : `10 ${symbol}`
         }.`}
       >
@@ -229,11 +229,11 @@ const PreferencesSection = ({ notify }: { notify: Notify }): JSX.Element => {
         />
       </Setting>
       <Setting
-        label="Picks before a group is ranked"
+        label="Ranking in Analytics"
         hint={
           minPicks <= 1
-            ? 'Analytics ranks every group, down to the one you bet once.'
-            : `Analytics sorts a group under ${minPicks} picks last, so one lucky bet cannot top the table.`
+            ? 'Every league, sport and market is ranked, even one you bet once.'
+            : `A league or market you bet under ${minPicks} times is sorted last, so one lucky bet cannot top the table.`
         }
       >
         <SegmentedToggle
@@ -292,8 +292,8 @@ const AppearanceSection = (): JSX.Element => {
         label="Casino page"
         hint={
           showCasino
-            ? 'Shown for accounts whose casino runs off the betting wallet.'
-            : 'Hidden. The casino is still counted, it just has no page of its own.'
+            ? 'A page of its own for accounts that also have a casino.'
+            : 'Hidden. Casino money is still counted everywhere else.'
         }
       >
         <Switch checked={showCasino} onCheckedChange={(next) => void patch({ showCasino: next })} />
@@ -310,14 +310,20 @@ const AppearanceSection = (): JSX.Element => {
 /** Everything that decides what the figure at the top of the page counts. */
 const BalanceSection = ({ notify }: { notify: Notify }): JSX.Element => {
   const { settings, patch } = useSettings();
+  const { activeBookmakers } = useDashboard();
   const source = settings?.balanceSource ?? 'live';
   const layout = settings?.balanceLayout ?? 'total';
   const includeBonus = settings?.includeBonus ?? true;
   const showClaimable = settings?.showClaimable ?? true;
+  // Not every bookmaker has the thing the switch decides about, and a switch
+  // that changes nothing on any of the accounts connected here is a question
+  // the reader has no way of answering.
+  const has = (flag: 'hasBonusWallet' | 'hasRakeback'): boolean =>
+    activeBookmakers.some((id) => findAccount(id)?.[flag] === true);
 
   return (
     <Section title="Balance" tour="settings-balance">
-      <Setting label="What it shows" hint={BALANCE_SOURCE_HINTS[source]}>
+      <Setting label="What the balance shows" hint={BALANCE_SOURCE_HINTS[source]}>
         <SegmentedToggle
           className="text-xs"
           value={source}
@@ -332,7 +338,7 @@ const BalanceSection = ({ notify }: { notify: Notify }): JSX.Element => {
           }}
         />
       </Setting>
-      <Setting label="How it is split" hint={BALANCE_LAYOUT_HINTS[layout]}>
+      <Setting label="How the balance is split" hint={BALANCE_LAYOUT_HINTS[layout]}>
         <SegmentedToggle
           className="text-xs"
           value={layout}
@@ -340,32 +346,36 @@ const BalanceSection = ({ notify }: { notify: Notify }): JSX.Element => {
           onChange={(balanceLayout) => void patch({ balanceLayout })}
         />
       </Setting>
-      <Setting
-        label="Count bonus money"
-        hint={
-          includeBonus
-            ? 'Bonus money is counted in, the way the bookmaker counts it.'
-            : 'Only the money you could withdraw today is counted.'
-        }
-      >
-        <Switch
-          checked={includeBonus}
-          onCheckedChange={(next) => void patch({ includeBonus: next })}
-        />
-      </Setting>
-      <Setting
-        label="Show rewards waiting to be claimed"
-        hint={
-          showClaimable
-            ? 'Rakeback the bookmaker is holding is shown beside the balance until you claim it.'
-            : 'Only money already in the account is shown.'
-        }
-      >
-        <Switch
-          checked={showClaimable}
-          onCheckedChange={(next) => void patch({ showClaimable: next })}
-        />
-      </Setting>
+      {has('hasBonusWallet') && (
+        <Setting
+          label="Count bonus money"
+          hint={
+            includeBonus
+              ? 'Bonus money is counted in, the way the bookmaker counts it.'
+              : 'Only the money you could withdraw today is counted.'
+          }
+        >
+          <Switch
+            checked={includeBonus}
+            onCheckedChange={(next) => void patch({ includeBonus: next })}
+          />
+        </Setting>
+      )}
+      {has('hasRakeback') && (
+        <Setting
+          label="Rakeback"
+          hint={
+            showClaimable
+              ? 'Shown under the balance until you claim it on the site.'
+              : 'Hidden. Only money already in the account is shown.'
+          }
+        >
+          <Switch
+            checked={showClaimable}
+            onCheckedChange={(next) => void patch({ showClaimable: next })}
+          />
+        </Setting>
+      )}
     </Section>
   );
 };
@@ -379,25 +389,35 @@ const NotificationsSection = ({ notify }: { notify: Notify }): JSX.Element => {
 
   const syncAlerts = settings?.syncAlerts ?? true;
   const connectionAlerts = settings?.connectionAlerts ?? true;
+  const rakebackAlerts = settings?.rakebackAlerts ?? true;
 
   return (
     <Section title="Notifications" tour="settings-notifications">
       <SettingGroup
         label="Accounts"
-        hint="Messages about what came in from a bookmaker, and what stopped coming in."
-        on={syncAlerts || connectionAlerts}
+        hint="Short messages in the corner of the app, about your bookmakers."
+        on={syncAlerts || connectionAlerts || rakebackAlerts}
         onToggle={(on) => {
-          void patch({ syncAlerts: on, connectionAlerts: on });
+          void patch({ syncAlerts: on, connectionAlerts: on, rakebackAlerts: on });
           notify(on ? 'Account messages are back on.' : 'Account messages are off.');
         }}
       >
         <Setting label="New data" hint="What each bookmaker brought in since your last visit.">
           <Switch checked={syncAlerts} onCheckedChange={(on) => void patch({ syncAlerts: on })} />
         </Setting>
-        <Setting label="Signed out" hint="When an account quietly stops updating.">
+        <Setting label="Signed out" hint="When a bookmaker stops updating and needs a sign-in.">
           <Switch
             checked={connectionAlerts}
             onCheckedChange={(on) => void patch({ connectionAlerts: on })}
+          />
+        </Setting>
+        <Setting
+          label="Rakeback waiting"
+          hint="When a bookmaker is holding rakeback you have not claimed yet."
+        >
+          <Switch
+            checked={rakebackAlerts}
+            onCheckedChange={(on) => void patch({ rakebackAlerts: on })}
           />
         </Setting>
       </SettingGroup>
@@ -649,16 +669,21 @@ const DataSection = ({ notify }: { notify: Notify }): JSX.Element => {
       >
         <SaveBackup onSaved={notify} />
       </Setting>
-      <Setting
-        label="Demo data"
-        hint={
-          isDemoMode()
-            ? 'Every page is showing a made-up history. Nothing of your own was touched, and switching this off brings it back.'
-            : 'Fill every page with a made-up history, to see what the app does before your own bets are in.'
-        }
-      >
-        <Switch checked={isDemoMode()} onCheckedChange={setDemoMode} />
-      </Setting>
+      {/* The made-up history is a testing aid rather than a feature. An
+          installed copy shows the switch only once `demo=1` has turned it on,
+          so it can be turned off again; a development build always shows it. */}
+      {(import.meta.env.DEV || isDemoMode()) && (
+        <Setting
+          label="Demo data"
+          hint={
+            isDemoMode()
+              ? 'Every page is showing a made-up history. Your own data is untouched - switch this off to see it again.'
+              : 'Fill every page with a made-up history, to see what the app does before any bets are in.'
+          }
+        >
+          <Switch checked={isDemoMode()} onCheckedChange={setDemoMode} />
+        </Setting>
+      )}
       <Setting
         label="Delete everything"
         hint={storedSummary(betCount, transactions.length, activeBookmakers.length, earliestRecord)}

@@ -1,15 +1,19 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { PlugZap, X } from 'lucide-react';
+import { Coins, PlugZap, X } from 'lucide-react';
 import type { Bookmaker, Transaction } from '@betanal/shared';
 import { CATALOG, type BookmakerMeta } from '@bookmakers/catalog';
 import { isReleased } from '@bookmakers/released';
 import { AccountIcon } from '@/components/dashboard/account-icon';
+import { useDashboard } from '@/context/dashboard-context';
 import { getAllSyncMeta, getBetCounts, getSettings, loadTransactions } from '@/data/source';
+import { formatMoney } from '@/lib/utils';
 
 /** How much each account held on the last visit, so arrivals can be counted. */
 const SEEN_COUNTS_KEY = 'betanal:seen-counts';
 /** Which bookmakers the build could read on the last visit, so a new one is news. */
 const SEEN_BOOKMAKERS_KEY = 'betanal:seen-bookmakers';
+/** The waiting rakeback that was last reported, so the same money is said once. */
+const SEEN_RAKEBACK_KEY = 'betanal:seen-rakeback';
 const VISIBLE_MS = 6000;
 
 /**
@@ -222,6 +226,52 @@ export const NewBookmakerToast = (): JSX.Element | null => {
         </Toast>
       ))}
     </>
+  );
+};
+
+/**
+ * Rakeback the bookmaker is holding back until it is asked for.
+ *
+ * It is the one reward nothing ever delivers: no sync moves it, it is not in the
+ * balance, and an account can sit on months of it without being told. So it is
+ * said out loud once, when the figure is larger than the one last reported -
+ * repeating the same amount on every visit would train the reader to close it.
+ *
+ * No deadline is given because none is known: the sites that pay rakeback let it
+ * stand until it is claimed, and a date invented here would be the app telling
+ * the reader to hurry for no reason.
+ */
+export const RakebackToast = (): JSX.Element | null => {
+  const { claimable, currency, loading } = useDashboard();
+  const [announced, setAnnounced] = useState(0);
+  // Coins the display currency has no rate for are left out rather than guessed,
+  // so this can read 0 while something is genuinely waiting.
+  const waiting = claimable.reduce((sum, reward) => sum + (reward.worth ?? 0), 0);
+
+  useEffect(() => {
+    if (loading) return;
+    void getSettings().then((settings) => {
+      const seen = Number(localStorage.getItem(SEEN_RAKEBACK_KEY) ?? '0');
+      try {
+        localStorage.setItem(SEEN_RAKEBACK_KEY, String(waiting));
+      } catch {
+        /* private mode: the same figure is reported again next visit */
+      }
+      // A cent of drift is the conversion rate moving, not rakeback accruing -
+      // and a reward too small to print is not worth interrupting anyone for.
+      if (settings.rakebackAlerts && waiting > seen + 0.01) setAnnounced(waiting);
+    });
+  }, [loading, waiting]);
+
+  if (announced <= 0) return null;
+
+  return (
+    <Toast
+      icon={<Coins size={15} strokeWidth={1.75} />}
+      title={`${formatMoney(announced, currency)} rakeback waiting`}
+    >
+      Claim it on the site - nothing brings it in on its own.
+    </Toast>
   );
 };
 
