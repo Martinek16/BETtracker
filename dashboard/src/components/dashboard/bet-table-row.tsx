@@ -118,7 +118,7 @@ export const legGroups = (bet: Bet): BetLeg[][] => {
  */
 export const legDays = (
   bet: Bet,
-): { legs: BetLeg[]; showDay: boolean; startsDay: boolean; endsDay: boolean; ruled: boolean }[] => {
+): { legs: BetLeg[]; showDay: boolean; endsDay: boolean; ruled: boolean }[] => {
   const groups = legGroups(bet);
   const days = groups.map((legs) => {
     const at = legs[0]?.eventDate;
@@ -130,7 +130,6 @@ export const legDays = (
   return groups.map((legs, index) => ({
     legs,
     showDay: spansDays && (index === 0 || days[index] !== days[index - 1]),
-    startsDay: index === 0 || days[index] !== days[index - 1],
     endsDay: index === groups.length - 1 || days[index] !== days[index + 1],
     // A rule falls between two days and nowhere else - not under the last
     // fixture of the slip, where the shade already says the block has ended.
@@ -177,7 +176,6 @@ const LegRow = ({
   status,
   groupOdds,
   showDay,
-  startsDay,
   endsDay,
   ruled,
   hot,
@@ -196,8 +194,6 @@ const LegRow = ({
   groupOdds: number | null;
   /** Spells the date out, which only a slip spanning more than one day does. */
   showDay: boolean;
-  /** First fixture of its day, which is given room above it. */
-  startsDay: boolean;
   /** Last fixture of its day, which is given a little more room below it. */
   endsDay: boolean;
   /** A day follows this one, so a rule closes it off. */
@@ -213,9 +209,9 @@ const LegRow = ({
   // The pick's own price is already beside its name; only the builder's
   // combined price is missing from the open rows, and it belongs to the fixture.
   const odds = lead ? groupOdds : null;
-  // A day is given room above and below it; inside one, every pick is spaced
-  // alike, so a fixture bet three ways reads as three lines of one thing.
-  const pad = cn(lead && startsDay ? 'pt-2.5' : 'pt-0', last && endsDay ? 'pb-2.5' : 'pb-0');
+  // Room is made for the date and for nothing else: without one there is no
+  // heading to clear, and the fixture takes the spacing every other one has.
+  const pad = cn(lead && showDay ? 'pt-2.5' : 'pt-0', last && endsDay ? 'pb-2.5' : 'pb-0');
 
   return (
     <TableRow
@@ -411,7 +407,7 @@ export const BetTableRow = ({
       {/* In kickoff order, as the slip panel lists them: a slip reads as the
           evening it plays out rather than the order the picks were added in. */}
       {expanded
-        ? legDays(bet).flatMap(({ legs, showDay, startsDay, endsDay, ruled }, group) => {
+        ? legDays(bet).flatMap(({ legs, showDay, endsDay, ruled }, group) => {
             // One price for the group where the picks were priced as a builder,
             // and it belongs on the fixture, not on any one pick inside it.
             // A book that names no group price still prices the slip, and where
@@ -431,7 +427,6 @@ export const BetTableRow = ({
                 status={status}
                 groupOdds={groupOdds}
                 showDay={showDay}
-                startsDay={startsDay}
                 endsDay={endsDay}
                 ruled={ruled}
                 hot={hotGroup === group}
