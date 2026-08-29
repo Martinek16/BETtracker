@@ -7,6 +7,18 @@ import { HashRouter } from 'react-router';
 import { ThemeProvider } from '@/components/theme-provider';
 import { App } from '@/App';
 
+/** Volume, playback and launch keys, which move no focus. See `index.css`. */
+const MEDIA_KEY = /^(Audio|Media|Launch|Brightness)/;
+
+addEventListener(
+  'keydown',
+  (event) => {
+    if (!MEDIA_KEY.test(event.key)) document.documentElement.setAttribute('data-keys', '');
+  },
+  true,
+);
+addEventListener('pointerdown', () => document.documentElement.removeAttribute('data-keys'), true);
+
 const root = document.getElementById('root');
 if (root === null) throw new Error('#root element not found');
 
