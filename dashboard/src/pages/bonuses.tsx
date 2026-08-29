@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/table';
 import { useDashboard } from '@/context/dashboard-context';
 import { rangeCutoff, rangeEnd } from '@/lib/chart-data';
-import { cn, formatDate, formatMoney, smallMoney } from '@/lib/utils';
+import { cn, formatDate, formatMoney } from '@/lib/utils';
 
 /**
  * `released` is the only end state that means the wagering requirement was met.
@@ -207,7 +207,7 @@ export const BonusesPage = (): JSX.Element => {
               claimed.
             </p>
           </div>
-          <Fact label="Waiting to claim" value={smallMoney(waiting, currency)} />
+          <Fact label="Waiting to claim" value={formatMoney(waiting, currency)} />
           <Fact label="Claimed in this period" value={formatMoney(collected, currency)} />
           <Fact label="Claims" value={String(claimed.length)} />
           <Fact label="Last claim" value={lastClaim === null ? '—' : formatDate(lastClaim)} />

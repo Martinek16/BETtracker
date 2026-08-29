@@ -5,7 +5,7 @@ import { useDashboard, type BalanceRow } from '@/context/dashboard-context';
 import { findAccount } from '@/data/accounts';
 import { useUpdateNotice } from '@/data/update';
 import { isDemoMode } from '@/demo';
-import { cn, formatAmount, formatMoney, smallMoney, worthReading } from '@/lib/utils';
+import { cn, formatAmount, formatMoney, worthReading } from '@/lib/utils';
 
 interface Row {
   label: string;
@@ -62,7 +62,7 @@ const BreakdownRow = ({
       </span>
       {row.aside !== undefined && (
         <span className="text-[9px] tabular-nums text-muted-foreground">
-          {smallMoney(row.aside, currency)}
+          {formatMoney(row.aside, currency)}
         </span>
       )}
     </span>
@@ -109,7 +109,7 @@ const AccountGroup = ({
           <span className="ml-1 text-[9px] opacity-60">not in the total</span>
         </span>
         <span className="tabular-nums text-foreground">
-          {smallMoney(account.waiting, currency)}
+          {formatMoney(account.waiting, currency)}
         </span>
       </div>
     )}
@@ -172,6 +172,7 @@ const liveBalances = (
   balances: readonly BalanceRow[],
   bonuses: readonly Bonus[],
   includeBonus: boolean,
+  currency: string,
 ): AccountBalance[] =>
   balances.map(({ bookmaker, key, amount, holdings }) => {
     // A wallet per coin makes its own breakdown: what is held, and what each
@@ -183,7 +184,7 @@ const liveBalances = (
         key,
         amount,
         rows: holdings
-          .filter((h) => worthReading(h.amount, h.currency))
+          .filter((h) => worthReading(h.worth, currency))
           .map((h) => ({
             label: h.currency,
             value: h.amount,
@@ -274,7 +275,7 @@ const BalanceControl = (): JSX.Element => {
   // no number instead, which is the honest version of the same thing.
   const accounts = live
     ? [
-        ...liveBalances(accountBalances, bonuses, includeBonus),
+        ...liveBalances(accountBalances, bonuses, includeBonus, currency),
         ...unreadBalances.map((bookmaker) => ({
           bookmaker,
           key: bookmaker,
