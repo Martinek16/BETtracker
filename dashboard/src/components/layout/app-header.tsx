@@ -98,11 +98,19 @@ const AccountGroup = ({
     )}
     {/* Under the account's own figure rather than added to it: the bookmaker is
         holding this money back until it is asked for, so it is not in the
-        balance and no sync will move it there. */}
+        balance and no sync will move it there. The rule above it is fainter than
+        the one over the coins, because this is an aside to the account and not
+        another way of splitting it - and it says outright that the figure is
+        not in the total, which is the one thing a reader cannot infer. */}
     {account.waiting != null && (
-      <div className="mt-1 flex items-center justify-between gap-6 pl-[22px] text-muted-foreground">
-        <span>Rakeback</span>
-        <span className="tabular-nums">{smallMoney(account.waiting, currency)}</span>
+      <div className="mt-1.5 flex items-baseline justify-between gap-4 border-t border-border/40 pl-[22px] pt-1.5">
+        <span className="min-w-0 text-muted-foreground">
+          Rakeback
+          <span className="ml-1 text-[9px] opacity-60">not in the total</span>
+        </span>
+        <span className="tabular-nums text-foreground">
+          {smallMoney(account.waiting, currency)}
+        </span>
       </div>
     )}
   </div>
