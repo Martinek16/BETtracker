@@ -9,7 +9,7 @@ import {
 } from '@betanal/shared';
 import {
   formatLegEvent,
-  formatLegSelection,
+  pickLabel,
   sharedEventName,
   singleEventLabel,
   singlePickLabel,
@@ -273,7 +273,7 @@ const LegRow = ({
                     as one of them; here it reads as what it is - the price of
                     this match bet several ways. */}
                 {odds == null ? null : (
-                  <span className="shrink-0 tabular-nums text-[11px] leading-tight text-muted-foreground">
+                  <span className="shrink-0 tabular-nums text-[10px] leading-tight text-muted-foreground">
                     {`@${formatOdds(odds, oddsFormat)}`}
                   </span>
                 )}
@@ -282,8 +282,15 @@ const LegRow = ({
             ) : null}
             {/* Tinted by the pick's own result, which the fixture's icon cannot
                 say for a builder whose picks did not all go the same way. */}
+            {/* The price is set apart from the pick and written smaller: what
+                was backed is the line to be read, the number only prices it. */}
             <span className={cn('block truncate text-[11px] leading-tight', legTone(leg.status))}>
-              {formatLegSelection(leg, oddsFormat)}
+              {pickLabel(leg.marketType, leg.selection)}
+              {leg.odds == null ? null : (
+                <span className="ml-1 tabular-nums text-[10px] text-muted-foreground">
+                  {`@${formatOdds(leg.odds, oddsFormat)}`}
+                </span>
+              )}
             </span>
           </div>
         </div>
@@ -388,7 +395,12 @@ export const BetTableRow = ({
         ? legDays(bet).flatMap(({ legs, showDay, startsDay, endsDay, ruled }, group) => {
             // One price for the group where the picks were priced as a builder,
             // and it belongs on the fixture, not on any one pick inside it.
-            const groupOdds = legs.length > 1 ? (legs[0]?.groupOdds ?? null) : null;
+            // A book that names no group price still prices the slip, and where
+            // the whole slip is that one fixture the two are the same number.
+            const groupOdds =
+              legs.length > 1
+                ? (legs[0]?.groupOdds ?? (legs.length === bet.legs.length ? bet.odds : null))
+                : null;
             const status = groupStatus(legs);
             return legs.map((leg, index) => (
               <LegRow
