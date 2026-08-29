@@ -136,6 +136,17 @@ const toneClass = (value: number | null): string =>
   value === null || value === 0 ? 'text-foreground' : value > 0 ? 'text-profit' : 'text-loss';
 
 /**
+ * What the stake came back as, written against the stake rather than as a share
+ * of it: 97% and -3% are the same evening, but only the second one says at a
+ * glance which way it went.
+ */
+const overStake = (rtp: number | null, digits = 1): string => {
+  if (rtp === null) return '—';
+  const over = (rtp - 1) * 100;
+  return `${over > 0 ? '+' : ''}${formatPercent(over, digits)}`;
+};
+
+/**
  * Rounds enough for a band to say something rather than describe one evening,
  * the most bands worth reading at once, and the share of the play beyond which
  * a single row stops telling you anything about where the money went.
@@ -497,8 +508,13 @@ const GroupTable = <T extends GroupRow>({
               <span className={cn('w-16 text-center tabular-nums', toneClass(group.net))}>
                 {formatMoney(group.returned, currency)}
               </span>
-              <span className="w-12 text-center tabular-nums text-muted-foreground">
-                {group.rtp === null ? '—' : formatPercent(group.rtp * 100, 0)}
+              <span
+                className={cn(
+                  'w-12 text-center tabular-nums',
+                  toneClass(group.rtp === null ? null : group.rtp - 1),
+                )}
+              >
+                {overStake(group.rtp, 0)}
               </span>
             </Row>
           );
@@ -641,9 +657,9 @@ export const CasinoPage = (): JSX.Element => {
         />
         <MetricCard
           icon={Percent}
-          label="Actual return"
-          value={played.rtp === null ? '—' : formatPercent(played.rtp * 100)}
-          subtitle="Came back per unit staked"
+          label="Return on stake"
+          value={overStake(played.rtp)}
+          subtitle="What came back, against what you staked"
           tone={played.rtp === null ? 'neutral' : signTone(played.rtp - 1)}
         />
         <MetricCard
