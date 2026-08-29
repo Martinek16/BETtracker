@@ -15,7 +15,6 @@ import {
   getAllBonuses,
   getAllTransactions,
   getAllBalances,
-  getAllBalanceHistory,
   getAllCasinoRounds,
   getAllPerks,
   getAllSyncMeta as storedSyncMeta,
@@ -44,12 +43,13 @@ import {
   demoBalances,
   demoBets,
   demoBonuses,
+  demoCasinoRounds,
   demoKnownAccounts,
   demoPerks,
   demoSyncMeta,
   demoTransactions,
-  isDemoData,
-} from '@/data/demo-data';
+  isDemoMode,
+} from '@/demo';
 
 /** True when running as the packaged extension page (vs. Vite dev server). */
 export const isExtension = (): boolean =>
@@ -69,7 +69,7 @@ export const isExtension = (): boolean =>
  * the dashboard stays runnable standalone.
  */
 export const loadBets = async (from: string | null, to: string | null): Promise<Bet[]> => {
-  if (isDemoData()) return demoBets(from, to);
+  if (isDemoMode()) return demoBets(from, to);
   if (!isExtension()) return devBets as unknown as Bet[];
   try {
     const [inRange, pending] = await Promise.all([getBetsInRange(from, to), getPendingBets()]);
@@ -87,7 +87,7 @@ export const loadBets = async (from: string | null, to: string | null): Promise<
  * read left whose cost grows with the history.
  */
 export const loadAllBets = async (): Promise<Bet[]> => {
-  if (isDemoData()) return demoAllBets();
+  if (isDemoMode()) return demoAllBets();
   if (!isExtension()) return devBets as unknown as Bet[];
   try {
     return await getAllBets();
@@ -107,7 +107,7 @@ export const loadBetSummary = async (): Promise<{
   earliest: string | null;
   bookmakers: Bookmaker[];
 }> => {
-  if (isDemoData()) {
+  if (isDemoMode()) {
     const all = demoAllBets();
     return {
       count: all.length,
@@ -126,12 +126,6 @@ export const loadBetSummary = async (): Promise<{
   } catch (err) {
     log('warn', 'dashboard', `failed to summarise bets: ${(err as Error).message}`);
     return { count: 0, earliest: null, bookmakers: [] };
-  }
-};
-
-export const requestResync = (mode: 'incremental' | 'full'): void => {
-  if (isExtension()) {
-    void chrome.runtime.sendMessage({ type: 'SYNC_NOW', mode });
   }
 };
 
@@ -210,7 +204,7 @@ export const refreshOpenBets = async (): Promise<ActiveBetsSnapshot | null> => {
  * currencies, and only the dashboard context knows the conversion rates.
  */
 export const loadBalances = async (): Promise<BalanceInfo[]> => {
-  if (isDemoData()) return demoBalances();
+  if (isDemoMode()) return demoBalances();
   if (!isExtension()) return [];
   try {
     return await getAllBalances();
@@ -226,7 +220,7 @@ export const loadBalances = async (): Promise<BalanceInfo[]> => {
  * server, so this works in either.
  */
 export const loadTransactions = async (): Promise<Transaction[]> => {
-  if (isDemoData()) return demoTransactions();
+  if (isDemoMode()) return demoTransactions();
   try {
     return await withoutDuplicates(await getAllTransactions());
   } catch (err) {
@@ -271,7 +265,7 @@ const NOISE_BONUS_NAMES = new Set(['COMBI+']);
 
 /** Bonus grants, newest first. Never mixed into transactions - see `Bonus`. */
 export const loadBonuses = async (): Promise<Bonus[]> => {
-  if (isDemoData()) return demoBonuses();
+  if (isDemoMode()) return demoBonuses();
   try {
     return (await getAllBonuses()).filter((b) => !NOISE_BONUS_NAMES.has(b.name));
   } catch (err) {
@@ -285,7 +279,7 @@ export const loadBonuses = async (): Promise<Bonus[]> => {
  * casino round by round, which is most of them.
  */
 export const loadCasinoRounds = async (): Promise<CasinoRound[]> => {
-  if (isDemoData()) return [];
+  if (isDemoMode()) return demoCasinoRounds();
   try {
     return await getAllCasinoRounds();
   } catch (err) {
@@ -299,7 +293,7 @@ export const loadCasinoRounds = async (): Promise<CasinoRound[]> => {
  * an empty list means nothing has been read yet, never that there is nothing.
  */
 export const loadPerks = async (): Promise<AccountPerks[]> => {
-  if (isDemoData()) return demoPerks();
+  if (isDemoMode()) return demoPerks();
   try {
     return await getAllPerks();
   } catch (err) {
@@ -308,26 +302,16 @@ export const loadPerks = async (): Promise<AccountPerks[]> => {
   }
 };
 
-/** Balance readings scraped from the bookmaker, used as a reality check. */
-export const loadBalanceHistory = async (): Promise<BalanceInfo[]> => {
-  try {
-    return await getAllBalanceHistory();
-  } catch (err) {
-    log('warn', 'dashboard', `failed to read balance history: ${(err as Error).message}`);
-    return [];
-  }
-};
-
 /** Logins the extension has seen. The demo history needs two to have come from. */
 export const getKnownAccounts = async (bookmaker?: Bookmaker): Promise<KnownAccount[]> =>
-  isDemoData()
+  isDemoMode()
     ? demoKnownAccounts().filter((a) => bookmaker === undefined || a.bookmaker === bookmaker)
     : storedAccounts(bookmaker);
 
 /** Sync state per login. In demo both accounts read as just synced. */
 export const getAllSyncMeta = async (): Promise<
   readonly { account: AccountRef; meta: SyncMeta }[]
-> => (isDemoData() ? demoSyncMeta() : storedSyncMeta());
+> => (isDemoMode() ? demoSyncMeta() : storedSyncMeta());
 
 /**
  * Bookmakers that have shown an open bet at least once. Read separately from the

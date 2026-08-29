@@ -12,7 +12,7 @@ import {
   type GroupStats,
   type SlipDimension,
 } from '@betanal/shared';
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import { SortHeaderCell } from '@/components/analytics/sort-header-cell';
 import { ProfitBar } from '@/components/dashboard/profit-bar';
 import { useDashboard } from '@/context/dashboard-context';
 import { heldBack, useRankFloor } from '@/lib/held-back';
@@ -91,44 +91,6 @@ interface SlipBreakdownProps {
   query: string;
   loading?: boolean;
 }
-
-const SortHeaderCell = ({
-  label,
-  sortKey,
-  active,
-  desc,
-  numeric = false,
-  widthClass,
-  onSort,
-}: {
-  label: string;
-  sortKey: SortKey;
-  active: boolean;
-  desc: boolean;
-  numeric?: boolean;
-  widthClass: string;
-  onSort: (key: SortKey) => void;
-}): JSX.Element => (
-  <button
-    type="button"
-    onClick={() => onSort(sortKey)}
-    className={cn(
-      'relative flex items-center gap-1 text-[10px] uppercase tracking-wide hover:text-foreground',
-      numeric ? 'justify-center' : 'justify-start',
-      active ? 'text-foreground' : 'text-muted-foreground',
-      widthClass,
-    )}
-  >
-    <span className="truncate">{label}</span>
-    {active ? (
-      // Out of the flow on the numeric columns: in the flow it pushes the label
-      // off centre, and the label is what the values below are read against.
-      <span className={cn('shrink-0', numeric && 'absolute right-0')}>
-        {desc ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
-      </span>
-    ) : null}
-  </button>
-);
 
 const STATUS_COLOR: Record<string, string> = {
   won: 'hsl(var(--profit))',

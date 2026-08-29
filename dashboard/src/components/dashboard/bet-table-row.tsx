@@ -205,7 +205,7 @@ const LegRow = ({
       <TableCell
         className={cn(
           pad,
-          'align-top tabular-nums text-[11px] leading-tight text-muted-foreground/70',
+          'text-right align-top tabular-nums text-[11px] leading-tight text-muted-foreground/70',
         )}
       >
         {odds == null ? '' : formatOdds(odds, oddsFormat)}
@@ -278,20 +278,18 @@ export const BetTableRow = ({
               width, the fixture's own state is a click away with the picks. */}
           <BetCell bet={bet} />
         </TableCell>
-        <TableCell className="tabular-nums text-xs text-muted-foreground">
+        <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
           {formatOdds(bet.odds, oddsFormat)}
         </TableCell>
-        <TableCell className="tabular-nums text-sm">
+        <TableCell className="text-right tabular-nums text-sm">
           {formatMoney(bet.stake, bet.currency)}
         </TableCell>
-        <TableCell className="tabular-nums text-sm">{formatReturn(bet)}</TableCell>
+        <TableCell className="text-right tabular-nums text-sm">{formatReturn(bet)}</TableCell>
         <TableCell
-          className="tabular-nums text-xs font-medium"
-          style={
-            bet.status === 'pending'
-              ? undefined
-              : { color: `hsl(var(--${pl >= 0 ? 'profit' : 'loss'}))` }
-          }
+          className={cn(
+            'text-right tabular-nums text-xs font-medium',
+            bet.status === 'pending' ? undefined : pl >= 0 ? 'text-profit' : 'text-loss',
+          )}
         >
           {bet.status === 'pending' ? '—' : formatMoney(pl, bet.currency)}
         </TableCell>

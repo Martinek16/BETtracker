@@ -9,7 +9,8 @@ import {
   type SelectionStats,
 } from '@betanal/shared';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, ListFilter } from 'lucide-react';
+import { ChevronDown, ChevronRight, ListFilter } from 'lucide-react';
+import { SortHeaderCell } from '@/components/analytics/sort-header-cell';
 import { CountryFlag } from '@/components/dashboard/country-flag';
 import { sportIconFor } from '@/components/dashboard/live-score';
 import { ProfitBar } from '@/components/dashboard/profit-bar';
@@ -143,44 +144,6 @@ const HitCell = ({
     <span className={cn('text-foreground', className)}>{stats.won}</span>
     <span className="text-[10px] text-muted-foreground">{formatPercent(stats.hitRate, 0)}</span>
   </span>
-);
-
-const SortHeaderCell = ({
-  label,
-  sortKey,
-  active,
-  desc,
-  numeric = false,
-  widthClass,
-  onSort,
-}: {
-  label: string;
-  sortKey: SortKey;
-  active: boolean;
-  desc: boolean;
-  numeric?: boolean;
-  widthClass: string;
-  onSort: (key: SortKey) => void;
-}): JSX.Element => (
-  <button
-    type="button"
-    onClick={() => onSort(sortKey)}
-    className={cn(
-      'relative flex items-center gap-1 text-[10px] uppercase tracking-wide hover:text-foreground',
-      numeric ? 'justify-center' : 'justify-start',
-      active ? 'text-foreground' : 'text-muted-foreground',
-      widthClass,
-    )}
-  >
-    <span className="truncate">{label}</span>
-    {active ? (
-      // Out of the flow on the numeric columns: in the flow it pushes the label
-      // off centre, and the label is what the values below are read against.
-      <span className={cn('shrink-0', numeric && 'absolute right-0')}>
-        {desc ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
-      </span>
-    ) : null}
-  </button>
 );
 
 /**

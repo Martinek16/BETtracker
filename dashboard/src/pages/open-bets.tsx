@@ -1,25 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { accountKey, type Bet, type Bookmaker } from '@betanal/shared';
-import {
-  ChevronDown,
-  ChevronUp,
-  ChevronsDownUp,
-  ChevronsUpDown,
-  Search,
-  Ticket,
-  X,
-} from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronsDownUp, ChevronsUpDown, Ticket } from 'lucide-react';
 import { ActiveSlipCard, useOpenSlips } from '@/components/active-bets/active-slip-card';
 import { SlipTotals } from '@/components/active-bets/slip-totals';
 import { AccountIcon } from '@/components/dashboard/account-icon';
+import { SearchBox } from '@/components/dashboard/search-box';
 import { SegmentedToggle, type SegmentedOption } from '@/components/dashboard/segmented-toggle';
-import { Input } from '@/components/ui/input';
 import { betSearchText } from '@/lib/bet-display';
 import { useDashboard } from '@/context/dashboard-context';
 import { findAccount, useAccountNames } from '@/data/accounts';
 import { useOpenBets } from '@/data/use-open-bets';
-import { cn } from '@/lib/utils';
 
 /**
  * How many columns the cards are laid out in, read off the same widths the
@@ -167,13 +158,11 @@ export const OpenBetsPage = (): JSX.Element => {
     dir: 'asc',
   });
   const [query, setQuery] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
   // What the wall stands as until a card is clicked: shut, so a page of ten
   // slips can be read at once, with the button for when they all want opening.
   const [allOpen, setAllOpen] = useState(false);
   const slips = useOpenSlips();
   const columns = useColumnCount();
-  const searchWide = searchOpen || query !== '';
   const needle = query.trim().toLowerCase();
 
   const accounts = openAccounts([...live, ...waiting], nameFor);
@@ -191,11 +180,6 @@ export const OpenBetsPage = (): JSX.Element => {
   const shownLive = mine(live);
   const shownWaiting = mine(waiting);
   const shown = [...shownLive, ...shownWaiting];
-  const staked = shown.reduce((sum, bet) => sum + bet.stake, 0);
-  const toWin = shown.reduce(
-    (sum, bet) => sum + (bet.currentPotentialReturn ?? bet.potentialReturn),
-    0,
-  );
 
   const tab = tabPicked ?? (shownLive.length > 0 ? 'live' : 'open');
   const picks = tab === 'live' ? shownLive : shownWaiting;
@@ -270,48 +254,12 @@ export const OpenBetsPage = (): JSX.Element => {
           )}
           {/* Opposite the controls that cut the wall, not among them: the totals
               are what is being read, and they answer to every filter left of here. */}
-          {!nothing && <SlipTotals staked={staked} toWin={toWin} currency={currency} />}
+          {!nothing && <SlipTotals bets={shown} currency={currency} />}
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {!nothing && (
             <>
-              {/* Collapsed to its icon until used, so a quiet page stays quiet; a
-                  typed term holds it open, or the filter would hide its own reason. */}
-              <div className="relative flex">
-                <Search
-                  size={12}
-                  className={cn(
-                    'pointer-events-none absolute top-1/2 -translate-y-1/2 text-muted-foreground',
-                    searchWide ? 'left-2' : 'left-1/2 -translate-x-1/2',
-                  )}
-                />
-                <Input
-                  type="search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  onFocus={() => setSearchOpen(true)}
-                  onBlur={() => setSearchOpen(false)}
-                  placeholder={searchWide ? 'Search team, pick…' : ''}
-                  aria-label="Search open bets"
-                  className={cn(
-                    // Same height and corner as the toggles beside it - the row
-                    // is read as one bar, so nothing in it may sit lower.
-                    'h-[23px] cursor-pointer rounded-md border-border bg-muted/30 py-0 text-[10px] shadow-none transition-[width] duration-150 focus-visible:ring-0 [&::-webkit-search-cancel-button]:hidden',
-                    searchWide ? 'w-52 pl-7 pr-7' : 'w-7 px-0',
-                  )}
-                />
-                {searchWide && query !== '' && (
-                  <button
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => setQuery('')}
-                    aria-label="Clear search"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <SearchBox value={query} onChange={setQuery} placeholder="Search team, pick…" />
               {/* Opens every card at once, and shuts them all again - including
                   the ones opened by hand, which is what makes it a way back.
                   Sits with the sort because both answer the same question:

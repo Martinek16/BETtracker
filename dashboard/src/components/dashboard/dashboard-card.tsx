@@ -18,16 +18,6 @@ export const DashboardCard = ({
   </div>
 );
 
-export const DashboardCardHeader = ({
-  className,
-  ...props
-}: HTMLAttributes<HTMLDivElement>): JSX.Element => (
-  <div
-    className={cn('mb-4 flex flex-wrap items-start justify-between gap-3', className)}
-    {...props}
-  />
-);
-
 /** Primary card title - use on every card so the section is identifiable. */
 export const DashboardCardHeading = ({
   title,
@@ -55,21 +45,4 @@ export const DashboardCardHeading = ({
       </div>
     ) : null}
   </div>
-);
-
-export const DashboardCardTitle = ({
-  className,
-  ...props
-}: HTMLAttributes<HTMLParagraphElement>): JSX.Element => (
-  <p className={cn('text-xs text-muted-foreground', className)} {...props} />
-);
-
-export const DashboardCardMetric = ({
-  className,
-  ...props
-}: HTMLAttributes<HTMLParagraphElement>): JSX.Element => (
-  <p
-    className={cn('text-2xl font-semibold tracking-tight text-foreground tabular-nums', className)}
-    {...props}
-  />
 );

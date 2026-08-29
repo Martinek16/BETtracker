@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { activeBets, isLiveBet, type Bet, type LiveScore } from '@betanal/shared';
 import { useDashboard } from '@/context/dashboard-context';
-import { DEMO_BETS, isDemoSlipEnabled } from '@/data/demo-slip';
 import { refreshOpenBets, type ActiveBetsSnapshot } from '@/data/source';
 
 /** How often the panel re-fetches while it is open and nothing is running. */
@@ -87,7 +86,7 @@ export const useActiveBets = (open: boolean): ActiveBets => {
   }, [open, every]);
 
   return {
-    bets: isDemoSlipEnabled() ? [...DEMO_BETS, ...bets] : bets,
+    bets,
     error: snapshot?.error ?? null,
     scores: snapshot?.scores ?? {},
     refreshedAt,

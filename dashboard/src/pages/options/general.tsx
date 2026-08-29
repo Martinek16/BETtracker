@@ -40,6 +40,7 @@ import { Switch } from '@/components/ui/switch';
 import { useDashboard } from '@/context/dashboard-context';
 import { findAccount, useAccountNames, useAllKnownAccounts } from '@/data/accounts';
 import { clearAll, exportAll, type ExportBundle } from '@/data/source';
+import { isDemoMode, setDemoMode } from '@/demo';
 import { useSettings } from '@/data/use-settings';
 import { Section } from '@/pages/options/parts';
 import { formatDate, symbolOf } from '@/lib/utils';
@@ -647,6 +648,16 @@ const DataSection = ({ notify }: { notify: Notify }): JSX.Element => {
         hint="A copy of what is stored here, for you to keep. It cannot be loaded back in."
       >
         <SaveBackup onSaved={notify} />
+      </Setting>
+      <Setting
+        label="Demo data"
+        hint={
+          isDemoMode()
+            ? 'Every page is showing a made-up history. Nothing of your own was touched, and switching this off brings it back.'
+            : 'Fill every page with a made-up history, to see what the app does before your own bets are in.'
+        }
+      >
+        <Switch checked={isDemoMode()} onCheckedChange={setDemoMode} />
       </Setting>
       <Setting
         label="Delete everything"

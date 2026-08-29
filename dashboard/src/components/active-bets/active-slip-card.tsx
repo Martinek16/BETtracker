@@ -207,7 +207,7 @@ export const ActiveSlipCard = ({
     <article
       onClick={onToggle}
       className={cn(
-        'cursor-pointer rounded-lg border border-border bg-background',
+        'cursor-pointer rounded-md border border-border bg-card',
         compact ? 'p-2' : 'p-3',
       )}
     >

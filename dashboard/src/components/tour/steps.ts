@@ -15,6 +15,12 @@ export interface TourStep {
    * nobody presses.
    */
   opens?: string;
+  /**
+   * `data-tour` of an element that has to be on screen already, or the stop is
+   * dropped without its page ever being opened. The casino rail link is the one
+   * case: a sportsbook-only reader would be walked onto an empty page.
+   */
+  onlyIf?: string;
 }
 
 /** What the bubble calls the page it is on, so the count reads as a place. */
@@ -22,6 +28,7 @@ export const PAGE_NAMES: Readonly<Record<string, string>> = {
   '/': 'Overview',
   '/bets': 'Bets',
   '/analytics': 'Analytics',
+  '/casino': 'Casino',
   '/options': 'Settings',
   '/options/accounts': 'Accounts',
 };
@@ -185,7 +192,45 @@ export const TOUR_STEPS: readonly TourStep[] = [
     view: 'breakdowns',
     unit: 'slips',
     title: 'Read the rows',
-    body: 'Each row is one group: how many bets, what you staked and what it did to your profit. Sort by any column to find your best and worst corners. Next stop: Settings.',
+    body: 'Each row is one group: how many bets, what you staked and what it did to your profit. Sort by any column to find your best and worst corners.',
+  },
+  // ── Casino ─────────────────────────────────────────────────────────────────
+  // Dropped whole for a sportsbook-only reader: without the rail link there is
+  // no casino page worth walking onto.
+  {
+    anchor: 'nav:/casino',
+    onlyIf: 'nav:/casino',
+    route: '/casino',
+    title: 'Casino',
+    body: 'One of your accounts runs a casino off the same wallet as the bets, so the rounds it played are read too. They are kept apart from the betting here, where they cannot skew it.',
+  },
+  {
+    anchor: 'casino-kpis',
+    onlyIf: 'nav:/casino',
+    route: '/casino',
+    title: 'What the slots did',
+    body: 'What the rounds cost, what came back, and how much of every unit staked was returned. A return under 100% is the house edge doing its work.',
+  },
+  {
+    anchor: 'casino-rounds',
+    onlyIf: 'nav:/casino',
+    route: '/casino',
+    title: 'Round by round',
+    body: 'Every spin drawn in the order it was played, so a session that ran away is a shape rather than a number.',
+  },
+  {
+    anchor: 'casino-games',
+    onlyIf: 'nav:/casino',
+    route: '/casino',
+    title: 'Which game took it',
+    body: 'The same rounds grouped by game, by stake and by what they paid. This is where a favourite that quietly costs you shows up.',
+  },
+  {
+    anchor: 'casino-sittings',
+    onlyIf: 'nav:/casino',
+    route: '/casino',
+    title: 'One evening at a time',
+    body: 'Rounds played close together are one sitting. Click a date to narrow everything above to that evening. Next stop: Settings.',
   },
   // ── Settings ───────────────────────────────────────────────────────────────
   {

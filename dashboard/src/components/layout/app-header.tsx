@@ -4,6 +4,7 @@ import { AccountIcon } from '@/components/dashboard/account-icon';
 import { useDashboard, type BalanceRow } from '@/context/dashboard-context';
 import { findAccount } from '@/data/accounts';
 import { useUpdateNotice } from '@/data/update';
+import { isDemoMode } from '@/demo';
 import { cn, formatAmount, formatMoney } from '@/lib/utils';
 
 interface Row {
@@ -96,7 +97,7 @@ const AccountGroup = ({
       </div>
     )}
     {account.waiting != null && (
-      <div className="mt-1 flex items-center justify-between gap-6 pl-[22px] text-emerald-500">
+      <div className="mt-1 flex items-center justify-between gap-6 pl-[22px] text-profit">
         <span>Rakeback to claim</span>
         <span className="tabular-nums">{formatMoney(account.waiting, currency)}</span>
       </div>
@@ -326,7 +327,7 @@ const ClaimableChip = (): JSX.Element | null => {
 
   return (
     <div className="group relative flex items-center gap-1.5" tabIndex={0}>
-      <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-emerald-500">
+      <span className="rounded-full bg-profit/15 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-profit">
         Rakeback {formatMoney(total, currency)}
       </span>
       <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 hidden w-56 rounded-lg border border-border bg-popover p-3 text-left text-[10px] text-popover-foreground shadow-lg group-hover:block group-focus-within:block">
@@ -376,6 +377,13 @@ export const AppHeader = ({ bare = false }: { bare?: boolean }): JSX.Element => 
           <span className="font-bold uppercase tracking-[0.18em] text-foreground">Bet</span>
           <span className="font-light tracking-tight text-muted-foreground">tracker</span>
         </span>
+        {/* Said out loud on every page: a reader who forgot the switch would
+            otherwise read a made-up history as their own. */}
+        {isDemoMode() && (
+          <span className="rounded-full border border-border px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Demo data
+          </span>
+        )}
         {!bare && (
           <div className="flex items-center gap-4">
             <UpdateChip />

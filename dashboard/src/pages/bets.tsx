@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { usePersistedState } from '@/lib/persisted-state';
-import { ArrowRight, ChevronDown, ChevronUp, Search, Ticket, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Ticket } from 'lucide-react';
 import { profitOf, type Bet } from '@betanal/shared';
 import { BetTableRow } from '@/components/dashboard/bet-table-row';
 import { betSearchText, SLIP_KIND_LABEL, singleEventLabel, slipKind } from '@/lib/bet-display';
 import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
 import { SegmentedToggle, type SegmentedOption } from '@/components/dashboard/segmented-toggle';
-import { Input } from '@/components/ui/input';
+import { SearchBox } from '@/components/dashboard/search-box';
 import {
   Table,
   TableBody,
@@ -49,6 +49,8 @@ const COLUMNS: ReadonlyArray<{ key: SortKey; label: string }> = [
   { key: 'status', label: 'Status' },
 ];
 
+const NUMERIC_COLUMNS = new Set<SortKey>(['odds', 'stake', 'return', 'pl']);
+
 /** Sorts on what the column actually shows, not on the underlying field. */
 const SORT_VALUE: Record<SortKey, (bet: Bet) => string | number> = {
   date: (bet) => bet.placedAt,
@@ -77,6 +79,8 @@ interface SortHeadProps {
 const SortHead = ({ column, sort, onSort }: SortHeadProps): JSX.Element => {
   const active = sort.key === column.key;
   const Arrow = active && sort.dir === 'asc' ? ChevronUp : ChevronDown;
+  // Money and odds sit over the digits they head, which are right-aligned.
+  const numeric = NUMERIC_COLUMNS.has(column.key);
   return (
     <TableHead
       className="text-[11px] uppercase tracking-wide"
@@ -85,7 +89,10 @@ const SortHead = ({ column, sort, onSort }: SortHeadProps): JSX.Element => {
       <button
         type="button"
         onClick={() => onSort(column.key)}
-        className="group flex items-center gap-1 uppercase transition-colors hover:text-foreground"
+        className={cn(
+          'group flex items-center gap-1 uppercase transition-colors hover:text-foreground',
+          numeric && 'ml-auto',
+        )}
       >
         {column.label}
         <Arrow
@@ -120,10 +127,6 @@ export const BetsPage = (): JSX.Element => {
     'other',
   ]);
   const [query, setQuery] = usePersistedState('bets.query', '');
-  const [searchOpen, setSearchOpen] = useState(false);
-  // Collapsed to its icon until used, so the toolbar stays quiet; a typed term
-  // keeps it open after blur, otherwise the filter would hide what it filters by.
-  const searchWide = searchOpen || query !== '';
   const needle = query.trim().toLowerCase();
   const [shown, setShown] = useState(PAGE);
 
@@ -170,41 +173,13 @@ export const BetsPage = (): JSX.Element => {
           title="Bet history"
           action={
             <div className="flex items-stretch gap-2">
-              <div className="relative flex" data-tour="bets-search">
-                <Search
-                  size={12}
-                  className={cn(
-                    'pointer-events-none absolute top-1/2 -translate-y-1/2 text-muted-foreground',
-                    searchWide ? 'left-2' : 'left-1/2 -translate-x-1/2',
-                  )}
-                />
-                <Input
-                  type="search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  onFocus={() => setSearchOpen(true)}
-                  onBlur={() => setSearchOpen(false)}
-                  placeholder={searchWide ? 'Search bets…' : ''}
-                  aria-label="Search bets"
-                  /* Same skin as the segmented toggles next to it; the height is
-                     taken from the row so the two always line up. */
-                  className={cn(
-                    'h-auto cursor-pointer rounded-md border-border bg-muted/30 py-0 text-[10px] shadow-none transition-[width] duration-150 focus-visible:ring-0 [&::-webkit-search-cancel-button]:hidden',
-                    searchWide ? 'w-56 pl-7 pr-7' : 'w-7 px-0',
-                  )}
-                />
-                {searchWide && query !== '' ? (
-                  <button
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => setQuery('')}
-                    aria-label="Clear search"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X size={12} />
-                  </button>
-                ) : null}
-              </div>
+              <SearchBox
+                data-tour="bets-search"
+                value={query}
+                onChange={setQuery}
+                placeholder="Search bets…"
+                width="w-56"
+              />
               <div className="flex items-stretch" data-tour="bets-status">
                 <SegmentedToggle value={status} options={STATUS_OPTIONS} onChange={setStatus} />
               </div>

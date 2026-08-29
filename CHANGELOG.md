@@ -1,5 +1,45 @@
 # Changelog
 
+## 1.1.2 — August 2026
+
+A release about the app before it has anything of yours in it. The demo used to
+be a link you had to keep retyping; it is now a switch, and what it shows is a
+year of betting shaped the way the bookmakers hand it over.
+
+### Demo data
+
+- **A switch in Settings, under Your data.** The demo used to need `demo=1` in
+  the address, and every click that dropped it dropped the demo with it, so only
+  the page it was typed on could be looked at. Once switched on it stays on
+  across every page and reload, until it is switched off. The old link still
+  works — it now turns the switch on rather than the page.
+- **The header says so on every page.** A made-up history read as a real one is
+  worse than no demo at all.
+- **A year of betting on both accounts**, generated rather than written out by
+  hand: bookmaker-shaped bet references, odds that sit where the market they
+  belong to sits, a bet builder priced below the product of its legs the way the
+  books price one, and outcomes drawn against the bookmaker's margin — so the
+  punter ends the year slightly down, which is the story the app is for.
+  Singles, doubles, accumulators, cash-outs and voided slips are all in there,
+  along with deposits, withdrawals, bonuses and slips still running.
+- **A casino that pays back less than it takes**, over a thousand rounds across
+  nine games, in sittings rather than scattered one at a time.
+- **Nothing of yours is touched.** The demo replaces what the pages read; it
+  never writes over the stored history, and switching it off brings it back.
+
+### The rest
+
+- **The tour walks the casino too**, and drops those stops for a reader whose
+  bookmaker has no casino, rather than walking them onto an empty page.
+- **One search box and one sort header.** The collapsing search was written
+  three times and the sort header twice, so the same control behaved slightly
+  differently depending on which page it stood on.
+- **The open-bets cards sit on a card surface again** — in the dark theme they
+  were drawn on the page's own background, so the wall lost its edges.
+- **A page of no bonuses says so** instead of standing empty, money in the bet
+  table is right-aligned like money everywhere else, and the clickable figures
+  on Overview show a focus ring when tabbed to.
+
 ## 1.1.1 — August 2026
 
 Bets that have not been decided yet get a page of their own. The drawer that
