@@ -4,7 +4,7 @@ import { usePersistedState } from '@/lib/persisted-state';
 import { ArrowRight, ChevronDown, ChevronUp, Ticket } from 'lucide-react';
 import { profitOf, type Bet } from '@betanal/shared';
 import { BetTableRow } from '@/components/dashboard/bet-table-row';
-import { betSearchText, SLIP_KIND_LABEL, singleEventLabel, slipKind } from '@/lib/bet-display';
+import { betSearchText, singleEventLabel, slipKind, slipLabel } from '@/lib/bet-display';
 import { DashboardCard, DashboardCardHeading } from '@/components/dashboard/dashboard-card';
 import { SegmentedToggle, type SegmentedOption } from '@/components/dashboard/segmented-toggle';
 import { SearchBox } from '@/components/dashboard/search-box';
@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { useDashboard } from '@/context/dashboard-context';
 import { useLiveBets } from '@/data/live-bets';
-import { cn, formatTime } from '@/lib/utils';
+import { formatTime } from '@/lib/utils';
 
 type SortKey = 'date' | 'type' | 'bet' | 'odds' | 'stake' | 'return' | 'pl' | 'status';
 type SortDir = 'asc' | 'desc';
@@ -40,8 +40,8 @@ const matchesStatus = (bet: Bet, filter: StatusFilter): boolean => {
 
 const COLUMNS: ReadonlyArray<{ key: SortKey; label: string }> = [
   { key: 'date', label: 'Date' },
-  { key: 'type', label: 'Type' },
   { key: 'bet', label: 'Bet' },
+  { key: 'type', label: 'Type' },
   { key: 'odds', label: 'Odds' },
   { key: 'stake', label: 'Stake' },
   { key: 'return', label: 'Return' },
@@ -49,12 +49,10 @@ const COLUMNS: ReadonlyArray<{ key: SortKey; label: string }> = [
   { key: 'status', label: 'Status' },
 ];
 
-const NUMERIC_COLUMNS = new Set<SortKey>(['odds', 'stake', 'return', 'pl']);
-
 /** Sorts on what the column actually shows, not on the underlying field. */
 const SORT_VALUE: Record<SortKey, (bet: Bet) => string | number> = {
   date: (bet) => bet.placedAt,
-  type: (bet) => SLIP_KIND_LABEL[slipKind(bet)],
+  type: (bet) => slipLabel(bet),
   bet: (bet) => (slipKind(bet) === 'single' ? singleEventLabel(bet) : `${bet.legs.length} `),
   odds: (bet) => bet.odds,
   stake: (bet) => bet.stake,
@@ -79,20 +77,17 @@ interface SortHeadProps {
 const SortHead = ({ column, sort, onSort }: SortHeadProps): JSX.Element => {
   const active = sort.key === column.key;
   const Arrow = active && sort.dir === 'asc' ? ChevronUp : ChevronDown;
-  // Money and odds sit over the digits they head, which are right-aligned.
-  const numeric = NUMERIC_COLUMNS.has(column.key);
   return (
     <TableHead
-      className="text-[11px] uppercase tracking-wide"
+      className="text-center text-[11px] uppercase tracking-wide"
       aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
     >
+      {/* Centred over the column it heads, arrow included: the arrow is part of
+          the label, so it moves with it rather than pinning the head to an edge. */}
       <button
         type="button"
         onClick={() => onSort(column.key)}
-        className={cn(
-          'group flex items-center gap-1 uppercase transition-colors hover:text-foreground',
-          numeric && 'ml-auto',
-        )}
+        className="group mx-auto flex items-center gap-1 uppercase transition-colors hover:text-foreground"
       >
         {column.label}
         <Arrow
@@ -205,8 +200,8 @@ export const BetsPage = (): JSX.Element => {
               <colgroup>
                 {showAccount ? <col className="w-[2.75rem]" /> : null}
                 <col className="w-[9rem]" />
-                <col className="w-[9.5rem]" />
                 <col />
+                <col className="w-[7rem]" />
                 <col className="w-[4.5rem]" />
                 <col className="w-[5.5rem]" />
                 <col className="w-[5.5rem]" />

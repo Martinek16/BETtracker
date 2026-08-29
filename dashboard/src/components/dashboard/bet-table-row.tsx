@@ -9,13 +9,13 @@ import {
   type LiveScore,
 } from '@betanal/shared';
 import {
-  SLIP_KIND_LABEL,
   formatLegEvent,
   formatLegSelection,
   sharedEventName,
   singleEventLabel,
   singlePickLabel,
   slipKind,
+  slipLabel,
 } from '@/lib/bet-display';
 import { AccountIcon } from '@/components/dashboard/account-icon';
 import {
@@ -79,13 +79,13 @@ const BetCell = ({ bet }: BetTableRowProps): JSX.Element => {
   const kind = slipKind(bet);
   const fixture = kind === 'single' ? singleEventLabel(bet) : sharedEventName(bet);
   if (lead === undefined || fixture === null) {
-    return <p className="truncate text-sm">{`${bet.legs.length} selections`}</p>;
+    return <p className="truncate text-center text-xs">{`${bet.legs.length} selections`}</p>;
   }
 
   return (
-    <div className="flex min-w-0 items-baseline gap-1.5">
-      <span className="truncate text-sm font-medium text-foreground">{fixture}</span>
-      <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+    <div className="flex min-w-0 items-baseline justify-center gap-1.5">
+      <span className="truncate text-xs text-foreground">{fixture}</span>
+      <span className="min-w-0 truncate text-[11px] text-muted-foreground">
         {kind === 'single' ? singlePickLabel(bet) : `${bet.legs.length} picks`}
       </span>
     </div>
@@ -164,12 +164,12 @@ const LegRow = ({
       <TableCell
         className={cn(
           pad,
-          'whitespace-nowrap align-top text-[11px] leading-tight text-muted-foreground/70',
+          'whitespace-nowrap text-center align-top text-[11px] leading-tight text-muted-foreground/70',
         )}
       >
         {!lead || leg.eventDate == null ? '' : formatDateTime(leg.eventDate)}
       </TableCell>
-      {/* Across Type and Bet: held in the Bet column alone the legs sat half a
+      {/* Across Bet and Type: held in the Bet column alone the legs sat half a
           table away from the date they are ordered by. */}
       <TableCell colSpan={2} className={cn(pad, 'overflow-hidden align-top')}>
         <div className="flex min-w-0 items-start gap-2">
@@ -205,7 +205,7 @@ const LegRow = ({
       <TableCell
         className={cn(
           pad,
-          'text-right align-top tabular-nums text-[11px] leading-tight text-muted-foreground/70',
+          'text-center align-top tabular-nums text-[11px] leading-tight text-muted-foreground/70',
         )}
       >
         {odds == null ? '' : formatOdds(odds, oddsFormat)}
@@ -213,8 +213,8 @@ const LegRow = ({
       <TableCell className={pad} />
       <TableCell className={pad} />
       <TableCell className={pad} />
-      <TableCell className={cn(pad, 'align-top')}>
-        <span className="inline-block origin-left scale-[0.85]">
+      <TableCell className={cn(pad, 'text-center align-top')}>
+        <span className="inline-block origin-center scale-[0.85]">
           <StatusBadge status={leg.status} live={isLiveLeg(leg, Date.now(), scores)} />
         </span>
       </TableCell>
@@ -265,35 +265,38 @@ export const BetTableRow = ({
             <AccountIcon bookmaker={bet.bookmaker} className="h-5 w-5 text-[10px]" />
           </TableCell>
         ) : null}
-        <TableCell className="whitespace-nowrap text-[11px] text-muted-foreground">
+        <TableCell className="whitespace-nowrap text-center text-[11px] text-muted-foreground">
           {formatDateTime(bet.placedAt)}
-        </TableCell>
-        {/* Only two things in the row are read on every pass - what the slip is
-            on and what it did - so everything around them steps back a size. */}
-        <TableCell className="overflow-hidden text-xs text-muted-foreground">
-          {SLIP_KIND_LABEL[slipKind(bet)]}
         </TableCell>
         <TableCell className="overflow-hidden">
           {/* The score stays out of the shut row: what is on the slip fits the
               width, the fixture's own state is a click away with the picks. */}
           <BetCell bet={bet} />
         </TableCell>
-        <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
+        <TableCell className="overflow-hidden text-center text-xs text-muted-foreground">
+          {slipLabel(bet)}
+        </TableCell>
+        <TableCell className="text-center tabular-nums text-xs text-muted-foreground">
           {formatOdds(bet.odds, oddsFormat)}
         </TableCell>
-        <TableCell className="text-right tabular-nums text-sm">
+        <TableCell className="text-center tabular-nums text-sm">
           {formatMoney(bet.stake, bet.currency)}
         </TableCell>
-        <TableCell className="text-right tabular-nums text-sm">{formatReturn(bet)}</TableCell>
+        {/* The colour rides on what came back rather than on the difference:
+            what a punter looks for down this table is the money returned, and
+            the P/L beside it says the same thing in figures either way. */}
         <TableCell
           className={cn(
-            'text-right tabular-nums text-xs font-medium',
+            'text-center tabular-nums text-sm',
             bet.status === 'pending' ? undefined : pl >= 0 ? 'text-profit' : 'text-loss',
           )}
         >
+          {formatReturn(bet)}
+        </TableCell>
+        <TableCell className="text-center tabular-nums text-xs font-medium">
           {bet.status === 'pending' ? '—' : formatMoney(pl, bet.currency)}
         </TableCell>
-        <TableCell>
+        <TableCell className="text-center">
           {/* With the scores, so a slip reads Live only while its match is
               actually being played - the same rule the slip panel goes by. */}
           <StatusBadge status={bet.status} live={isLiveBet(bet, Date.now(), scores)} />
