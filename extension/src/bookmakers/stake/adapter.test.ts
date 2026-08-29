@@ -10,6 +10,7 @@ import {
   normalizeBet,
   normalizeRound,
   parseBalance,
+  parsePerks,
   parseScopedTotals,
   stake,
 } from './adapter';
@@ -422,5 +423,41 @@ describe('casino rounds', () => {
 
   it('dates the round by the site clock, as an ISO timestamp', () => {
     expect(rounds[0]?.playedAt).toBe('2026-01-31T19:42:39.000Z');
+  });
+});
+
+describe('the rewards snapshot', () => {
+  // Shape lifted from a recorded page load, coins and all: the balances arrive
+  // as dust in several currencies, and one of them is empty.
+  const answer = {
+    user: {
+      rakeback: {
+        enabled: true,
+        balances: [
+          { currency: 'btc', availableAmount: 8.279578557407534e-9 },
+          { currency: 'ltc', availableAmount: 0 },
+          { currency: 'sol', availableAmount: 5.2573500000000004e-8 },
+        ],
+      },
+      flags: [{ flag: 'bronze', rank: 1 }],
+      faucet: { value: 1, active: false, claimInterval: 86400000, lastClaim: null, expireAt: null },
+    },
+  };
+
+  it('prices what is waiting and leaves out the coins with nothing in them', () => {
+    const perks = parsePerks(answer, new Map([['SOL', 200]]), sampleRef('stake'));
+    expect(perks.rakeback?.enabled).toBe(true);
+    expect(perks.rakeback?.balances.map((b) => b.currency)).toEqual(['SOL', 'BTC']);
+    expect(perks.rakeback?.balances[0]?.worth).toBeCloseTo(5.2573500000000004e-8 * 200, 10);
+    // No rate for the coin means no price, never a price of zero.
+    expect(perks.rakeback?.balances[1]?.worth).toBeNull();
+  });
+
+  // A refused field takes the whole `user` with it rather than just itself, so
+  // asking for one number nobody reads once cost the entire snapshot.
+  it('survives an answer the server refused to fill in', () => {
+    const perks = parsePerks({ user: null }, new Map(), sampleRef('stake'));
+    expect(perks.rakeback).toBeNull();
+    expect(perks.vip).toBeNull();
   });
 });
