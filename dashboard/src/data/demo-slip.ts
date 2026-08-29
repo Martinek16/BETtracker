@@ -172,6 +172,7 @@ export const DEMO_BETS: Bet[] = [
   // was placed at - the only slip where the two returns differ.
   slip({
     betId: 'demo-combo-mixed',
+    bookmaker: 'stake',
     betType: 'accumulator',
     odds: 10.62,
     stake: 8,
@@ -270,6 +271,7 @@ export const DEMO_BETS: Bet[] = [
   single(
     {
       betId: 'demo-tennis',
+      bookmaker: 'stake',
       sport: 'Tennis',
       league: 'ATP Toronto',
       event: 'Alcaraz - Sinner',
@@ -313,6 +315,7 @@ export const DEMO_BETS: Bet[] = [
   single(
     {
       betId: 'demo-basketball',
+      bookmaker: 'stake',
       sport: 'Basketball',
       league: 'NBA',
       event: 'Boston Celtics - Denver Nuggets',
@@ -409,8 +412,11 @@ export const DEMO_BETS: Bet[] = [
     },
   ),
 
+  // A second login at the same site: the account is the unit, not the site.
   slip({
     betId: 'demo-open-combo',
+    bookmaker: 'stake',
+    accountId: 'demo-2',
     betType: 'accumulator',
     odds: 12.17,
     stake: 2,

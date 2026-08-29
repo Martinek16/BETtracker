@@ -154,6 +154,33 @@ const kickoffTime = (leg: BetLeg): string | null => {
   return `${pad(at.getHours())}:${pad(at.getMinutes())}`;
 };
 
+/**
+ * What a folded fixture is worth one glance for: the count once there is one,
+ * and until then the time it is due. Never the part being played - a shut card
+ * is read in a single pass down the column, and "Half time" is a word standing
+ * where every other card has a figure.
+ */
+export const StatOrKickoff = ({
+  leg,
+  score,
+  status,
+}: {
+  leg: BetLeg;
+  score: LiveScore | undefined;
+  /** Whole-fixture state, since a fixture's picks can differ from one another. */
+  status: BetStatus;
+}): JSX.Element | null => {
+  if (score !== undefined && score.home !== '') return <Stat score={score} />;
+  if (status !== 'pending') return null;
+  const at = kickoffTime(leg);
+  if (at === null) return null;
+  return (
+    <span className="shrink-0 whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
+      {at}
+    </span>
+  );
+};
+
 /** Only football is read by the minute; every other sport is read by its part. */
 const BY_THE_MINUTE = new Set(['Football']);
 
@@ -175,8 +202,10 @@ const clockOf = (live: LiveScore | undefined, sport: string | null): string | un
 /**
  * Once a match is running, when it started stops being the useful number, and
  * once it has been played out neither is: the row falls silent and the pick's
- * own dot says how it went. A fixture called off keeps its kickoff, struck
- * through - that time is the reason the rest of the slip now hangs where it does.
+ * own dot says how it went. A fixture called off never kicked off, so it has no
+ * time to show either - what it has is a struck-through name.
+ *
+ * Always read immediately left of the count it belongs to, wherever it appears.
  */
 export const LegClock = ({
   leg,
@@ -190,16 +219,15 @@ export const LegClock = ({
   status: BetStatus;
   className?: string;
 }): JSX.Element | null => {
-  if (status !== 'pending' && status !== 'void') return null;
+  if (status !== 'pending') return null;
   // A pick can still be open minutes after the whistle, while the book settles it.
   if (live?.period === 'Ended') return null;
-  const at = status === 'void' ? kickoffTime(leg) : (clockOf(live, leg.sport) ?? kickoffTime(leg));
+  const at = clockOf(live, leg.sport) ?? kickoffTime(leg);
   if (at === null) return null;
   return (
     <span
       className={cn(
         'shrink-0 whitespace-nowrap text-[11px] tabular-nums text-muted-foreground',
-        status === 'void' && 'line-through',
         className,
       )}
     >

@@ -8,6 +8,7 @@ import { DashboardProvider } from '@/context/dashboard-context';
 import { LiveBetsProvider } from '@/data/live-bets';
 import { OverviewPage } from '@/pages/overview';
 import { BetsPage } from '@/pages/bets';
+import { OpenBetsPage } from '@/pages/open-bets';
 import { AnalyticsPage } from '@/pages/analytics';
 import { TransactionsPage } from '@/pages/transactions';
 import { BonusesPage } from '@/pages/bonuses';
@@ -24,8 +25,10 @@ export const App = (): JSX.Element => {
   // Nothing is connected yet on the welcome page, so every chrome that reads
   // from an account has nothing to show and only gets in the way.
   const welcome = location.pathname === '/welcome';
-  // Settings are not a period, so a time range picker above them means nothing.
-  const showToolbar = !location.pathname.startsWith('/options') && !welcome;
+  // Settings are not a period, and neither is a bet that has not been decided
+  // yet, so a time range picker above either of them means nothing.
+  const showToolbar =
+    !location.pathname.startsWith('/options') && !welcome && location.pathname !== '/bets/open';
 
   return (
     <DashboardProvider>
@@ -53,6 +56,7 @@ export const App = (): JSX.Element => {
                   <Routes>
                     <Route path="/" element={<OverviewPage />} />
                     <Route path="/bets" element={<BetsPage />} />
+                    <Route path="/bets/open" element={<OpenBetsPage />} />
                     <Route path="/analytics" element={<AnalyticsPage />} />
                     <Route path="/transactions" element={<TransactionsPage />} />
                     <Route path="/bonuses" element={<BonusesPage />} />

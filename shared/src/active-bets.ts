@@ -5,6 +5,7 @@
  * alongside the other pure bet logic.
  */
 
+import { canonicalSport, isEsport } from './sports';
 import type { Bet, BetLeg, LiveScore } from './types';
 
 /** Kickoff as epoch ms, or NaN when unknown - every comparison against NaN is false. */
@@ -31,7 +32,7 @@ const LIVE_WINDOW_MS = 4 * 60 * 60_000;
  * as running and the slip pulsed as live all evening.
  */
 const NOT_RUNNING =
-  /^(ended|finished|full[ -]?time|ft|aet|after extra time|final|result|not started|postponed|delayed|interrupted|suspended|abandoned|cancell?ed|walkover|retired)$/i;
+  /^(ended|finished|full[ -]?time|ft|aet|after extra time|final|result|not[ _-]?started|scheduled|postponed|delayed|start delayed|interrupted|suspended|abandoned|cancell?ed|walkover|retired)$/i;
 
 /** The book saying this event is not being played, whatever it calls it. */
 export const isStoppedEvent = (scores: readonly LiveScore[] | undefined): boolean =>
@@ -39,14 +40,39 @@ export const isStoppedEvent = (scores: readonly LiveScore[] | undefined): boolea
   scores.some((score) => score.period !== undefined && NOT_RUNNING.test(score.period.trim()));
 
 /**
- * The book naming the part being played, or counting a clock. No test day, five
- * setter or rain delay outlasts this: the match is running because the book is
- * still reporting it as running, however many hours ago it started.
+ * The book naming the part being played, counting a clock, or simply putting a
+ * figure on the board. No test day, five setter or rain delay outlasts this: the
+ * match is running because the book is still reporting it as running, however
+ * many hours ago it started.
+ *
+ * The scoreline counts on its own because not every feed carries a clock: a
+ * bookmaker that pushes only the set score would otherwise say nothing this
+ * function recognises, and its match would be judged by the kickoff alone.
  */
 const isRunningEvent = (scores: readonly LiveScore[] | undefined): boolean =>
   scores !== undefined &&
   !isStoppedEvent(scores) &&
-  scores.some((score) => score.clock !== undefined || score.period !== undefined);
+  scores.some(
+    (score) => score.clock !== undefined || score.period !== undefined || score.home !== '',
+  );
+
+/**
+ * Sports played one after another on the same court, table, oche or ring, where
+ * the time on the slip is when the match was due up rather than when it starts.
+ * A five-setter before it, or a card that overruns, puts everything behind it
+ * back by an hour and the book never rewrites the kickoff it sold the bet at.
+ *
+ * For these the kickoff is not evidence of anything, so a slip goes in play only
+ * when the book itself reports the match running - or when it was placed in play
+ * to begin with. Sports that start when the clock says so keep the window below.
+ */
+const WAITS_ITS_TURN =
+  /tennis|badminton|squash|padel|snooker|billiard|pool|darts|bowling|boxing|mma|ufc|fighting|martial|chess/i;
+
+const startsWhenCalled = (sport: string | null): boolean => {
+  const name = canonicalSport(sport) ?? '';
+  return isEsport(name) || WAITS_ITS_TURN.test(name);
+};
 
 /**
  * A leg is in play if it is flagged live or its event has started and could
@@ -61,7 +87,8 @@ const isRunningEvent = (scores: readonly LiveScore[] | undefined): boolean =>
  * either direction: a match it is still reporting on is in play for as long as
  * it says so, with no window over it, and one it calls off is not in play even
  * though its kickoff has been and gone. The window only stands in where the book
- * says nothing at all.
+ * says nothing at all - and not even then for a sport that waits its turn, where
+ * a passed kickoff says only that the match was due, not that it is being played.
  */
 export const isLiveLeg = (
   leg: BetLeg,
@@ -72,7 +99,9 @@ export const isLiveLeg = (
   if (isStoppedEvent(said)) return false;
   if (isRunningEvent(said)) return leg.status === 'pending';
   const at = startedAt(leg);
-  if (leg.status === 'pending' && at <= now) return now - at < LIVE_WINDOW_MS;
+  if (leg.status === 'pending' && at <= now && !startsWhenCalled(leg.sport)) {
+    return now - at < LIVE_WINDOW_MS;
+  }
   return leg.isLive;
 };
 

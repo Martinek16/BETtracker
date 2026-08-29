@@ -1,5 +1,55 @@
 # Changelog
 
+## 1.1.1 — August 2026
+
+Bets that have not been decided yet get a page of their own. The drawer that
+held them was a column you scrolled; a page is a wall you read.
+
+### Open bets
+
+- **A page for every slip still running**, at Bets → Open bets. The slips are
+  laid out as cards across the width of the window rather than stacked in a
+  drawer, so a dozen of them are read in one pass instead of a dozen scrolls.
+- **Live and Open are two counts, not two lists.** The toggle picks which half
+  is on the wall, and the totals beside it — what those slips cost and what they
+  pay if they land — answer to whatever is filtered, sorted or searched.
+- **Sort by time, stake or what it pays**, filter to one account, and search
+  across teams, leagues, markets and picks.
+- **A card shut is one line per fixture** with one figure against it: the score
+  once there is one, and until then the time the match is due. A card opened is
+  every pick, its price, and what the book would buy the slip back for.
+- **Open or shut them all with one button**, or click a single card. Either way
+  the columns re-pack so they end at roughly the same height, and the cards
+  still read left to right in the order the sort put them.
+- **Singles are laid out exactly as multiples are.** They used to carry a price
+  and a market on the front of the card, which made a page of mixed slips look
+  like two different pages.
+
+### Live matches
+
+- **A sport that waits its turn no longer goes live on the clock.** Tennis,
+  darts, snooker, boxing, chess and the rest are played one after another on the
+  same court or table, and the time on the slip is when the match was due up,
+  not when it started. A five-setter before it puts everything behind it back an
+  hour, and the book never rewrites the kickoff it sold the bet at. Those slips
+  now move to Live when the book itself says the match is running.
+- **A scoreline on its own counts as running.** Not every feed sends a clock; a
+  bookmaker that pushes only the set score was saying nothing the app
+  recognised.
+- **"Scheduled" and "Start delayed" are understood** as a match that has not
+  begun, alongside the words already known.
+- **The clock reads before the score**, in that order wherever either appears.
+- **A called-off fixture keeps its row in the bet table**, struck through — it
+  is what the rest of the slip now hangs on.
+
+### The rest
+
+- **Stake's cash-out figure is read from the site** rather than left blank, and
+  it disappears the moment the book stops buying the slip back.
+- **Coin dust is out of the balance breakdown.** A wallet site leaves a trace of
+  every coin it has ever paid out, and a holding worth less than a cent printed
+  as a row of zeros, burying the lines that carried actual money.
+
 ## 1.1.0 — August 2026
 
 The casino gets a page. Until now this app had one honest thing to say about

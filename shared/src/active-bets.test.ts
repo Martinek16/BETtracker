@@ -104,6 +104,24 @@ describe('isLiveBet with the book’s own scores', () => {
     expect(isLiveBet(slip, NOW, { e1: [{ home: '', away: '', period: 'Postponed' }] })).toBe(false);
   });
 
+  it('reads a scoreline as a match being played, clock or no clock', () => {
+    // A feed that pushes the set score and nothing else - no minute, no period -
+    // still says the match is on, and is the only thing that can say so for a
+    // sport whose kickoff is a queue position.
+    const tennis = leg({ ...started, sport: 'Tennis' });
+    expect(isLiveBet(bet('x', [tennis]), NOW, { e1: [{ home: '1', away: '0' }] })).toBe(true);
+  });
+
+  it('waits for the book on a sport that is played when the court frees up', () => {
+    // The match was due at eleven; the one before it went to five sets. Nothing
+    // the book has said puts it on court, so the kickoff on its own must not.
+    const tennis = leg({ ...started, sport: 'Tennis' });
+    expect(isLiveBet(bet('x', [tennis]), NOW, {})).toBe(false);
+    expect(isLiveBet(bet('x', [leg(started)]), NOW, {})).toBe(true);
+    // Placed in play, so it was being played whatever the schedule said.
+    expect(isLiveBet(bet('x', [leg({ ...tennis, isLive: true })]), NOW, {})).toBe(true);
+  });
+
   it('keeps a match in play for as long as the book names the part being played', () => {
     // The cricket case: eight hours past the first ball, no window over it, and
     // out of play the moment the pick itself is decided.

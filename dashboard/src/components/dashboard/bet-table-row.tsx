@@ -48,8 +48,9 @@ const kickoffMs = (leg: BetLeg): number => {
 };
 
 /**
- * How the fixture is going, on the row that names it: the count the pick backed
- * and how far the match is. Silent on anything already decided.
+ * How the fixture is going, on the row that names it: how far the match is and
+ * then the count the pick backed, in that order here as everywhere. Silent on
+ * anything already decided.
  */
 const Live = ({
   leg,
@@ -61,8 +62,8 @@ const Live = ({
   const stats = leg.eventId === undefined ? undefined : scores?.[leg.eventId];
   return (
     <span className="flex shrink-0 items-baseline gap-1.5 text-xs">
-      <Stat score={statForLeg(leg, stats)} />
       <LegClock leg={leg} live={liveOf(stats)} status={leg.status} />
+      <Stat score={statForLeg(leg, stats)} />
     </span>
   );
 };
@@ -73,7 +74,7 @@ const Live = ({
  * single name would be true of it, so it says only how many picks are folded in;
  * the legs themselves are one click away.
  */
-const BetCell = ({ bet, scores }: BetTableRowProps): JSX.Element => {
+const BetCell = ({ bet }: BetTableRowProps): JSX.Element => {
   const lead = bet.legs[0];
   const kind = slipKind(bet);
   const fixture = kind === 'single' ? singleEventLabel(bet) : sharedEventName(bet);
@@ -83,11 +84,10 @@ const BetCell = ({ bet, scores }: BetTableRowProps): JSX.Element => {
 
   return (
     <div className="flex min-w-0 items-baseline gap-1.5">
-      <span className="truncate text-sm text-foreground">{fixture}</span>
-      <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+      <span className="truncate text-sm font-medium text-foreground">{fixture}</span>
+      <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
         {kind === 'single' ? singlePickLabel(bet) : `${bet.legs.length} picks`}
       </span>
-      <Live leg={lead} scores={scores} />
     </div>
   );
 };
@@ -181,12 +181,19 @@ const LegRow = ({
           <div className="min-w-0 flex-1">
             {lead ? (
               <span className="flex min-w-0 items-baseline gap-1.5">
-                <span className="min-w-0 flex-1 truncate text-[11px] font-semibold leading-tight text-foreground">
+                <span
+                  className={cn(
+                    'min-w-0 flex-1 truncate text-[11px] font-semibold leading-tight',
+                    // A match that was called off is struck through and says
+                    // nothing else: it has no clock and no count to report.
+                    leg.status === 'void'
+                      ? 'text-muted-foreground line-through'
+                      : 'text-foreground',
+                  )}
+                >
                   {formatLegEvent(leg)}
                 </span>
-                {/* A called-off fixture keeps its kickoff on the date column; a
-                    second copy of it, struck through, is the same fact twice. */}
-                {leg.status === 'void' ? null : <Live leg={leg} scores={scores} />}
+                <Live leg={leg} scores={scores} />
               </span>
             ) : null}
             <span className="block truncate text-[11px] leading-tight text-muted-foreground/70">
@@ -258,20 +265,28 @@ export const BetTableRow = ({
             <AccountIcon bookmaker={bet.bookmaker} className="h-5 w-5 text-[10px]" />
           </TableCell>
         ) : null}
-        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+        <TableCell className="whitespace-nowrap text-[11px] text-muted-foreground">
           {formatDateTime(bet.placedAt)}
         </TableCell>
-        <TableCell className="overflow-hidden text-sm">{SLIP_KIND_LABEL[slipKind(bet)]}</TableCell>
-        <TableCell className="overflow-hidden">
-          <BetCell bet={bet} scores={scores} />
+        {/* Only two things in the row are read on every pass - what the slip is
+            on and what it did - so everything around them steps back a size. */}
+        <TableCell className="overflow-hidden text-xs text-muted-foreground">
+          {SLIP_KIND_LABEL[slipKind(bet)]}
         </TableCell>
-        <TableCell className="tabular-nums text-sm">{formatOdds(bet.odds, oddsFormat)}</TableCell>
+        <TableCell className="overflow-hidden">
+          {/* The score stays out of the shut row: what is on the slip fits the
+              width, the fixture's own state is a click away with the picks. */}
+          <BetCell bet={bet} />
+        </TableCell>
+        <TableCell className="tabular-nums text-xs text-muted-foreground">
+          {formatOdds(bet.odds, oddsFormat)}
+        </TableCell>
         <TableCell className="tabular-nums text-sm">
           {formatMoney(bet.stake, bet.currency)}
         </TableCell>
         <TableCell className="tabular-nums text-sm">{formatReturn(bet)}</TableCell>
         <TableCell
-          className="tabular-nums text-sm font-medium"
+          className="tabular-nums text-xs font-medium"
           style={
             bet.status === 'pending'
               ? undefined
