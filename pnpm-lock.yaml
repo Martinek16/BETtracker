@@ -74,8 +74,8 @@ importers:
         specifier: ^8.0.3
         version: 8.0.3
       lucide-react:
-        specifier: ^0.469.0
-        version: 0.469.0(react@18.3.1)
+        specifier: ^0.577.0
+        version: 0.577.0(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -83,8 +83,8 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
       react-router:
-        specifier: ^7.18.2
-        version: 7.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^7.18.3
+        version: 7.18.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       recharts:
         specifier: ^2.15.4
         version: 2.15.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1677,8 +1677,8 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
-  lucide-react@0.469.0:
-    resolution: {integrity: sha512-28vvUnnKQ/dBwiCQtwJw7QauYnE7yd2Cyp4tTTJpvglX4EMpbflcdBgrgToX2j71B3YvugK/NH3BGUk+E/p/Fw==}
+  lucide-react@0.577.0:
+    resolution: {integrity: sha512-4LjoFv2eEPwYDPg/CUdBJQSDfPyzXCRrVW1X7jrx/trgxnxkHFjnVZINbzvzxjN70dxychOfg+FTYwBiS3pQ5A==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
@@ -1880,8 +1880,8 @@ packages:
       '@types/react':
         optional: true
 
-  react-router@7.18.2:
-    resolution: {integrity: sha512-aUVMjFm3GAPTTZL7oYr5E7ETiqfQCHRLH+B+5afnICvf0r7kkK4eR6SMuwbSTJw/7t+12khT/Kahij49fqOCIg==}
+  react-router@7.18.3:
+    resolution: {integrity: sha512-gyXgtdr5uACJ5b1Q4udzjVV+tb/rlHIMJKuJ0e89R4Kzgz47z/rgP0dIKxktqIEUhDHluGTPJJH/wRha7CyqsA==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: '>=18'
@@ -3642,7 +3642,7 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  lucide-react@0.469.0(react@18.3.1):
+  lucide-react@0.577.0(react@18.3.1):
     dependencies:
       react: 18.3.1
 
@@ -3806,7 +3806,7 @@ snapshots:
     optionalDependencies:
       '@types/react': 18.3.31
 
-  react-router@7.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  react-router@7.18.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       cookie: 1.1.1
       react: 18.3.1
