@@ -200,6 +200,64 @@ it('never lets two sites claim the same id', () => {
   expect(new Set(ids).size).toBe(ids.length);
 });
 
+/** The rounds are keyed the same way, in a store of their own. */
+it('never lets two sites claim the same round id', () => {
+  const ids = CASES.flatMap((c) => c.casino ?? []).map((r) => r.id);
+  expect(new Set(ids).size).toBe(ids.length);
+});
+
+/**
+ * Only the folders that read a casino at all. A site with none hands over no
+ * list, and nothing below is asked of it.
+ */
+const CASINO_CASES = CASES.filter((c) => c.casino !== undefined);
+
+describe.each(CASINO_CASES)('$name casino rounds', ({ name, casino = [] }) => {
+  it('parses rounds out of the recorded payload at all', () => {
+    expect(
+      casino.length,
+      `${name}: samples.ts declares a casino and yielded no round. Either the fixture holds none, or adapter.ts is reading the wrong field out of it`,
+    ).toBeGreaterThan(0);
+  });
+
+  it('stamps every round with its own site and account', () => {
+    for (const round of casino) {
+      expect(round.bookmaker).toBe(name);
+      expect(round.accountId).toBe(SAMPLE_ACCOUNT_ID);
+      expect(round.id.length).toBeGreaterThan(0);
+    }
+  });
+
+  /**
+   * `casinoSessions` groups rounds by the gap between two `Date.parse` results.
+   * A timestamp it cannot read makes that comparison false rather than throwing,
+   * which files every round as a sitting of its own - a plausible-looking casino
+   * page built out of nothing but one-spin sessions, with no error anywhere.
+   */
+  it('dates every round, in a zone, or the sittings come apart quietly', () => {
+    const zoned = /(?:Z|[+-]\d{2}:?\d{2})$/;
+    for (const round of casino) {
+      expect(round.playedAt, `${round.id}: playedAt carries no timezone`).toMatch(zoned);
+      expect(
+        Number.isNaN(Date.parse(round.playedAt)),
+        `${round.id}: playedAt does not parse`,
+      ).toBe(false);
+    }
+  });
+
+  it('keeps every figure a real number in a named currency', () => {
+    for (const round of casino) {
+      for (const value of [round.stake, round.payout, round.multiplier]) {
+        expect(Number.isFinite(value)).toBe(true);
+      }
+      // A free round stakes nothing, so this is not `> 0`.
+      expect(round.stake).toBeGreaterThanOrEqual(0);
+      expect(round.payout).toBeGreaterThanOrEqual(0);
+      expect(round.currency).toMatch(/^[A-Z]{3,5}$/);
+    }
+  });
+});
+
 /**
  * The surface every adapter has to answer for, whether or not the site happens
  * to expose the data behind it. These are the calls the background worker makes

@@ -15,7 +15,7 @@
  * - a weakened invariant would be weakened for every bookmaker at once.
  */
 
-import type { AccountId, AccountRef, Bet, Bookmaker } from '@betanal/shared';
+import type { AccountId, AccountRef, Bet, Bookmaker, CasinoRound } from '@betanal/shared';
 
 /**
  * One account id for every folder's samples, so the suite can prove that two
@@ -40,4 +40,10 @@ export interface Samples {
   settled: Bet[];
   /** Bets still running. Empty where the site exposes no payload to record. */
   open: Bet[];
+  /**
+   * Casino rounds, where the site has a casino and the folder parses it. Left
+   * out entirely by a folder that reads sports bets only - the suite skips what
+   * is not handed over, but holds whatever is to the same rules as the bets.
+   */
+  casino?: CasinoRound[];
 }
