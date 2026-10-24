@@ -244,4 +244,43 @@ describe('authedJson on a refused request', () => {
     // stopped the log folding the repeats into one line.
     expect((err as Error).message).toBe('HTTP 504 for https://stake.com/_api/graphql: Maintenance');
   });
+
+  /**
+   * A login wall or a proxy's error page can come back as 200, and the run puts
+   * whatever it failed on in front of the reader. `JSON.parse` alone says
+   * "Unexpected token '<'", which names neither the site nor the request.
+   */
+  it('says where an answer that is not JSON came from', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => JSON.parse(MAINTENANCE) as unknown,
+      }),
+    );
+    const err = await authedJson('https://stake.com/_api/graphql', {}).then(
+      () => null,
+      (e: unknown) => e as Error,
+    );
+    expect(err?.message).toBe(
+      'https://stake.com/_api/graphql answered 200 with something other than JSON',
+    );
+  });
+
+  it('says the same of an answer relayed through a tab', async () => {
+    vi.stubGlobal('chrome', {
+      tabs: {
+        query: () => Promise.resolve([{ id: 7 }]),
+        sendMessage: () => Promise.resolve({ status: 200, body: MAINTENANCE }),
+      },
+    });
+    const err = await authedJson('https://stake.com/_api/graphql', {}, true).then(
+      () => null,
+      (e: unknown) => e as Error,
+    );
+    expect(err?.message).toBe(
+      'https://stake.com/_api/graphql answered 200 with something other than JSON: Maintenance',
+    );
+  });
 });
